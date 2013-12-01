@@ -22,27 +22,27 @@ type Context interface {
 }
 
 type context struct {
-	requestId string
-	requestIn   *http.Request
-	requestOut  *http.Request
-	route     *Route
-	logger Logger
+	requestId  string
+	requestIn  *http.Request
+	requestOut *http.Request
+	route      *Route
+	logger     Logger
 }
 
 func newContext(req *http.Request, logger Logger) *context {
 	id := nd.Guidv4String()
 	requestOut := &http.Request{
-		Close: false,
-		Proto: "HTTP/1.1",
+		Close:      false,
+		Proto:      "HTTP/1.1",
 		ProtoMajor: 1,
 		ProtoMinor: 1,
-		Header: http.Header{"X-Request-Id": []string{id}},
+		Header:     http.Header{"X-Request-Id": []string{id}},
 	}
 	return &context{
-		requestIn:   req,
-		requestId: id,
-		requestOut:  requestOut,
-		logger: logger,
+		requestIn:  req,
+		requestId:  id,
+		requestOut: requestOut,
+		logger:     logger,
 	}
 }
 

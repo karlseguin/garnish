@@ -5,13 +5,13 @@ type Router func(context Context) (*Route, Response)
 
 // Route information
 type Route struct {
-	Name string
+	Name     string
 	Upstream string
 }
 
-func NewRoute(name, upstream string) *Route{
+func NewRoute(name, upstream string) *Route {
 	return &Route{
-		Name: name,
+		Name:     name,
 		Upstream: upstream,
 	}
 }

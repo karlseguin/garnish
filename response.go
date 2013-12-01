@@ -1,8 +1,8 @@
 package garnish
 
 import (
-	"net/http"
 	"github.com/karlseguin/bytepool"
+	"net/http"
 	"strconv"
 )
 

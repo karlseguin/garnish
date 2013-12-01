@@ -14,7 +14,7 @@ type DnsResolver func(address string) (string, error)
 type Upstream struct {
 	Name                      string
 	Host                      string
-	Scheme                  	string
+	Scheme                    string
 	Pool                      *bytepool.Pool
 	PoolItemSize              int
 	disableKeepAlives         bool
@@ -29,7 +29,7 @@ func NewUpstream(name, scheme, host string) *Upstream {
 	return &Upstream{
 		Name:                      name,
 		Host:                      host,
-		Scheme:                  scheme,
+		Scheme:                    scheme,
 		PoolItemSize:              65536,
 		Pool:                      bytepool.New(125, 65536),
 		disableKeepAlives:         false,

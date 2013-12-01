@@ -12,9 +12,9 @@ type RouteMap struct {
 
 // Configuration for router middleware
 type Configuration struct {
-	logger garnish.Logger
+	logger   garnish.Logger
 	fallback *garnish.Route
-	routes map[string]*RouteMap
+	routes   map[string]*RouteMap
 }
 
 func Configure(base *garnish.Configuration) *Configuration {

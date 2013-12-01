@@ -28,7 +28,6 @@ func (r *Router) router(context garnish.Context) (*garnish.Route, garnish.Respon
 	request := context.RequestIn()
 	r.logger.Infof(context, "+[router] %v %v", request.Method, request.URL)
 
-
 	rm, ok := r.routes[request.Method]
 	if ok == false {
 		r.logger.Infof(context, "-[router] unknown method %q", request.Method)
