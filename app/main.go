@@ -3,7 +3,7 @@ package main
 
 import (
 	"github.com/karlseguin/garnish"
-	"github.com/karlseguin/garnish/middleware/pathrouter"
+	"github.com/karlseguin/garnish/routing/path"
 	"github.com/karlseguin/garnish/middleware/upstream"
 	"os"
 	"os/signal"
@@ -13,10 +13,10 @@ import (
 func main() {
 	mainConfig := garnish.Configure().LogInfo()
 
-	routerConfig := pathrouter.Configure(mainConfig)
+	routerConfig := path.Configure(mainConfig)
 	routerConfig.Add("GET", "/", garnish.NewRoute("root", "openmymind"))
 	routerConfig.Fallback(garnish.NewRoute("fallback", "openmymind"))
-	mainConfig.Router(pathrouter.Register(routerConfig))
+	mainConfig.Router(path.Register(routerConfig))
 
 	upstreamConfig := upstream.Configure(mainConfig)
 	upstreamConfig.Add(garnish.NewUpstream("openmymind", "http", "openmymind.net"))

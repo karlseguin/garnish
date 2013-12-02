@@ -1,4 +1,4 @@
-package pathrouter
+package path
 
 import (
 	"github.com/karlseguin/garnish"
