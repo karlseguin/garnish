@@ -18,6 +18,6 @@ func main() {
 	upstreamConfig := upstream.Configure(mainConfig)
 	upstreamConfig.Add(garnish.NewUpstream("openmymind", "http", "openmymind.net"))
 
-	mainConfig.Middleware(upstream.Register(upstreamConfig))
+	mainConfig.Middleware(upstreamConfig)
 	garnish.Start(mainConfig)
 }

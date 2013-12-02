@@ -7,14 +7,14 @@ import (
 	"time"
 )
 
+
 type Configuration struct {
 	maxProcs             int
 	address              string
 	maxHeaderBytes       int
 	router               Router
 	readTimeout          time.Duration
-	middlewares          []Middleware
-	middlewareNames      []string
+	middlewareFactories          []MiddlewareFactory
 	internalErrorMessage string
 	notFoundMessage      string
 
@@ -29,8 +29,7 @@ func Configure() *Configuration {
 		maxProcs:             runtime.NumCPU(),
 		readTimeout:          time.Second * 10,
 		address:              "tcp://127.0.0.1:6772",
-		middlewares:          make([]Middleware, 0, 1),
-		middlewareNames:      make([]string, 0, 1),
+		middlewareFactories:          make([]MiddlewareFactory, 0, 1),
 		Logger:               &logger{logger: log.New(os.Stdout, "[garnish] ", log.Ldate|log.Lmicroseconds)},
 	}
 }
@@ -73,9 +72,8 @@ func (c *Configuration) LogInfo() *Configuration {
 }
 
 // Enable logging info messages
-func (c *Configuration) Middleware(name string, middleware Middleware) *Configuration {
-	c.middlewares = append(c.middlewares, middleware)
-	c.middlewareNames = append(c.middlewareNames, name)
+func (c *Configuration) Middleware(factory MiddlewareFactory) *Configuration {
+	c.middlewareFactories = append(c.middlewareFactories, factory)
 	return c
 }
 

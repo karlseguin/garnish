@@ -5,7 +5,6 @@ package upstream
 import (
 	"bytes"
 	"errors"
-	"github.com/karlseguin/dnscache"
 	"github.com/karlseguin/garnish"
 	"io"
 	"net/http"
@@ -15,18 +14,11 @@ type Upstream struct {
 	*Configuration
 }
 
-func Register(config *Configuration) (string, garnish.Middleware) {
-	dns := dnscache.New(config.dnsRefresh)
-	u := &Upstream{config}
-
-	for _, upstream := range config.upstreams {
-		upstream.Resolver(dns.FetchOneString)
-		upstream.Finalize()
-	}
-	return "upstream", u.run
+func (u *Upstream) Name() string {
+	return "upstream"
 }
 
-func (u *Upstream) run(context garnish.Context, next garnish.Next) garnish.Response {
+func (u *Upstream) Run(context garnish.Context, next garnish.Next) garnish.Response {
 	route := context.Route()
 	upstream, ok := u.upstreams[route.Upstream]
 	if ok == false {

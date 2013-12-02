@@ -11,34 +11,27 @@ type Handler struct {
 	logger Logger
 }
 
-func newHandler(config *Configuration) *Handler {
+func newHandler(config *Configuration) (*Handler, error) {
 	h := &Handler{
 		router: config.router,
 		logger: config.Logger,
-		head: &MiddlewareWrapper{
-			logger:     config.Logger,
-			name:       config.middlewareNames[0],
-			middleware: config.middlewares[0],
-		},
 	}
 
-	prev := h.head
-	for i := 1; i < len(config.middlewares); i++ {
-		link := &MiddlewareWrapper{
-			logger:     config.Logger,
-			name:       config.middlewareNames[i],
-			middleware: config.middlewares[i],
-		}
+	prev, err := newMiddlewareWrapper(config, 0)
+	if err != nil { return nil, err }
+	h.head = prev
+	for i := 1; i < len(config.middlewareFactories); i++ {
+		link, err := newMiddlewareWrapper(config, i)
+		if err != nil { return nil, err }
 		prev.next = link
 		prev = link
 	}
 	prev.next = &MiddlewareWrapper{
 		logger:     config.Logger,
-		name:       "catchall",
-		middleware: notFoundMiddleware,
+		middleware: new(notFoundMiddleware),
 	}
 
-	return h
+	return h, nil
 }
 
 func (h *Handler) ServeHTTP(output http.ResponseWriter, req *http.Request) {

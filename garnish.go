@@ -11,7 +11,7 @@ import (
 func Start(config *Configuration) {
 	runtime.GOMAXPROCS(config.maxProcs)
 
-	if len(config.middlewares) == 0 {
+	if len(config.middlewareFactories) == 0 {
 		config.Logger.Error(nil, "must configure at least 1 middleware")
 		os.Exit(1)
 	}
@@ -35,8 +35,9 @@ func Start(config *Configuration) {
 		os.Exit(1)
 	}
 
+	handler, _ := newHandler(config)
 	s := &http.Server{
-		Handler:        newHandler(config),
+		Handler:        handler,
 		ReadTimeout:    config.readTimeout,
 		MaxHeaderBytes: config.maxHeaderBytes,
 	}

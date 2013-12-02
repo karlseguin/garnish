@@ -2,6 +2,7 @@ package upstream
 
 import (
 	"github.com/karlseguin/garnish"
+	"github.com/karlseguin/dnscache"
 	"time"
 )
 
@@ -20,6 +21,16 @@ func Configure(base *garnish.Configuration) *Configuration {
 		dnsRefresh:     time.Minute,
 		upstreams:      make(map[string]*garnish.Upstream),
 	}
+}
+
+func (c *Configuration) Create() (garnish.Middleware, error) {
+	upstream := &Upstream{c}
+	dns := dnscache.New(c.dnsRefresh)
+	for _, upstream := range c.upstreams {
+		upstream.Resolver(dns.FetchOneString)
+		upstream.Finalize()
+	}
+	return upstream, nil
 }
 
 // Forward the specified headers from the input request to the
