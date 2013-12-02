@@ -72,16 +72,16 @@ func (c *context) Fatal(err error) Response {
 // The builder itself satifies the Context interface
 type CB struct {
 	requestId string
-	request   *http.Request
-	upstream  *http.Request
+	requestIn   *http.Request
+	requestOut  *http.Request
 	route     *Route
 }
 
 func ContextBuilder() *CB {
 	return &CB{
 		requestId: "9001!",
-		request:   new(http.Request),
-		upstream:  new(http.Request),
+		requestIn:   new(http.Request),
+		requestOut:  new(http.Request),
 		route:     new(Route),
 	}
 }
@@ -91,8 +91,8 @@ func (c *CB) SetId(id string) *CB {
 	return c
 }
 
-func (c *CB) SetRequest(request *http.Request) *CB {
-	c.request = request
+func (c *CB) SetRequestIn(request *http.Request) *CB {
+	c.requestIn = request
 	return c
 }
 
@@ -100,14 +100,19 @@ func (c *CB) RequestId() string {
 	return c.requestId
 }
 
-func (c *CB) Request() *http.Request {
-	return c.request
+func (c *CB) RequestIn() *http.Request {
+	return c.requestIn
 }
 
-func (c *CB) Upstream() *http.Request {
-	return c.upstream
+func (c *CB) RequestOut() *http.Request {
+	return c.requestOut
 }
 
 func (c *CB) Route() *Route {
 	return c.route
+}
+
+
+func (c *CB) Fatal(err error) Response {
+	return nil
 }

@@ -59,7 +59,7 @@ func TestLogsInternalServerErrors(t *testing.T) {
 
 func buildHandler(route *Route, response Response, middlewares ...Middleware) *Handler {
 	router := func(context Context) (*Route, Response) { return route, response }
-	config := Configure(router)
+	config := Configure().Router(router)
 	for index, middleware := range middlewares {
 		config.Middleware(strconv.Itoa(index), middleware)
 	}
