@@ -8,7 +8,7 @@
 //   /sayans/9001/skills
 //
 // the first route will be picked
-package pathrouter
+package path
 
 import (
 	"github.com/karlseguin/garnish"
