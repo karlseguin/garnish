@@ -5,10 +5,21 @@ import (
 	"net/http"
 	"os"
 	"runtime"
+	"sync"
 )
 
+type Garnish struct {
+	sync.RWMutex
+	logger  Logger
+	handler http.Handler
+}
+
+func New() *Garnish {
+	return new(Garnish)
+}
+
 // Start garnish with the given configuraiton
-func Start(config *Configuration) {
+func (g *Garnish) Start(config *Configuration) {
 	runtime.GOMAXPROCS(config.maxProcs)
 
 	if len(config.middlewareFactories) == 0 {
@@ -35,12 +46,38 @@ func Start(config *Configuration) {
 		os.Exit(1)
 	}
 
-	handler, _ := newHandler(config)
+	handler, err := newHandler(config)
+	if err != nil {
+		config.Logger.Error(nil, err)
+		os.Exit(1)
+	}
+	g.handler = handler
+	g.logger = config.Logger
 	s := &http.Server{
-		Handler:        handler,
+		Handler:        g,
 		ReadTimeout:    config.readTimeout,
 		MaxHeaderBytes: config.maxHeaderBytes,
 	}
 	config.Logger.Infof(nil, "listening on %v", config.address)
 	config.Logger.Error(nil, s.Serve(l))
+}
+
+func (g *Garnish) ServeHTTP(output http.ResponseWriter, req *http.Request) {
+	g.RLock()
+	defer g.RUnlock()
+	g.handler.ServeHTTP(output, req)
+}
+
+func (g *Garnish) Reload(config *Configuration) {
+	g.logger.Info(nil, "reloading")
+	handler, err := newHandler(config)
+	if err != nil {
+		config.Logger.Error(nil, err)
+	} else {
+		g.Lock()
+		g.logger = config.Logger
+		g.handler = handler
+		g.Unlock()
+		g.logger.Info(nil, "reloaded")
+	}
 }

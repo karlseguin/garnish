@@ -20,7 +20,9 @@ type MiddlewareWrapper struct {
 func newMiddlewareWrapper(config *Configuration, index int) (*MiddlewareWrapper, error) {
 	factory := config.middlewareFactories[index]
 	middleware, err := factory.Create()
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	return &MiddlewareWrapper{
 		logger:     config.Logger,
 		middleware: middleware,
@@ -38,7 +40,7 @@ func (wrapper *MiddlewareWrapper) Yield(context Context) Response {
 	return wrapper.middleware.Run(context, next)
 }
 
-type notFoundMiddleware struct {}
+type notFoundMiddleware struct{}
 
 func (m *notFoundMiddleware) Name() string {
 	return "_notFound"

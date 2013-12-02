@@ -7,14 +7,13 @@ import (
 	"time"
 )
 
-
 type Configuration struct {
 	maxProcs             int
 	address              string
 	maxHeaderBytes       int
 	router               Router
 	readTimeout          time.Duration
-	middlewareFactories          []MiddlewareFactory
+	middlewareFactories  []MiddlewareFactory
 	internalErrorMessage string
 	notFoundMessage      string
 
@@ -29,7 +28,7 @@ func Configure() *Configuration {
 		maxProcs:             runtime.NumCPU(),
 		readTimeout:          time.Second * 10,
 		address:              "tcp://127.0.0.1:6772",
-		middlewareFactories:          make([]MiddlewareFactory, 0, 1),
+		middlewareFactories:  make([]MiddlewareFactory, 0, 1),
 		Logger:               &logger{logger: log.New(os.Stdout, "[garnish] ", log.Ldate|log.Lmicroseconds)},
 	}
 }

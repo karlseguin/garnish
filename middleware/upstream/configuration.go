@@ -1,8 +1,8 @@
 package upstream
 
 import (
-	"github.com/karlseguin/garnish"
 	"github.com/karlseguin/dnscache"
+	"github.com/karlseguin/garnish"
 	"time"
 )
 

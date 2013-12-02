@@ -68,15 +68,16 @@ func (l *FakeLogger) Infof(context Context, format string, v ...interface{}) {
 	l.printf(true, format, v...)
 }
 
+func (l *FakeLogger) Info(context Context, v ...interface{}) {
+	l.print(true, v...)
+}
+
 func (l *FakeLogger) Errorf(context Context, format string, v ...interface{}) {
 	l.printf(false, format, v...)
 }
 
 func (l *FakeLogger) Error(context Context, v ...interface{}) {
-	if l.messages == nil {
-		l.messages = make([]FakeLogMessage, 0, 1)
-	}
-	l.messages = append(l.messages, FakeLogMessage{true, fmt.Sprint(v...)})
+	l.print(false, v...)
 }
 
 func (l *FakeLogger) printf(info bool, format string, v ...interface{}) {
@@ -84,6 +85,13 @@ func (l *FakeLogger) printf(info bool, format string, v ...interface{}) {
 		l.messages = make([]FakeLogMessage, 0, 1)
 	}
 	l.messages = append(l.messages, FakeLogMessage{info, fmt.Sprintf(format, v...)})
+}
+
+func (l *FakeLogger) print(info bool, v ...interface{}) {
+	if l.messages == nil {
+		l.messages = make([]FakeLogMessage, 0, 1)
+	}
+	l.messages = append(l.messages, FakeLogMessage{info, fmt.Sprint(v...)})
 }
 
 func (l *FakeLogger) Assert(t *testing.T, expected FakeLogMessage) {

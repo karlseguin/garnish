@@ -5,6 +5,9 @@ import (
 	"github.com/karlseguin/garnish"
 	"github.com/karlseguin/garnish/middleware/pathrouter"
 	"github.com/karlseguin/garnish/middleware/upstream"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
 func main() {
@@ -19,5 +22,14 @@ func main() {
 	upstreamConfig.Add(garnish.NewUpstream("openmymind", "http", "openmymind.net"))
 
 	mainConfig.Middleware(upstreamConfig)
-	garnish.Start(mainConfig)
+	g := garnish.New()
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, syscall.SIGUSR2)
+	go func() {
+		for {
+			<-sig
+			g.Reload(mainConfig)
+		}
+	}()
+	g.Start(mainConfig)
 }

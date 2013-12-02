@@ -18,11 +18,15 @@ func newHandler(config *Configuration) (*Handler, error) {
 	}
 
 	prev, err := newMiddlewareWrapper(config, 0)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	h.head = prev
 	for i := 1; i < len(config.middlewareFactories); i++ {
 		link, err := newMiddlewareWrapper(config, i)
-		if err != nil { return nil, err }
+		if err != nil {
+			return nil, err
+		}
 		prev.next = link
 		prev = link
 	}

@@ -7,7 +7,7 @@ import (
 
 func TestNotFoundMiddlewareReturnsNotFoundResponse(t *testing.T) {
 	spec := gspec.New(t)
-	res := notFoundMiddleware(nil, nil)
+	res := new(notFoundMiddleware).Run(nil, nil)
 	spec.Expect(res.GetStatus()).ToEqual(404)
 	spec.Expect(string(res.GetBody())).ToEqual("not found")
 }
@@ -15,7 +15,7 @@ func TestNotFoundMiddlewareReturnsNotFoundResponse(t *testing.T) {
 func TestMiddlewareWrapperLogsExecution(t *testing.T) {
 	spec := gspec.New(t)
 	logger, buffer := testLogger(true)
-	mw := &MiddlewareWrapper{name: "test-wrap", logger: logger, middleware: notFoundMiddleware}
+	mw := &MiddlewareWrapper{logger: logger, middleware: new(notFoundMiddleware)}
 	mw.Yield(nil)
-	spec.Expect(buffer.String()).ToEqual("[internal] +[test-wrap]\n[internal] -[test-wrap]\n")
+	spec.Expect(buffer.String()).ToEqual("[internal] +[_notFound]\n[internal] -[_notFound]\n")
 }
