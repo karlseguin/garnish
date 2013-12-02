@@ -62,10 +62,14 @@ func (h *Handler) reply(context Context, response Response, output http.Response
 	status := response.GetStatus()
 
 	if status >= 500 {
-		h.logger.Errorf(context, "%q %d %v", context.RequestIn().URL, status, string(body))
+		LogError(h.logger, context, status, body)
 	}
 
 	outHeader["Content-Length"] = []string{strconv.Itoa(len(body))}
 	output.WriteHeader(status)
 	output.Write(body)
+}
+
+func LogError(logger Logger, context Context, status int, body []byte) {
+	logger.Errorf(context, "%q %d %v", context.RequestIn().URL, status, string(body))
 }

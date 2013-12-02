@@ -24,6 +24,13 @@ type Response interface {
 
 	// Close the response
 	Close() error
+
+	// Detaches the response from any underlying resourcs.
+	// In cases where Close is a no-op, this should probably
+	// return self. Otherwise, the response should do whatever
+	// it has to so that it can be long-lived (clone itself into
+	// a normal response and close itself)
+	Detach() Response
 }
 
 // A in-memory response with a chainable API. Should be created
@@ -72,6 +79,10 @@ func (r *ResponseBuilder) Close() error {
 	return nil
 }
 
+func (r *ResponseBuilder) Detach() Response {
+	return r
+}
+
 // Creates a Response
 func Respond(body []byte) *ResponseBuilder {
 	return &ResponseBuilder{
@@ -104,7 +115,17 @@ func (r *ClosableResponse) GetStatus() int {
 	return r.S
 }
 
-// Noop
 func (r *ClosableResponse) Close() error {
 	return r.B.Close()
+}
+
+func (r *ClosableResponse) Detach() Response {
+	defer r.B.Close()
+	clone := &ResponseBuilder{
+		S: r.S,
+		H: r.H,
+	}
+	clone.B = make([]byte, r.B.Len())
+	copy(clone.B, r.B.Bytes())
+	return clone
 }

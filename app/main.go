@@ -15,7 +15,7 @@ func main() {
 
 	routerConfig := pathrouter.Configure(mainConfig)
 	routerConfig.Add("GET", "/", garnish.NewRoute("root", "openmymind"))
-	routerConfig.Fallback(garnish.NewRoute("fallback", "openmymind"))
+	routerConfig.Fallback(garnish.NewRoute("fallback", "openmymind").Cache())
 	mainConfig.Router(pathrouter.Register(routerConfig))
 
 	upstreamConfig := upstream.Configure(mainConfig)
