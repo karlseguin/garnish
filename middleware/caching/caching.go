@@ -3,6 +3,7 @@ package caching
 
 import (
 	"github.com/karlseguin/garnish"
+	"github.com/karlseguin/garnish/caches"
 	"strconv"
 	"strings"
 	"time"
@@ -20,24 +21,26 @@ func (c *Caching) Run(context garnish.Context, next garnish.Next) garnish.Respon
 	request := context.RequestIn()
 	caching := context.Route().Caching
 	if request.Method != "GET" || caching == nil {
+		c.logger.Info(context, "not cacheable")
 		return next(context)
 	}
 
 	key, vary := caching.KeyGenerator(context)
-	cached := c.storage.Get(key, vary)
+	cached := c.cache.Get(key, vary)
 	if cached != nil {
 		now := time.Now()
 		if cached.Expires.After(now) {
 			c.logger.Info(context, "hit")
 			return cached
 		}
-		if cached.Expires.After(now.Add(c.grace)) {
+		if now.Add(c.grace).After(cached.Expires) {
 			c.logger.Info(context, "grace")
 			//todo grace fetch
 			return cached
 		}
 	}
 
+	c.logger.Info(context, "miss")
 	response := next(context)
 	if response.GetStatus() >= 500 && c.saint {
 		// log this here since the final handler will never see this 500 error
@@ -45,20 +48,20 @@ func (c *Caching) Run(context garnish.Context, next garnish.Next) garnish.Respon
 		c.logger.Info(context, "saint")
 		return cached
 	}
-	return c.cache(caching, response, context, key, vary)
+	return c.set(caching, response, context, key, vary)
 }
 
-func (c *Caching) cache(caching *garnish.Caching, response garnish.Response, context garnish.Context, key, vary string) garnish.Response {
+func (c *Caching) set(caching *garnish.Caching, response garnish.Response, context garnish.Context, key, vary string) garnish.Response {
 	ttl, ok := ttl(caching, response)
 	if ok == false {
 		c.logger.Error(context, "configured to cache but no expiry was given")
 		return response
 	}
-	cr := &CachedResponse{
+	cr := &caches.CachedResponse{
 		Expires:  time.Now().Add(ttl),
 		Response: response.Detach(),
 	}
-	c.storage.Set(key, vary, ttl, cr)
+	c.cache.Set(key, vary, ttl, cr)
 	return cr
 }
 

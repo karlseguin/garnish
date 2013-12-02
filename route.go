@@ -38,3 +38,7 @@ func (r *Route) TTL(duration time.Duration) *Route {
 	r.Caching.TTL = duration
 	return r
 }
+
+func (r *Route) String() string {
+	return r.Name
+}

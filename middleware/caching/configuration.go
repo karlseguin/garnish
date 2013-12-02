@@ -2,23 +2,30 @@ package caching
 
 import (
 	"github.com/karlseguin/garnish"
+	"github.com/karlseguin/garnish/caches"
 	"time"
 )
 
 // Configuration for the Caching middleware
 type Configuration struct {
-	logger  garnish.Logger
-	storage Storage
-	grace   time.Duration
-	saint   bool
+	logger garnish.Logger
+	cache  caches.Cache
+	grace  time.Duration
+	saint  bool
 }
 
-func Configure(base *garnish.Configuration) *Configuration {
+func Configure(base *garnish.Configuration, cache caches.Cache) *Configuration {
 	return &Configuration{
 		logger: base.Logger,
 		grace:  time.Second * 10,
 		saint:  true,
+		cache:  cache,
 	}
+}
+
+// Create the middleware from the configuration
+func (c *Configuration) Create() (garnish.Middleware, error) {
+	return &Caching{c}, nil
 }
 
 // Serve a request even if it has expired within the specified

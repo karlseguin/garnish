@@ -1,4 +1,4 @@
-package caching
+package caches
 
 import (
 	"github.com/karlseguin/garnish"

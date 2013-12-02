@@ -1,11 +1,11 @@
-package caching
+package caches
 
 import (
 	"time"
 )
 
 // Cache storage implementations must follow this interface
-type Storage interface {
+type Cache interface {
 	// Get a value from the cache
 	Get(key, vary string) *CachedResponse
 
