@@ -1,7 +1,7 @@
 package ccache
 
 import (
-	"github.com/viki-org/gspec"
+	"github.com/karlseguin/gspec"
 	"testing"
 )
 

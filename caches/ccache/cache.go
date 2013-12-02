@@ -146,7 +146,7 @@ func (c *Cache) gc() {
 			return
 		}
 		item := element.Value.(*Item)
-		c.bucket(item.key).delete(item.key)
+		c.bucket(item.key).deleteVary(item.key, item.vary)
 		c.list.Remove(element)
 	}
 }

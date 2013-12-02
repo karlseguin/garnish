@@ -1,34 +1,36 @@
 package ccache
 
 import (
-	"github.com/viki-org/gspec"
+	"github.com/karlseguin/garnish"
+	"github.com/karlseguin/garnish/caches"
+	"github.com/karlseguin/gspec"
 	"testing"
 	"time"
 )
 
 func TestGetMissFromBucket(t *testing.T) {
 	bucket := testBucket()
-	gspec.New(t).Expect(bucket.get("invalid")).ToBeNil()
+	gspec.New(t).Expect(bucket.get("invalid", "vary")).ToBeNil()
 }
 
 func TestGetHitFromBucket(t *testing.T) {
 	bucket := testBucket()
-	item := bucket.get("power")
+	item := bucket.get("goku", "power")
 	assertValue(t, item, "9000")
 }
 
 func TestDeleteItemFromBucket(t *testing.T) {
 	bucket := testBucket()
 	bucket.delete("power")
-	gspec.New(t).Expect(bucket.get("power")).ToBeNil()
+	gspec.New(t).Expect(bucket.get("power", "power")).ToBeNil()
 }
 
 func TestSetsANewBucketItem(t *testing.T) {
 	spec := gspec.New(t)
 	bucket := testBucket()
-	item, new := bucket.set("spice", TestValue("flow"), time.Minute)
+	item, new := bucket.set("spice", "must", fakeResponse("flow"), time.Minute)
 	assertValue(t, item, "flow")
-	item = bucket.get("spice")
+	item = bucket.get("spice", "must")
 	assertValue(t, item, "flow")
 	spec.Expect(new).ToEqual(true)
 }
@@ -36,29 +38,44 @@ func TestSetsANewBucketItem(t *testing.T) {
 func TestSetsAnExistingItem(t *testing.T) {
 	spec := gspec.New(t)
 	bucket := testBucket()
-	item, new := bucket.set("power", TestValue("9002"), time.Minute)
+	item, new := bucket.set("goku", "power", fakeResponse("9002"), time.Minute)
 	assertValue(t, item, "9002")
-	item = bucket.get("power")
+	item = bucket.get("goku", "power")
 	assertValue(t, item, "9002")
 	spec.Expect(new).ToEqual(false)
 }
 
+func TestSetsANewVariance(t *testing.T) {
+	spec := gspec.New(t)
+	bucket := testBucket()
+	item, new := bucket.set("goku", "dbz", fakeResponse("7"), time.Minute)
+	assertValue(t, item, "7")
+	item = bucket.get("goku", "power")
+	assertValue(t, item, "9000")
+	item = bucket.get("goku", "dbz")
+	assertValue(t, item, "7")
+	spec.Expect(new).ToEqual(true)
+}
+
 func testBucket() *Bucket {
-	b := &Bucket{lookup: make(map[string]*Item)}
-	b.lookup["power"] = &Item{
-		key:   "power",
-		value: TestValue("9000"),
+	b := &Bucket{lookup: make(map[string]*Vary)}
+	v := &Vary{lookup: make(map[string]*Item)}
+	b.lookup["goku"] = v
+	v.lookup["power"] = &Item{
+		key:   "goku",
+		vary:  "power",
+		value: fakeResponse("9000"),
 	}
 	return b
 }
 
 func assertValue(t *testing.T, item *Item, expected string) {
-	value := item.value.(TestValue)
-	gspec.New(t).Expect(value).ToEqual(TestValue(expected))
+	actual := item.value
+	gspec.New(t).Expect(string(actual.GetBody())).ToEqual(expected)
 }
 
-type TestValue string
-
-func (v TestValue) Expires() time.Time {
-	return time.Now()
+func fakeResponse(body string) *caches.CachedResponse {
+	return &caches.CachedResponse{
+		Response: garnish.Respond([]byte(body)),
+	}
 }

@@ -40,8 +40,7 @@ func newHandler(config *Configuration) (*Handler, error) {
 
 func (h *Handler) ServeHTTP(output http.ResponseWriter, req *http.Request) {
 	context := newContext(req, h.logger)
-	h.logger.Info(context, "<router>")
-	h.logger.Info(context, req.URL)
+	h.logger.Info(context, "<router url=%q>", req.URL)
 	route, response := h.router(context)
 	defer h.logger.Info(context, "</router>")
 
