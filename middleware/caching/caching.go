@@ -2,6 +2,7 @@
 package caching
 
 import (
+	"sync"
 	"github.com/karlseguin/garnish"
 	"github.com/karlseguin/garnish/caches"
 	"strconv"
@@ -11,6 +12,8 @@ import (
 
 type Caching struct {
 	*Configuration
+	lock sync.RWMutex
+	downloading map[string]time.Time
 }
 
 func (c *Caching) Name() string {
@@ -33,9 +36,9 @@ func (c *Caching) Run(context garnish.Context, next garnish.Next) garnish.Respon
 			c.logger.Info(context, "hit")
 			return cached
 		}
-		if now.Add(c.grace).After(cached.Expires) {
+		if now.Add(c.Configuration.grace).After(cached.Expires) {
 			c.logger.Info(context, "grace")
-			//todo grace fetch
+			go c.grace(key, vary, context, next)
 			return cached
 		}
 	}
@@ -48,11 +51,11 @@ func (c *Caching) Run(context garnish.Context, next garnish.Next) garnish.Respon
 		c.logger.Info(context, "saint")
 		return cached
 	}
-	return c.set(caching, response, context, key, vary)
+	return c.set(key, vary, context, response)
 }
 
-func (c *Caching) set(caching *garnish.Caching, response garnish.Response, context garnish.Context, key, vary string) garnish.Response {
-	ttl, ok := ttl(caching, response)
+func (c *Caching) set(key, vary string, context garnish.Context, response garnish.Response) garnish.Response {
+	ttl, ok := ttl(context.Route().Caching, response)
 	if ok == false {
 		c.logger.Error(context, "configured to cache but no expiry was given")
 		return response
@@ -81,4 +84,42 @@ func ttl(caching *garnish.Caching, response garnish.Response) (time.Duration, bo
 		}
 	}
 	return time.Second, false
+}
+
+func (c *Caching) grace(key, vary string, context garnish.Context, next garnish.Next) {
+	downloadKey := key + vary
+	if c.isDownloading(downloadKey) { return }
+	if c.lockDownload(downloadKey) == false { return }
+	defer c.unlockDownload(downloadKey)
+	c.logger.Info(context, "grace start download")
+	response := next(context)
+	if response.GetStatus() < 500 {
+		c.logger.Infof(context, "grace %d", response.GetStatus())
+		c.set(key, vary, context, response)
+	} else {
+		garnish.LogError(c.logger, context, response.GetStatus(), response.GetBody())
+	}
+}
+
+func (c *Caching) isDownloading(key string) bool {
+	c.lock.RLock()
+	expires, exists := c.downloading[key]
+	c.lock.RUnlock()
+	return exists && time.Now().Before(expires)
+}
+
+func (c *Caching) lockDownload(key string) bool {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	if _, exists := c.downloading[key]; exists {
+		return false
+	}
+	c.downloading[key] = time.Now().Add(time.Second * 30)
+	return true
+}
+
+func (c *Caching) unlockDownload(key string) {
+	c.lock.Lock()
+	delete(c.downloading, key)
+	c.lock.Unlock()
 }

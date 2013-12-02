@@ -25,7 +25,8 @@ func Configure(base *garnish.Configuration, cache caches.Cache) *Configuration {
 
 // Create the middleware from the configuration
 func (c *Configuration) Create() (garnish.Middleware, error) {
-	return &Caching{c}, nil
+
+	return &Caching{Configuration: c, downloading: make(map[string]time.Time)}, nil
 }
 
 // Serve a request even if it has expired within the specified
