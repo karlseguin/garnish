@@ -5,7 +5,6 @@ import (
 	"github.com/karlseguin/garnish/caches"
 	"github.com/karlseguin/gspec"
 	"testing"
-	"time"
 )
 
 func TestGetMissFromBucket(t *testing.T) {
@@ -28,7 +27,7 @@ func TestDeleteItemFromBucket(t *testing.T) {
 func TestSetsANewBucketItem(t *testing.T) {
 	spec := gspec.New(t)
 	bucket := testBucket()
-	item, new := bucket.set("spice", "must", fakeResponse("flow"), time.Minute)
+	item, new := bucket.set("spice", "must", fakeResponse("flow"))
 	assertValue(t, item, "flow")
 	item = bucket.get("spice", "must")
 	assertValue(t, item, "flow")
@@ -38,7 +37,7 @@ func TestSetsANewBucketItem(t *testing.T) {
 func TestSetsAnExistingItem(t *testing.T) {
 	spec := gspec.New(t)
 	bucket := testBucket()
-	item, new := bucket.set("goku", "power", fakeResponse("9002"), time.Minute)
+	item, new := bucket.set("goku", "power", fakeResponse("9002"))
 	assertValue(t, item, "9002")
 	item = bucket.get("goku", "power")
 	assertValue(t, item, "9002")
@@ -48,7 +47,7 @@ func TestSetsAnExistingItem(t *testing.T) {
 func TestSetsANewVariance(t *testing.T) {
 	spec := gspec.New(t)
 	bucket := testBucket()
-	item, new := bucket.set("goku", "dbz", fakeResponse("7"), time.Minute)
+	item, new := bucket.set("goku", "dbz", fakeResponse("7"))
 	assertValue(t, item, "7")
 	item = bucket.get("goku", "power")
 	assertValue(t, item, "9000")

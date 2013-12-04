@@ -3,9 +3,50 @@ package caching
 import (
 	"github.com/karlseguin/garnish"
 	"github.com/karlseguin/gspec"
+	"github.com/karlseguin/garnish/caches"
 	"testing"
 	"time"
 )
+
+var originalGrace = grace
+
+func TestDoesNotCacheNonGetRequests(t *testing.T) {
+	spec := gspec.New(t)
+	context := garnish.ContextBuilder().SetRequestIn(gspec.Request().Method("POST").Req)
+	caching, _ := Configure(garnish.Configure(), nil).Create()
+	res := caching.Run(context, garnish.FakeNext)
+	spec.Expect(res.GetStatus()).ToEqual(123)
+}
+
+func TestDoesNotCachingRoutesWhichArentConfiguredForCaching(t *testing.T) {
+	spec := gspec.New(t)
+	context := garnish.ContextBuilder().SetRequestIn(gspec.Request().Method("GET").Req)
+	context.Route().Caching = nil
+	caching, _ := Configure(garnish.Configure(), nil).Create()
+	res := caching.Run(context, garnish.FakeNext)
+	spec.Expect(res.GetStatus()).ToEqual(123)
+}
+
+func TestReturnsAFreshResult(t *testing.T) {
+	spec := gspec.New(t)
+	context := garnish.ContextBuilder().SetRequestIn(gspec.Request().Method("GET").Req)
+	context.Route().Caching = buildCaching("goku", "power")
+	caching, _ := Configure(garnish.Configure(), newFakeStorage()).Create()
+	res := caching.Run(context, nil)
+	spec.Expect(res.GetStatus()).ToEqual(9001)
+}
+
+func TestReturnsASlightlyStaleResult(t *testing.T) {
+	graceCalled := false
+	stubGrace(&graceCalled)
+	spec := gspec.New(t)
+	context := garnish.ContextBuilder().SetRequestIn(gspec.Request().Method("GET").Req)
+	context.Route().Caching = buildCaching("goku", "level")
+	caching, _ := Configure(garnish.Configure(), newFakeStorage()).Create()
+	res := caching.Run(context, nil)
+	spec.Expect(res.GetStatus()).ToEqual(3)
+	spec.Expect(graceCalled).ToEqual(true)
+}
 
 func TestTTLReturnsTheConfiguredTimeForAGoodRespone(t *testing.T) {
 	spec := gspec.New(t)
@@ -38,4 +79,65 @@ func TestTTLDoesNotHandleInvalidMissingExpiryTime(t *testing.T) {
 	spec := gspec.New(t)
 	_, ok := ttl(new(garnish.Caching), garnish.Respond(nil).Status(200))
 	spec.Expect(ok).ToEqual(false)
+}
+
+func buildCaching(key, vary string) *garnish.Caching {
+	kg := func(context garnish.Context) (string, string) {
+		return key, vary
+	}
+	return &garnish.Caching{
+		KeyGenerator: kg,
+	}
+}
+
+func stubGrace(flag *bool) {
+	grace = func(c *Caching, key, vary string, context garnish.Context, next garnish.Next) {
+		grace = originalGrace
+		*flag = true
+	}
+}
+
+type FakeStorage struct {
+	data map[string]map[string]*caches.CachedResponse
+}
+
+func newFakeStorage() caches.Cache {
+	return &FakeStorage{
+		data: map[string]map[string]*caches.CachedResponse{
+			"goku": map[string]*caches.CachedResponse{
+				"power": &caches.CachedResponse{
+					Expires: time.Now().Add(time.Minute),
+					Response: garnish.Respond([]byte("over 9000")).Status(9001),
+				},
+				"level": &caches.CachedResponse{
+					Expires: time.Now().Add(time.Second*-8),
+					Response: garnish.Respond([]byte("super super sayan")).Status(3),
+				},
+			},
+		},
+	}
+}
+
+func (c *FakeStorage) Get(key, vary string) *caches.CachedResponse {
+	main, exists := c.data[key]
+	if exists == false { return nil }
+	return main[vary]
+}
+
+func (c *FakeStorage) Set(key, vary string, value *caches.CachedResponse) {
+	c.data[key][vary] = value
+}
+
+func (c *FakeStorage) Delete(key string) bool {
+	_, exists := c.data[key]
+	delete(c.data, key)
+	return exists
+}
+
+func (c *FakeStorage) DeleteVary(key, vary string) bool {
+	main, exists := c.data[key]
+	if exists == false { return false }
+	_, exists = main[vary]
+	delete(main, vary)
+	return exists
 }

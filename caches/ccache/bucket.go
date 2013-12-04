@@ -3,7 +3,6 @@ package ccache
 import (
 	"github.com/karlseguin/garnish/caches"
 	"sync"
-	"time"
 )
 
 type Bucket struct {
@@ -26,7 +25,7 @@ func (b *Bucket) get(key, vary string) *Item {
 	return v.lookup[vary]
 }
 
-func (b *Bucket) set(key, vary string, value *caches.CachedResponse, duration time.Duration) (*Item, bool) {
+func (b *Bucket) set(key, vary string, value *caches.CachedResponse) (*Item, bool) {
 	v, ok := b.getVary(key)
 	if ok == false {
 		b.Lock()
@@ -36,7 +35,6 @@ func (b *Bucket) set(key, vary string, value *caches.CachedResponse, duration ti
 		}
 		b.Unlock()
 	}
-	expires := time.Now().Add(duration)
 	v.Lock()
 	defer v.Unlock()
 	if existing, exists := v.lookup[vary]; exists {
@@ -45,7 +43,7 @@ func (b *Bucket) set(key, vary string, value *caches.CachedResponse, duration ti
 		existing.Unlock()
 		return existing, false
 	}
-	item := newItem(key, vary, value, expires)
+	item := newItem(key, vary, value)
 	v.lookup[vary] = item
 	return item, true
 }

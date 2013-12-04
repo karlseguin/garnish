@@ -2,22 +2,26 @@
 package caching
 
 import (
-	"sync"
 	"github.com/karlseguin/garnish"
 	"github.com/karlseguin/garnish/caches"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
 type Caching struct {
 	*Configuration
-	lock sync.RWMutex
+	lock        sync.RWMutex
 	downloading map[string]time.Time
 }
 
 func (c *Caching) Name() string {
 	return "caching"
+}
+
+var grace = func(c *Caching, key, vary string, context garnish.Context, next garnish.Next) {
+	go c.grace(key, vary, context, next)
 }
 
 func (c *Caching) Run(context garnish.Context, next garnish.Next) garnish.Response {
@@ -38,7 +42,7 @@ func (c *Caching) Run(context garnish.Context, next garnish.Next) garnish.Respon
 		}
 		if now.Add(c.Configuration.grace).After(cached.Expires) {
 			c.logger.Info(context, "grace")
-			go c.grace(key, vary, context, next)
+			grace(c, key, vary, context, next)
 			return cached
 		}
 	}
@@ -64,7 +68,7 @@ func (c *Caching) set(key, vary string, context garnish.Context, response garnis
 		Expires:  time.Now().Add(ttl),
 		Response: response.Detach(),
 	}
-	c.cache.Set(key, vary, ttl, cr)
+	c.cache.Set(key, vary, cr)
 	return cr
 }
 
@@ -88,8 +92,12 @@ func ttl(caching *garnish.Caching, response garnish.Response) (time.Duration, bo
 
 func (c *Caching) grace(key, vary string, context garnish.Context, next garnish.Next) {
 	downloadKey := key + vary
-	if c.isDownloading(downloadKey) { return }
-	if c.lockDownload(downloadKey) == false { return }
+	if c.isDownloading(downloadKey) {
+		return
+	}
+	if c.lockDownload(downloadKey) == false {
+		return
+	}
 	defer c.unlockDownload(downloadKey)
 	c.logger.Info(context, "grace start download")
 	response := next(context)

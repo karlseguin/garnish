@@ -47,8 +47,8 @@ func (c *Cache) Get(key, vary string) *caches.CachedResponse {
 	return item.value
 }
 
-func (c *Cache) Set(key, vary string, duration time.Duration, value *caches.CachedResponse) {
-	item, new := c.bucket(key).set(key, vary, value, duration)
+func (c *Cache) Set(key, vary string, value *caches.CachedResponse) {
+	item, new := c.bucket(key).set(key, vary, value)
 	if new {
 		c.promote(item)
 	} else {

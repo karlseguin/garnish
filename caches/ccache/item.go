@@ -5,7 +5,6 @@ import (
 	"github.com/karlseguin/garnish/caches"
 	"sync"
 	"sync/atomic"
-	"time"
 )
 
 type Item struct {
@@ -17,7 +16,7 @@ type Item struct {
 	element    *list.Element
 }
 
-func newItem(key, vary string, value *caches.CachedResponse, expires time.Time) *Item {
+func newItem(key, vary string, value *caches.CachedResponse) *Item {
 	return &Item{
 		key:        key,
 		vary:       vary,
