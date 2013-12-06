@@ -2,8 +2,8 @@ package caching
 
 import (
 	"github.com/karlseguin/garnish"
-	"github.com/karlseguin/gspec"
 	"github.com/karlseguin/garnish/caches"
+	"github.com/karlseguin/gspec"
 	"testing"
 	"time"
 )
@@ -14,7 +14,7 @@ func TestDoesNotCacheNonGetRequests(t *testing.T) {
 	spec := gspec.New(t)
 	context := garnish.ContextBuilder().SetRequestIn(gspec.Request().Method("POST").Req)
 	caching, _ := Configure(garnish.Configure(), nil).Create()
-	res := caching.Run(context, garnish.FakeNext)
+	res := caching.Run(context, garnish.FakeNext(garnish.Respond(nil).Status(123)))
 	spec.Expect(res.GetStatus()).ToEqual(123)
 }
 
@@ -23,7 +23,7 @@ func TestDoesNotCachingRoutesWhichArentConfiguredForCaching(t *testing.T) {
 	context := garnish.ContextBuilder().SetRequestIn(gspec.Request().Method("GET").Req)
 	context.Route().Caching = nil
 	caching, _ := Configure(garnish.Configure(), nil).Create()
-	res := caching.Run(context, garnish.FakeNext)
+	res := caching.Run(context, garnish.FakeNext(garnish.Respond(nil).Status(123)))
 	spec.Expect(res.GetStatus()).ToEqual(123)
 }
 
@@ -46,6 +46,37 @@ func TestReturnsASlightlyStaleResult(t *testing.T) {
 	res := caching.Run(context, nil)
 	spec.Expect(res.GetStatus()).ToEqual(3)
 	spec.Expect(graceCalled).ToEqual(true)
+}
+
+func TestReturnsAStaleResultIfTheNewResultIsAnError(t *testing.T) {
+	spec := gspec.New(t)
+	context := garnish.ContextBuilder().SetRequestIn(gspec.Request().Method("GET").Req)
+	context.Route().Caching = buildCaching("goku", "age")
+	caching, _ := Configure(garnish.Configure(), newFakeStorage()).Create()
+	now := time.Now()
+	res := caching.Run(context, garnish.FakeNext(garnish.Respond(nil).Status(500)))
+	spec.Expect(res.GetStatus()).ToEqual(20)
+	spec.Expect(res.(*caches.CachedResponse).Expires.After(now)).ToEqual(true)
+}
+
+func TestReturnsAndCachesAnUpdatedResult(t *testing.T) {
+	spec := gspec.New(t)
+	context := garnish.ContextBuilder().SetRequestIn(gspec.Request().Method("GET").Req)
+	context.Route().Caching = buildCaching("goku", "age")
+	caching, _ := Configure(garnish.Configure(), newFakeStorage()).Create()
+	res := caching.Run(context, garnish.FakeNext(garnish.Respond([]byte("21")).Status(200).Cache(200)))
+	spec.Expect(res.GetStatus()).ToEqual(200)
+	spec.Expect(string(caching.(*Caching).cache.Get("goku", "age").GetBody())).ToEqual("21")
+}
+
+func TestReturnsAndCachesANewResult(t *testing.T) {
+	spec := gspec.New(t)
+	context := garnish.ContextBuilder().SetRequestIn(gspec.Request().Method("GET").Req)
+	context.Route().Caching = buildCaching("goku", "other")
+	caching, _ := Configure(garnish.Configure(), newFakeStorage()).Create()
+	res := caching.Run(context, garnish.FakeNext(garnish.Respond([]byte("otherother")).Status(200).Cache(200)))
+	spec.Expect(res.GetStatus()).ToEqual(200)
+	spec.Expect(string(caching.(*Caching).cache.Get("goku", "other").GetBody())).ToEqual("otherother")
 }
 
 func TestTTLReturnsTheConfiguredTimeForAGoodRespone(t *testing.T) {
@@ -106,12 +137,16 @@ func newFakeStorage() caches.Cache {
 		data: map[string]map[string]*caches.CachedResponse{
 			"goku": map[string]*caches.CachedResponse{
 				"power": &caches.CachedResponse{
-					Expires: time.Now().Add(time.Minute),
+					Expires:  time.Now().Add(time.Minute),
 					Response: garnish.Respond([]byte("over 9000")).Status(9001),
 				},
 				"level": &caches.CachedResponse{
-					Expires: time.Now().Add(time.Second*-8),
+					Expires:  time.Now().Add(time.Second * -8),
 					Response: garnish.Respond([]byte("super super sayan")).Status(3),
+				},
+				"age": &caches.CachedResponse{
+					Expires:  time.Now().Add(time.Hour * -8),
+					Response: garnish.Respond([]byte("20")).Status(20),
 				},
 			},
 		},
@@ -120,7 +155,9 @@ func newFakeStorage() caches.Cache {
 
 func (c *FakeStorage) Get(key, vary string) *caches.CachedResponse {
 	main, exists := c.data[key]
-	if exists == false { return nil }
+	if exists == false {
+		return nil
+	}
 	return main[vary]
 }
 
@@ -136,7 +173,9 @@ func (c *FakeStorage) Delete(key string) bool {
 
 func (c *FakeStorage) DeleteVary(key, vary string) bool {
 	main, exists := c.data[key]
-	if exists == false { return false }
+	if exists == false {
+		return false
+	}
 	_, exists = main[vary]
 	delete(main, vary)
 	return exists

@@ -11,21 +11,20 @@ type Configuration struct {
 	logger garnish.Logger
 	cache  caches.Cache
 	grace  time.Duration
-	saint  bool
+	saint  time.Duration
 }
 
 func Configure(base *garnish.Configuration, cache caches.Cache) *Configuration {
 	return &Configuration{
 		logger: base.Logger,
 		grace:  time.Second * 10,
-		saint:  true,
+		saint:  time.Second * 10,
 		cache:  cache,
 	}
 }
 
 // Create the middleware from the configuration
 func (c *Configuration) Create() (garnish.Middleware, error) {
-
 	return &Caching{Configuration: c, downloading: make(map[string]time.Time)}, nil
 }
 
@@ -43,12 +42,13 @@ func (c *Configuration) Grace(duration time.Duration) *Configuration {
 }
 
 // Serve a request regardless of how stale it is should the upstream
-// return a 500+ status code.
+// return a 500+ status code. The duration specifies how long to
+// extend the cache for before trying again.
 //
 // May not be available in all storage engines.
 //
-// [enabled]
-func (c *Configuration) Saintless() *Configuration {
-	c.saint = false
+// [10 second]
+func (c *Configuration) Saint(duration time.Duration) *Configuration {
+	c.saint = duration
 	return c
 }

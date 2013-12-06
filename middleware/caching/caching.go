@@ -40,7 +40,7 @@ func (c *Caching) Run(context garnish.Context, next garnish.Next) garnish.Respon
 			c.logger.Info(context, "hit")
 			return cached
 		}
-		if now.Add(c.Configuration.grace).After(cached.Expires) {
+		if cached.Expires.Add(c.Configuration.grace).After(now) {
 			c.logger.Info(context, "grace")
 			grace(c, key, vary, context, next)
 			return cached
@@ -49,10 +49,11 @@ func (c *Caching) Run(context garnish.Context, next garnish.Next) garnish.Respon
 
 	c.logger.Info(context, "miss")
 	response := next(context)
-	if response.GetStatus() >= 500 && c.saint {
+	if response.GetStatus() >= 500 && c.saint.Nanoseconds() > 0 {
 		// log this here since the final handler will never see this 500 error
 		garnish.LogError(c.logger, context, response.GetStatus(), response.GetBody())
 		c.logger.Info(context, "saint")
+		cached.Expires = time.Now().Add(c.saint)
 		return cached
 	}
 	return c.set(key, vary, context, response)

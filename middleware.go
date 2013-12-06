@@ -54,6 +54,8 @@ func (m *notFoundMiddleware) Run(context Context, next Next) Response {
 	return NotFound
 }
 
-func FakeNext(context Context) Response {
-	return Respond([]byte("123")).Status(123)
+func FakeNext(r Response) Next {
+	return func(context Context) Response {
+		return r
+	}
 }
