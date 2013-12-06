@@ -31,8 +31,8 @@ func newMiddlewareWrapper(config *Configuration, index int) (*MiddlewareWrapper,
 
 func (wrapper *MiddlewareWrapper) Yield(context Context) Response {
 	name := wrapper.middleware.Name()
-	wrapper.logger.Infof(context, "+[%v]", name)
-	defer wrapper.logger.Infof(context, "-[%v]", name)
+	wrapper.logger.Infof(context, "<%v>", name)
+	defer wrapper.logger.Infof(context, "</%v>", name)
 	var next Next
 	if wrapper.next != nil {
 		next = wrapper.next.Yield
@@ -52,4 +52,10 @@ func (m *notFoundMiddleware) Configure(config interface{}) error {
 
 func (m *notFoundMiddleware) Run(context Context, next Next) Response {
 	return NotFound
+}
+
+func FakeNext(r Response) Next {
+	return func(context Context) Response {
+		return r
+	}
 }

@@ -40,7 +40,10 @@ func newHandler(config *Configuration) (*Handler, error) {
 
 func (h *Handler) ServeHTTP(output http.ResponseWriter, req *http.Request) {
 	context := newContext(req, h.logger)
+	h.logger.Info(context, "<router url=%q>", req.URL)
 	route, response := h.router(context)
+	defer h.logger.Info(context, "</router>")
+
 	if response != nil {
 		h.reply(context, response, output)
 	} else if route == nil {
@@ -62,10 +65,14 @@ func (h *Handler) reply(context Context, response Response, output http.Response
 	status := response.GetStatus()
 
 	if status >= 500 {
-		h.logger.Errorf(context, "%q %d %v", context.RequestIn().URL, status, string(body))
+		LogError(h.logger, context, status, body)
 	}
 
 	outHeader["Content-Length"] = []string{strconv.Itoa(len(body))}
 	output.WriteHeader(status)
 	output.Write(body)
+}
+
+func LogError(logger Logger, context Context, status int, body []byte) {
+	logger.Errorf(context, "%q %d %v", context.RequestIn().URL, status, string(body))
 }

@@ -11,7 +11,7 @@ func TestHandlerRepliesWithTheRoutersResponse(t *testing.T) {
 	spec := gspec.New(t)
 	h := buildHandler(new(Route), Respond(nil).Status(401), new(nilMiddleware))
 	rec := httptest.NewRecorder()
-	h.ServeHTTP(rec, nil)
+	h.ServeHTTP(rec, new(http.Request))
 	spec.Expect(rec.Code).ToEqual(401)
 }
 
@@ -19,7 +19,7 @@ func TestHandlerRepliesWithNotFoundIfRouteIsNotSet(t *testing.T) {
 	spec := gspec.New(t)
 	h := buildHandler(nil, nil, new(nilMiddleware))
 	rec := httptest.NewRecorder()
-	h.ServeHTTP(rec, nil)
+	h.ServeHTTP(rec, new(http.Request))
 	spec.Expect(rec.Code).ToEqual(404)
 }
 
@@ -27,7 +27,7 @@ func TestHandlerCallsTheMiddlewareChain(t *testing.T) {
 	spec := gspec.New(t)
 	h := buildHandler(new(Route), nil, new(nextMiddleware), newResponseMiddleware(201, "ok", nil))
 	rec := httptest.NewRecorder()
-	h.ServeHTTP(rec, nil)
+	h.ServeHTTP(rec, new(http.Request))
 	spec.Expect(rec.Code).ToEqual(201)
 	spec.Expect(rec.Body.String()).ToEqual("ok")
 }
@@ -36,7 +36,7 @@ func TestHandlerWritesTheContentLength(t *testing.T) {
 	spec := gspec.New(t)
 	h := buildHandler(new(Route), nil, newResponseMiddleware(201, "it's over 9000", http.Header{"Content-Length": []string{"32"}}))
 	rec := httptest.NewRecorder()
-	h.ServeHTTP(rec, nil)
+	h.ServeHTTP(rec, new(http.Request))
 	spec.Expect(rec.HeaderMap.Get("Content-Length")).ToEqual("14")
 }
 
@@ -44,7 +44,7 @@ func TestHandlerWritesHeaders(t *testing.T) {
 	spec := gspec.New(t)
 	h := buildHandler(new(Route), nil, newResponseMiddleware(201, "it's over 9000", http.Header{"X-Test": []string{"leto"}}))
 	rec := httptest.NewRecorder()
-	h.ServeHTTP(rec, nil)
+	h.ServeHTTP(rec, new(http.Request))
 	spec.Expect(rec.HeaderMap.Get("X-Test")).ToEqual("leto")
 }
 

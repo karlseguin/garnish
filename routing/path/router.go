@@ -26,11 +26,10 @@ type Router struct {
 
 func (r *Router) router(context garnish.Context) (*garnish.Route, garnish.Response) {
 	request := context.RequestIn()
-	r.logger.Infof(context, "+[router] %v %v", request.Method, request.URL)
 
 	rm, ok := r.routes[request.Method]
 	if ok == false {
-		r.logger.Infof(context, "-[router] unknown method %q", request.Method)
+		r.logger.Infof(context, "unknown method %q", request.Method)
 		return r.fallback, nil
 	}
 
@@ -40,7 +39,6 @@ func (r *Router) router(context garnish.Context) (*garnish.Route, garnish.Respon
 		if route == nil {
 			route = r.fallback
 		}
-		logResult(context, r.logger, route)
 		return rm.route, nil
 	}
 
@@ -56,14 +54,5 @@ func (r *Router) router(context garnish.Context) (*garnish.Route, garnish.Respon
 			rm = node
 		}
 	}
-	logResult(context, r.logger, route)
 	return route, nil
-}
-
-func logResult(context garnish.Context, logger garnish.Logger, route *garnish.Route) {
-	if route == nil {
-		logger.Infof(context, "-[router] nil")
-	} else {
-		logger.Infof(context, "-[router] %v", route.Name)
-	}
 }
