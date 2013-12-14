@@ -32,6 +32,16 @@ func TestRoutesMatchesANestedRoute(t *testing.T) {
 	spec.Expect(res).ToBeNil()
 }
 
+func TestRoutesMatchesANestedRouteEndingWithAParameter(t *testing.T) {
+	spec := gspec.New(t)
+	req := gspec.Request().Url("/houses/harkonnen.json").Req
+	route, params, res := buildRouter("/", "root", "/houses/", "houses", "/houses/:houseName", "showHouse").router(garnish.ContextBuilder().SetRequestIn(req))
+	spec.Expect(route.Upstream).ToEqual("showHouse")
+	spec.Expect(params["ext"]).ToEqual("json")
+	spec.Expect(params["houseName"]).ToEqual("harkonnen")
+	spec.Expect(res).ToBeNil()
+}
+
 func TestRoutesMatchesATheClosestMatch(t *testing.T) {
 	spec := gspec.New(t)
 	req := gspec.Request().Url("/houses/atreides/mentant").Req

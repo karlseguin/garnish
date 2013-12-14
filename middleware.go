@@ -43,7 +43,7 @@ func (wrapper *MiddlewareWrapper) Yield(context Context) Response {
 type notFoundMiddleware struct{}
 
 func (m *notFoundMiddleware) Name() string {
-	return "_notFound"
+	return "NotFound"
 }
 
 func (m *notFoundMiddleware) Configure(config interface{}) error {

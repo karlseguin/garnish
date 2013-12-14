@@ -104,6 +104,10 @@ func (c *CB) SetRequestIn(request *http.Request) *CB {
 	c.requestIn = request
 	return c
 }
+func (c *CB) SetRoute(route *Route) *CB {
+	c.route = route
+	return c
+}
 
 func (c *CB) RequestId() string {
 	return c.requestId

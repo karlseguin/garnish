@@ -57,6 +57,9 @@ func (r *Router) router(context garnish.Context) (*garnish.Route, garnish.Params
 			}
 			rm = node
 		} else if node, exists := rm.routes["*"]; exists {
+			if node.route != nil {
+				route = node.route
+			}
 			params[node.parameterName] = part
 			rm = node
 		}

@@ -17,5 +17,5 @@ func TestMiddlewareWrapperLogsExecution(t *testing.T) {
 	logger, buffer := testLogger(true)
 	mw := &MiddlewareWrapper{logger: logger, middleware: new(notFoundMiddleware)}
 	mw.Yield(nil)
-	spec.Expect(buffer.String()).ToEqual("[internal] + _notFound\n[internal] - _notFound\n")
+	spec.Expect(buffer.String()).ToEqual("[internal] + NotFound\n[internal] - NotFound\n")
 }
