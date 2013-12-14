@@ -5,23 +5,43 @@ import (
 	"strings"
 )
 
+type Contraints map[string]struct{}
+
 type RouteMap struct {
 	route         *garnish.Route
 	parameterName string
+	constraints   Contraints
 	routes        map[string]*RouteMap
+}
+
+type RouteInfo struct {
+	method string
+	path string
+	route *garnish.Route
+	constraints map[string]Contraints
+}
+
+func (ri *RouteInfo) ParamContraint(param string, values ...string) *RouteInfo {
+	s := make(Contraints, len(values))
+	for _, value := range values {
+		s[value] = struct{}{}
+	}
+	ri.constraints[param] = s
+	return ri
 }
 
 // Configuration for router middleware
 type Configuration struct {
 	logger   garnish.Logger
 	fallback *garnish.Route
+	info []*RouteInfo
 	routes   map[string]*RouteMap
 }
 
 func Configure(base *garnish.Configuration) *Configuration {
 	return &Configuration{
 		logger: base.Logger,
-		routes: make(map[string]*RouteMap),
+		info: make([]*RouteInfo, 0, 10),
 	}
 }
 
@@ -33,8 +53,28 @@ func (c *Configuration) Fallback(route *garnish.Route) *Configuration {
 
 // Adds a route. A method of * will be expanded to include GET, PUT, POST,
 // DELETE, PURGE and PATCH
-func (c *Configuration) Add(method, path string, route *garnish.Route) *Configuration {
-	methods := strings.Split(strings.Replace(method, "*", "GET,PUT,POST,DELETE,PURGE,PATCH", -1), ",")
+func (c *Configuration) Add(method, path string, route *garnish.Route) *RouteInfo {
+	ri := &RouteInfo{
+		method: method,
+		path: path,
+		route: route,
+		constraints: make(map[string]Contraints),
+	}
+	c.info = append(c.info, ri)
+	return ri
+}
+
+func (c *Configuration) compile() *Configuration {
+	c.routes = make(map[string]*RouteMap, len(c.info))
+	for _, ri := range c.info {
+		c.addInfo(ri)
+	}
+	c.info = nil
+	return c
+}
+
+func (c *Configuration) addInfo(info *RouteInfo) {
+	methods := strings.Split(strings.Replace(info.method, "*", "GET,PUT,POST,DELETE,PURGE,PATCH", -1), ",")
 	for _, method := range methods {
 		method = strings.ToUpper(strings.TrimSpace(method))
 		rm, exists := c.routes[method]
@@ -42,12 +82,13 @@ func (c *Configuration) Add(method, path string, route *garnish.Route) *Configur
 			rm = &RouteMap{routes: make(map[string]*RouteMap)}
 			c.routes[method] = rm
 		}
-		c.add(rm, path, route)
+		c.add(rm, info)
 	}
-	return c
 }
 
-func (c *Configuration) add(root *RouteMap, path string, route *garnish.Route) {
+func (c *Configuration) add(root *RouteMap, info *RouteInfo) {
+	path := info.path
+	route := info.route
 	if len(path) == 0 {
 		c.addRoot(root, route)
 		return
@@ -77,7 +118,13 @@ func (c *Configuration) add(root *RouteMap, path string, route *garnish.Route) {
 		}
 		leaf, ok = root.routes[part]
 		if ok == false {
-			leaf = &RouteMap{routes: make(map[string]*RouteMap), parameterName: parameterName}
+			leaf = &RouteMap{
+				routes: make(map[string]*RouteMap),
+				parameterName: parameterName,
+			}
+			if constraints, exists := info.constraints[parameterName]; exists {
+				leaf.constraints = constraints
+			}
 			root.routes[part] = leaf
 		}
 		root = leaf

@@ -17,7 +17,7 @@ import (
 )
 
 func Register(config *Configuration) garnish.Router {
-	r := &Router{config}
+	r := &Router{config.compile()}
 	return r.router
 }
 
@@ -57,6 +57,11 @@ func (r *Router) router(context garnish.Context) (*garnish.Route, garnish.Params
 			}
 			rm = node
 		} else if node, exists := rm.routes["*"]; exists {
+			if node.constraints != nil {
+				if _, constrained := node.constraints[part]; constrained == false {
+					continue
+				}
+			}
 			if node.route != nil {
 				route = node.route
 			}
