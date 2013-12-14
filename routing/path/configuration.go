@@ -15,9 +15,9 @@ type RouteMap struct {
 }
 
 type RouteInfo struct {
-	method string
-	path string
-	route *garnish.Route
+	method      string
+	path        string
+	route       *garnish.Route
 	constraints map[string]Contraints
 }
 
@@ -34,14 +34,14 @@ func (ri *RouteInfo) ParamContraint(param string, values ...string) *RouteInfo {
 type Configuration struct {
 	logger   garnish.Logger
 	fallback *garnish.Route
-	info []*RouteInfo
+	info     []*RouteInfo
 	routes   map[string]*RouteMap
 }
 
 func Configure(base *garnish.Configuration) *Configuration {
 	return &Configuration{
 		logger: base.Logger,
-		info: make([]*RouteInfo, 0, 10),
+		info:   make([]*RouteInfo, 0, 10),
 	}
 }
 
@@ -55,9 +55,9 @@ func (c *Configuration) Fallback(route *garnish.Route) *Configuration {
 // DELETE, PURGE and PATCH
 func (c *Configuration) Add(method, path string, route *garnish.Route) *RouteInfo {
 	ri := &RouteInfo{
-		method: method,
-		path: path,
-		route: route,
+		method:      method,
+		path:        path,
+		route:       route,
 		constraints: make(map[string]Contraints),
 	}
 	c.info = append(c.info, ri)
@@ -119,7 +119,7 @@ func (c *Configuration) add(root *RouteMap, info *RouteInfo) {
 		leaf, ok = root.routes[part]
 		if ok == false {
 			leaf = &RouteMap{
-				routes: make(map[string]*RouteMap),
+				routes:        make(map[string]*RouteMap),
 				parameterName: parameterName,
 			}
 			if constraints, exists := info.constraints[parameterName]; exists {
