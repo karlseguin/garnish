@@ -6,9 +6,9 @@ import (
 )
 
 type RouteMap struct {
-	route  *garnish.Route
+	route         *garnish.Route
 	parameterName string
-	routes map[string]*RouteMap
+	routes        map[string]*RouteMap
 }
 
 // Configuration for router middleware

@@ -43,7 +43,6 @@ func (r *Router) router(context garnish.Context) (*garnish.Route, garnish.Params
 		return rm.route, nil, nil
 	}
 
-
 	params := make(garnish.Params)
 	if extensionIndex := strings.LastIndex(path, "."); extensionIndex != -1 {
 		params["ext"] = path[extensionIndex+1:]

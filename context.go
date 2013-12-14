@@ -29,7 +29,7 @@ type context struct {
 	requestOut *http.Request
 	route      *Route
 	logger     Logger
-	params Params
+	params     Params
 }
 
 func newContext(req *http.Request, logger Logger) *context {
@@ -82,7 +82,7 @@ type CB struct {
 	requestIn  *http.Request
 	requestOut *http.Request
 	route      *Route
-	params Params
+	params     Params
 }
 
 func ContextBuilder() *CB {
@@ -91,7 +91,7 @@ func ContextBuilder() *CB {
 		requestIn:  new(http.Request),
 		requestOut: new(http.Request),
 		route:      new(Route),
-		params: make(Params),
+		params:     make(Params),
 	}
 }
 
