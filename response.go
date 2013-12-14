@@ -1,10 +1,16 @@
 package garnish
 
 import (
-	"github.com/karlseguin/bytepool"
 	"net/http"
 	"strconv"
 )
+
+// An interface used for a Closable response
+type ByteCloser interface {
+	Len() int
+	Close() error
+	Bytes() []byte
+}
 
 // A pre-built response for a 404
 var NotFound = Respond([]byte("not found")).Status(404)
@@ -22,6 +28,9 @@ type Response interface {
 	// Get the response's status
 	GetStatus() int
 
+	//set the response's status
+	SetStatus(status int)
+
 	// Close the response
 	Close() error
 
@@ -36,67 +45,82 @@ type Response interface {
 // A in-memory response with a chainable API. Should be created
 // via the Respond() method
 type ResponseBuilder struct {
+	Response
+}
+
+// Set a cache-control for the specified duration
+func (b *ResponseBuilder) Cache(duration int) *ResponseBuilder {
+	return b.Header("Cache-Control", "private,max-age="+strconv.Itoa(duration))
+}
+
+// Set a header
+func (b *ResponseBuilder) Header(key, value string) *ResponseBuilder {
+	b.GetHeader().Set(key, value)
+	return b
+}
+
+// Set a header
+func (b *ResponseBuilder) Status(status int) *ResponseBuilder {
+	b.Response.SetStatus(status)
+	return b
+}
+
+// Creates a Response
+func Respond(body interface{}) *ResponseBuilder {
+	h := make(http.Header)
+	switch b := body.(type) {
+	case string:
+		return &ResponseBuilder{&InMemoryResponse{h, []byte(b), 200}}
+	case []byte:
+		return &ResponseBuilder{&InMemoryResponse{h, b, 200}}
+	case ByteCloser:
+		return &ResponseBuilder{&ClosableResponse{h, b, 200}}
+	default:
+		return &ResponseBuilder{&InMemoryResponse{h, []byte("invalid body"), 500}}
+	}
+}
+
+type InMemoryResponse struct {
 	H http.Header
 	B []byte
 	S int
 }
 
-// Set the response status
-func (b *ResponseBuilder) Status(status int) *ResponseBuilder {
-	b.S = status
-	return b
-}
-
-// Set a cache-control for the specified duration
-func (b *ResponseBuilder) Cache(duration int) *ResponseBuilder {
-	b.H.Set("Cache-Control", "private,max-age="+strconv.Itoa(duration))
-	return b
-}
-
-// Set a header
-func (b *ResponseBuilder) Header(key, value string) *ResponseBuilder {
-	b.H.Set(key, value)
-	return b
-}
-
 // Get headers
-func (r *ResponseBuilder) GetHeader() http.Header {
+func (r *InMemoryResponse) GetHeader() http.Header {
 	return r.H
 }
 
 // Get the body
-func (r *ResponseBuilder) GetBody() []byte {
+func (r *InMemoryResponse) GetBody() []byte {
 	return r.B
 }
 
 // Get the status
-func (r *ResponseBuilder) GetStatus() int {
+func (r *InMemoryResponse) GetStatus() int {
 	return r.S
 }
 
-// Noop
-func (r *ResponseBuilder) Close() error {
+// Sets the status
+func (r *InMemoryResponse) SetStatus(status int) {
+	r.S = status
+}
+
+// close the response (noop)
+func (r *InMemoryResponse) Close() error {
 	return nil
 }
 
-func (r *ResponseBuilder) Detach() Response {
+// deatches the response from any underlying resources (noop)
+func (r *InMemoryResponse) Detach() Response {
 	return r
-}
-
-// Creates a Response
-func Respond(body []byte) *ResponseBuilder {
-	return &ResponseBuilder{
-		S: 200,
-		B: body,
-		H: make(http.Header),
-	}
 }
 
 // A in-memory response with a chainable API which uses a bytepool
 // as the body
 type ClosableResponse struct {
 	H http.Header
-	B *bytepool.Item
+	B ByteCloser
 	S int
 }
 
@@ -115,13 +139,21 @@ func (r *ClosableResponse) GetStatus() int {
 	return r.S
 }
 
+// Sets the status
+func (r *ClosableResponse) SetStatus(status int) {
+	r.S = status
+}
+
+// closes the underlying bytepool
 func (r *ClosableResponse) Close() error {
 	return r.B.Close()
 }
 
+// Detaches the response from the underlying bytepool,
+// turning this into an InMemoryResponse
 func (r *ClosableResponse) Detach() Response {
 	defer r.B.Close()
-	clone := &ResponseBuilder{
+	clone := &InMemoryResponse{
 		S: r.S,
 		H: r.H,
 	}
