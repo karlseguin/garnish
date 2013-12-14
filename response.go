@@ -65,6 +65,12 @@ func (b *ResponseBuilder) Status(status int) *ResponseBuilder {
 	return b
 }
 
+func Json(body interface{}) *ResponseBuilder {
+	rb := Respond(body)
+	rb.Header("Content-Type", "application/json; charset=utf-8")
+	return rb
+}
+
 // Creates a Response
 func Respond(body interface{}) *ResponseBuilder {
 	h := make(http.Header)
