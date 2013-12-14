@@ -7,6 +7,7 @@ import (
 
 type RouteMap struct {
 	route  *garnish.Route
+	parameterName string
 	routes map[string]*RouteMap
 }
 
@@ -69,9 +70,14 @@ func (c *Configuration) add(root *RouteMap, path string, route *garnish.Route) {
 	var leaf *RouteMap
 	ok := false
 	for _, part := range parts {
+		var parameterName string
+		if part[0] == ':' {
+			parameterName = part[1:]
+			part = "*"
+		}
 		leaf, ok = root.routes[part]
 		if ok == false {
-			leaf = &RouteMap{routes: make(map[string]*RouteMap)}
+			leaf = &RouteMap{routes: make(map[string]*RouteMap), parameterName: parameterName}
 			root.routes[part] = leaf
 		}
 		root = leaf

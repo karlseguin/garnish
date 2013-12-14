@@ -9,7 +9,7 @@ import (
 
 func TestHandlerRepliesWithTheRoutersResponse(t *testing.T) {
 	spec := gspec.New(t)
-	h := buildHandler(new(Route), Respond(nil).Status(401), new(nilMiddleware))
+	h := buildHandler(new(Route), nil, Respond(nil).Status(401), new(nilMiddleware))
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, new(http.Request))
 	spec.Expect(rec.Code).ToEqual(401)
@@ -17,7 +17,7 @@ func TestHandlerRepliesWithTheRoutersResponse(t *testing.T) {
 
 func TestHandlerRepliesWithNotFoundIfRouteIsNotSet(t *testing.T) {
 	spec := gspec.New(t)
-	h := buildHandler(nil, nil, new(nilMiddleware))
+	h := buildHandler(nil, nil, nil, new(nilMiddleware))
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, new(http.Request))
 	spec.Expect(rec.Code).ToEqual(404)
@@ -25,7 +25,7 @@ func TestHandlerRepliesWithNotFoundIfRouteIsNotSet(t *testing.T) {
 
 func TestHandlerCallsTheMiddlewareChain(t *testing.T) {
 	spec := gspec.New(t)
-	h := buildHandler(new(Route), nil, new(nextMiddleware), newResponseMiddleware(201, "ok", nil))
+	h := buildHandler(new(Route), nil, nil, new(nextMiddleware), newResponseMiddleware(201, "ok", nil))
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, new(http.Request))
 	spec.Expect(rec.Code).ToEqual(201)
@@ -34,7 +34,7 @@ func TestHandlerCallsTheMiddlewareChain(t *testing.T) {
 
 func TestHandlerWritesTheContentLength(t *testing.T) {
 	spec := gspec.New(t)
-	h := buildHandler(new(Route), nil, newResponseMiddleware(201, "it's over 9000", http.Header{"Content-Length": []string{"32"}}))
+	h := buildHandler(new(Route), nil, nil, newResponseMiddleware(201, "it's over 9000", http.Header{"Content-Length": []string{"32"}}))
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, new(http.Request))
 	spec.Expect(rec.HeaderMap.Get("Content-Length")).ToEqual("14")
@@ -42,21 +42,21 @@ func TestHandlerWritesTheContentLength(t *testing.T) {
 
 func TestHandlerWritesHeaders(t *testing.T) {
 	spec := gspec.New(t)
-	h := buildHandler(new(Route), nil, newResponseMiddleware(201, "it's over 9000", http.Header{"X-Test": []string{"leto"}}))
+	h := buildHandler(new(Route), nil, nil, newResponseMiddleware(201, "it's over 9000", http.Header{"X-Test": []string{"leto"}}))
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, new(http.Request))
 	spec.Expect(rec.HeaderMap.Get("X-Test")).ToEqual("leto")
 }
 
 func TestLogsInternalServerErrors(t *testing.T) {
-	h := buildHandler(new(Route), nil, newResponseMiddleware(505, "error", nil))
+	h := buildHandler(new(Route), nil, nil, newResponseMiddleware(505, "error", nil))
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, gspec.Request().Url("http://fake.garnish.io/fail").Req)
 	h.logger.(*FakeLogger).Assert(t, FakeLogMessage{false, `"http://fake.garnish.io/fail" 505 error`})
 }
 
-func buildHandler(route *Route, response Response, middlewares ...MiddlewareFactory) *Handler {
-	router := func(context Context) (*Route, Response) { return route, response }
+func buildHandler(route *Route, params Params, response Response, middlewares ...MiddlewareFactory) *Handler {
+	router := func(context Context) (*Route, Params, Response) { return route, params, response }
 	config := Configure().Router(router)
 	for _, middleware := range middlewares {
 		config.Middleware(middleware)

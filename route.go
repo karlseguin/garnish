@@ -4,8 +4,11 @@ import (
 	"time"
 )
 
+// Route parameters
+type Params map[string]string
+
 // Map an http.Request to a Route
-type Router func(context Context) (*Route, Response)
+type Router func(context Context) (*Route, Params, Response)
 
 // Generate a cache key and the vary parameters
 type CacheKeyGenerator func(context Context) (string, string)

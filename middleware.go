@@ -31,8 +31,8 @@ func newMiddlewareWrapper(config *Configuration, index int) (*MiddlewareWrapper,
 
 func (wrapper *MiddlewareWrapper) Yield(context Context) Response {
 	name := wrapper.middleware.Name()
-	wrapper.logger.Infof(context, "<%v>", name)
-	defer wrapper.logger.Infof(context, "</%v>", name)
+	wrapper.logger.Info(context, "+ ", name)
+	defer wrapper.logger.Info(context, "- ", name)
 	var next Next
 	if wrapper.next != nil {
 		next = wrapper.next.Yield

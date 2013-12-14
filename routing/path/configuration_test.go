@@ -23,9 +23,10 @@ func TestConfiguresASimpleRoute(t *testing.T) {
 func TestConfiguresMultipleRoutes(t *testing.T) {
 	spec := gspec.New(t)
 	c := Configure(garnish.Configure()).Add("GET", "/houses", new(garnish.Route))
-	c.Add("GET", "/houses/*/gholas", new(garnish.Route))
+	c.Add("GET", "/houses/:house/gholas", new(garnish.Route))
 	spec.Expect(c.routes["GET"].routes["houses"].route).ToNotBeNil()
 	spec.Expect(c.routes["GET"].routes["houses"].routes["*"].routes["gholas"].route).ToNotBeNil()
+	spec.Expect(c.routes["GET"].routes["houses"].routes["*"].parameterName).ToEqual("house")
 }
 
 func TestConfigurationOfRouteMethods(t *testing.T) {

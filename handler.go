@@ -41,7 +41,7 @@ func newHandler(config *Configuration) (*Handler, error) {
 func (h *Handler) ServeHTTP(output http.ResponseWriter, req *http.Request) {
 	context := newContext(req, h.logger)
 	h.logger.Info(context, "<router url=%q>", req.URL)
-	route, response := h.router(context)
+	route, params, response := h.router(context)
 	defer h.logger.Info(context, "</router>")
 
 	if response != nil {
@@ -50,6 +50,7 @@ func (h *Handler) ServeHTTP(output http.ResponseWriter, req *http.Request) {
 		h.reply(context, NotFound, output)
 	} else {
 		context.route = route
+		context.params = params
 		h.reply(context, h.head.Yield(context), output)
 	}
 }

@@ -16,6 +16,8 @@ type Context interface {
 	// The outgoing http.Request
 	RequestOut() *http.Request
 
+	Params() Params
+
 	Route() *Route
 
 	Fatal(err error) Response
@@ -27,6 +29,7 @@ type context struct {
 	requestOut *http.Request
 	route      *Route
 	logger     Logger
+	params Params
 }
 
 func newContext(req *http.Request, logger Logger) *context {
@@ -62,6 +65,10 @@ func (c *context) Route() *Route {
 	return c.route
 }
 
+func (c *context) Params() Params {
+	return c.params
+}
+
 func (c *context) Fatal(err error) Response {
 	c.logger.Error(c, err)
 	return InternalError
@@ -75,6 +82,7 @@ type CB struct {
 	requestIn  *http.Request
 	requestOut *http.Request
 	route      *Route
+	params Params
 }
 
 func ContextBuilder() *CB {
@@ -83,6 +91,7 @@ func ContextBuilder() *CB {
 		requestIn:  new(http.Request),
 		requestOut: new(http.Request),
 		route:      new(Route),
+		params: make(Params),
 	}
 }
 
@@ -110,6 +119,10 @@ func (c *CB) RequestOut() *http.Request {
 
 func (c *CB) Route() *Route {
 	return c.route
+}
+
+func (c *CB) Params() Params {
+	return c.params
 }
 
 func (c *CB) Fatal(err error) Response {

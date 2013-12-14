@@ -9,7 +9,7 @@ import (
 func TestRouterReturnsNilIfRouteNotFound(t *testing.T) {
 	spec := gspec.New(t)
 	req := gspec.Request().Req
-	route, res := buildRouter().router(garnish.ContextBuilder().SetRequestIn(req))
+	route, _, res := buildRouter().router(garnish.ContextBuilder().SetRequestIn(req))
 	spec.Expect(route).ToBeNil()
 	spec.Expect(res).ToBeNil()
 }
@@ -17,23 +17,25 @@ func TestRouterReturnsNilIfRouteNotFound(t *testing.T) {
 func TestRouterMatchesRoot(t *testing.T) {
 	spec := gspec.New(t)
 	req := gspec.Request().Url("/").Req
-	route, res := buildRouter("/", "root").router(garnish.ContextBuilder().SetRequestIn(req))
+	route, _, res := buildRouter("/", "root").router(garnish.ContextBuilder().SetRequestIn(req))
 	spec.Expect(route.Upstream).ToEqual("root")
 	spec.Expect(res).ToBeNil()
 }
 
 func TestRoutesMatchesANestedRoute(t *testing.T) {
 	spec := gspec.New(t)
-	req := gspec.Request().Url("/houses/atreides/mentant").Req
-	route, res := buildRouter("/", "root", "/houses/", "houses", "/houses/*/mentant/", "mentant").router(garnish.ContextBuilder().SetRequestIn(req))
+	req := gspec.Request().Url("/houses/atreides/mentant.json").Req
+	route, params, res := buildRouter("/", "root", "/houses/", "houses", "/houses/:houseName/mentant/", "mentant").router(garnish.ContextBuilder().SetRequestIn(req))
 	spec.Expect(route.Upstream).ToEqual("mentant")
+	spec.Expect(params["ext"]).ToEqual("json")
+	spec.Expect(params["houseName"]).ToEqual("atreides")
 	spec.Expect(res).ToBeNil()
 }
 
 func TestRoutesMatchesATheClosestMatch(t *testing.T) {
 	spec := gspec.New(t)
 	req := gspec.Request().Url("/houses/atreides/mentant").Req
-	route, res := buildRouter("/", "root", "/houses/", "houses").router(garnish.ContextBuilder().SetRequestIn(req))
+	route, _, res := buildRouter("/", "root", "/houses/", "houses").router(garnish.ContextBuilder().SetRequestIn(req))
 	spec.Expect(route.Upstream).ToEqual("houses")
 	spec.Expect(res).ToBeNil()
 }
@@ -41,7 +43,7 @@ func TestRoutesMatchesATheClosestMatch(t *testing.T) {
 func TestReturnsNilRouteWhenNoRouteMathes(t *testing.T) {
 	spec := gspec.New(t)
 	req := gspec.Request().Url("/worms/dune/count").Req
-	route, res := buildRouter("/", "root", "/houses/", "houses").router(garnish.ContextBuilder().SetRequestIn(req))
+	route, _, res := buildRouter("/", "root", "/houses/", "houses").router(garnish.ContextBuilder().SetRequestIn(req))
 	spec.Expect(route).ToBeNil()
 	spec.Expect(res).ToBeNil()
 }
@@ -49,7 +51,7 @@ func TestReturnsNilRouteWhenNoRouteMathes(t *testing.T) {
 func TestRouterMatchesASimpleRoute(t *testing.T) {
 	spec := gspec.New(t)
 	req := gspec.Request().Url("/houses/").Req
-	route, res := buildRouter("/houses", "up1").router(garnish.ContextBuilder().SetRequestIn(req))
+	route, _, res := buildRouter("/houses", "up1").router(garnish.ContextBuilder().SetRequestIn(req))
 	spec.Expect(route.Upstream).ToEqual("up1")
 	spec.Expect(res).ToBeNil()
 }
