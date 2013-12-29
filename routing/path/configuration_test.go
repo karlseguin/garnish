@@ -27,8 +27,8 @@ func TestConfiguresASimpleRoute(t *testing.T) {
 func TestConfiguresMultipleRoutes(t *testing.T) {
 	spec := gspec.New(t)
 	c := Configure(garnish.Configure())
-	c.Add("GET", "/houses", new(garnish.Route))
-	c.Add("GET", "/houses/:house/gholas", new(garnish.Route))
+	c.Add("GET", "/houses", &garnish.Route{Name: "ListHouses"})
+	c.Add("GET", "/houses/:house/gholas", &garnish.Route{Name: "ListHouseGholas"})
 	c.compile()
 	spec.Expect(c.routes["GET"].routes["houses"].route).ToNotBeNil()
 	spec.Expect(c.routes["GET"].routes["houses"].routes["*"].routes["gholas"].route).ToNotBeNil()
@@ -48,4 +48,16 @@ func TestConfigurationOfRouteMethods(t *testing.T) {
 	spec.Expect(c.routes["PATCH"]).ToNotBeNil()
 	spec.Expect(c.routes["TEST"]).ToNotBeNil()
 	spec.Expect(c.routes["OTHER"]).ToBeNil()
+}
+
+func TestPanicsIfDuplcateRouteNamesAreUsed(t *testing.T) {
+	defer func() {
+		if r := recover(); r.(string) != `Route names must be unique, "ListHouses" used twice` {
+			t.Error("expecting panic on duplicate route name")
+		}
+	}()
+	c := Configure(garnish.Configure())
+	c.Add("GET", "/houses", &garnish.Route{Name: "ListHouses"})
+	c.Add("GET", "/houses", &garnish.Route{Name: "ListHouses"})
+	c.compile()
 }

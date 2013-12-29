@@ -1,6 +1,7 @@
 package path
 
 import (
+	"fmt"
 	"github.com/karlseguin/garnish"
 	"strings"
 )
@@ -65,8 +66,15 @@ func (c *Configuration) Add(method, path string, route *garnish.Route) *RouteInf
 }
 
 func (c *Configuration) compile() *Configuration {
+	routeNames := make(map[string]struct{})
 	c.routes = make(map[string]*RouteMap, len(c.info))
 	for _, ri := range c.info {
+		routeName := ri.route.Name
+		if _, exists := routeNames[routeName]; exists {
+			panic(fmt.Sprintf("Route names must be unique, %q used twice", routeName))
+		} else {
+			routeNames[routeName] = struct{}{}
+		}
 		c.addInfo(ri)
 	}
 	c.info = nil

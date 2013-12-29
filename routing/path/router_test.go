@@ -47,8 +47,8 @@ func TestRoutesMatchesANestedRouteAFailedConstraint(t *testing.T) {
 	req := gspec.Request().Url("/root/harkonnen.json").Req
 
 	config := Configure(garnish.Configure())
-	config.Add("GET", "/root", &garnish.Route{Upstream: "root"})
-	config.Add("GET", "/root/:something", &garnish.Route{Upstream: "something"}).ParamContraint("something", "one", "two")
+	config.Add("GET", "/root", &garnish.Route{Name: "root", Upstream: "root"})
+	config.Add("GET", "/root/:something", &garnish.Route{Name: "something", Upstream: "something"}).ParamContraint("something", "one", "two")
 	r := &Router{config.compile()}
 
 	route, _, res := r.router(garnish.ContextBuilder().SetRequestIn(req))
@@ -61,8 +61,8 @@ func TestRoutesMatchesANestedRouteAPassedConstraint(t *testing.T) {
 	req := gspec.Request().Url("/root/one.json").Req
 
 	config := Configure(garnish.Configure())
-	config.Add("GET", "/root", &garnish.Route{Upstream: "root"})
-	config.Add("GET", "/root/:something", &garnish.Route{Upstream: "something"}).ParamContraint("something", "one", "two")
+	config.Add("GET", "/root", &garnish.Route{Name: "root", Upstream: "root"})
+	config.Add("GET", "/root/:something", &garnish.Route{Name: "something", Upstream: "something"}).ParamContraint("something", "one", "two")
 	r := &Router{config.compile()}
 
 	route, _, res := r.router(garnish.ContextBuilder().SetRequestIn(req))
@@ -97,7 +97,7 @@ func TestRouterMatchesASimpleRoute(t *testing.T) {
 func buildRouter(data ...string) *Router {
 	config := Configure(garnish.Configure())
 	for i := 0; i < len(data); i += 2 {
-		config.Add("GET", data[i], &garnish.Route{Upstream: data[i+1]})
+		config.Add("GET", data[i], &garnish.Route{Name: data[i], Upstream: data[i+1]})
 	}
 	return &Router{config.compile()}
 }
