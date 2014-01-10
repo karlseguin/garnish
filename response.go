@@ -167,3 +167,16 @@ func (r *ClosableResponse) Detach() Response {
 	copy(clone.B, r.B.Bytes())
 	return clone
 }
+
+type FatalResponse struct {
+	err error
+	*ResponseBuilder
+}
+
+func Fatal(err error) *FatalResponse {
+	return &FatalResponse{err, InternalError}
+}
+
+func Redirect(url string) *ResponseBuilder {
+	return Respond(nil).Status(301).Header("Location", url)
+}

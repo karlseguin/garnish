@@ -67,7 +67,11 @@ func (h *Handler) reply(context Context, response Response, output http.Response
 	status := response.GetStatus()
 
 	if status >= 500 {
-		LogError(h.logger, context, status, body)
+		if fatal, ok := response.(*FatalResponse); ok {
+			h.logger.Errorf(context, "%q - %v", context.RequestIn().URL, fatal.err)
+		} else {
+			LogError(h.logger, context, status, body)
+		}
 	}
 
 	outHeader["Content-Length"] = []string{strconv.Itoa(len(body))}
