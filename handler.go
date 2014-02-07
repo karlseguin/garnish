@@ -1,6 +1,7 @@
 package garnish
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 )
@@ -12,6 +13,9 @@ type Handler struct {
 }
 
 func newHandler(config *Configuration) (*Handler, error) {
+	if config.router == nil {
+		return nil, errors.New("A router must be provided")
+	}
 	h := &Handler{
 		router: config.router,
 		logger: config.Logger,
