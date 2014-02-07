@@ -11,7 +11,7 @@ type Configuration struct {
 	logger         garnish.Logger
 	forwardHeaders []string
 	dnsRefresh     time.Duration
-	upstreams      map[string]*garnish.Upstream
+	upstreams      map[string]*Server
 }
 
 func Configure(base *garnish.Configuration) *Configuration {
@@ -19,7 +19,7 @@ func Configure(base *garnish.Configuration) *Configuration {
 		logger:         base.Logger,
 		forwardHeaders: make([]string, 0, 1),
 		dnsRefresh:     time.Minute,
-		upstreams:      make(map[string]*garnish.Upstream),
+		upstreams:      make(map[string]*Server),
 	}
 }
 
@@ -49,7 +49,7 @@ func (c *Configuration) DnsRefresh(frequency time.Duration) *Configuration {
 
 // Adds an upstream. The upstream is picked based on the Route's
 // upstream, matching by name
-func (c *Configuration) Add(upstream *garnish.Upstream) *Configuration {
+func (c *Configuration) Add(upstream *Server) *Configuration {
 	c.upstreams[upstream.Name] = upstream
 	return c
 }

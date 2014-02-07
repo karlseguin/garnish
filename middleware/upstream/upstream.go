@@ -58,19 +58,19 @@ func (u *Upstream) Run(context garnish.Context, next garnish.Next) garnish.Respo
 	return garnish.RespondH(body, r.Header).Status(r.StatusCode)
 }
 
-func (u *Upstream) prepareRequest(context garnish.Context, upstream *garnish.Upstream) *http.Request {
+func (u *Upstream) prepareRequest(context garnish.Context, server *Server) *http.Request {
 	out := context.RequestOut()
 	in := context.RequestIn()
 	if len(out.Host) == 0 {
-		out.Host = upstream.Host
+		out.Host = server.Host
 	}
 	if len(out.Method) == 0 {
 		out.Method = in.Method
 	}
 	if out.URL == nil {
 		out.URL = in.URL
-		out.URL.Host = upstream.Host
-		out.URL.Scheme = upstream.Scheme
+		out.URL.Host = server.Host
+		out.URL.Scheme = server.Scheme
 	}
 
 	inHeader := in.Header

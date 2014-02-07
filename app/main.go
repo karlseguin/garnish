@@ -28,7 +28,7 @@ func main() {
 	mainConfig.Middleware(cachingConfig)
 
 	upstreamConfig := upstream.Configure(mainConfig)
-	upstreamConfig.Add(garnish.NewUpstream("openmymind", "http", "openmymind.net"))
+	upstreamConfig.Add(upstream.NewServer("openmymind", "http", "openmymind.net"))
 	mainConfig.Middleware(upstreamConfig)
 
 	g := garnish.New()

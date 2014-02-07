@@ -1,4 +1,4 @@
-package garnish
+package upstream
 
 import (
 	"github.com/karlseguin/bytepool"
@@ -10,8 +10,8 @@ import (
 // DNS lookup handler
 type DnsResolver func(address string) (string, error)
 
-// Configuration for an upstream service
-type Upstream struct {
+// Configuration for an Server service
+type Server struct {
 	Name                      string
 	Host                      string
 	Scheme                    string
@@ -23,10 +23,10 @@ type Upstream struct {
 	Transport                 *http.Transport
 }
 
-// Create an upstream service. scheme can either be http or https or
+// Create am upstream Server. scheme can either be http or https or
 // If host starts with unix:/, a unix socket is used
-func NewUpstream(name, scheme, host string, routes ...string) *Upstream {
-	return &Upstream{
+func NewServer(name, scheme, host string, routes ...string) *Server {
+	return &Server{
 		Name:                      name,
 		Host:                      host,
 		Scheme:                    scheme,
@@ -39,30 +39,30 @@ func NewUpstream(name, scheme, host string, routes ...string) *Upstream {
 
 // Responses which fit within the specified size (as per the response
 // Content-Length) are stored in a pre-allocated []byte pool [1024, 65536]
-func (u *Upstream) ResponsePool(count, size int) *Upstream {
+func (u *Server) ResponsePool(count, size int) *Server {
 	u.PoolItemSize = size
 	u.Pool = bytepool.New(count, size)
 	return u
 }
 
-// Disable keepalive to upstream [false]
-func (u *Upstream) DisableKeepAlives() *Upstream {
+// Disable keepalive to Server [false]
+func (u *Server) DisableKeepAlives() *Server {
 	u.disableKeepAlives = true
 	return u
 }
 
 // Maximum number of keep alive connections to keep [32]
-func (u *Upstream) MaxIdleConnectionsPerHost(count int) *Upstream {
+func (u *Server) MaxIdleConnectionsPerHost(count int) *Server {
 	u.maxIdleConnectionsPerHost = count
 	return u
 }
 
-func (u *Upstream) Resolver(resolver DnsResolver) *Upstream {
+func (u *Server) Resolver(resolver DnsResolver) *Server {
 	u.resolver = resolver
 	return u
 }
 
-func (u *Upstream) Finalize() {
+func (u *Server) Finalize() {
 	u.Transport = &http.Transport{
 		MaxIdleConnsPerHost: u.maxIdleConnectionsPerHost,
 		DisableKeepAlives:   u.disableKeepAlives,
