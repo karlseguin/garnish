@@ -6,19 +6,22 @@ import (
 	"time"
 )
 
+type AuthorizePurge func(context garnish.Context) bool
+
 // Configuration for the Caching middleware
 type Configuration struct {
-	logger garnish.Logger
-	cache  caches.Cache
-	grace  time.Duration
-	saint  time.Duration
+	logger         garnish.Logger
+	cache          caches.Cache
+	grace          time.Duration
+	saint          time.Duration
+	authorizePurge AuthorizePurge
 }
 
 func Configure(base *garnish.Configuration, cache caches.Cache) *Configuration {
 	return &Configuration{
 		logger: base.Logger,
 		grace:  time.Second * 10,
-		saint:  time.Second * 10,
+		saint:  time.Hour * 4,
 		cache:  cache,
 	}
 }
@@ -47,8 +50,18 @@ func (c *Configuration) Grace(duration time.Duration) *Configuration {
 //
 // May not be available in all storage engines.
 //
-// [10 second]
+// [4 hours]
 func (c *Configuration) Saint(duration time.Duration) *Configuration {
 	c.saint = duration
+	return c
+}
+
+// A callback method to authorize a PURGE request. If this method returns false
+// a 401 will be returned. Else it'll return 200 on a successful purge (the
+// purged item was in the cache) or a 204 (the purged item was not in the cache)
+
+// [nil - purging is not enabled]
+func (c *Configuration) AuthorizePurge(callback AuthorizePurge) *Configuration {
+	c.authorizePurge = callback
 	return c
 }

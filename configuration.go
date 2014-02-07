@@ -16,6 +16,7 @@ type Configuration struct {
 	middlewareFactories  []MiddlewareFactory
 	internalErrorMessage string
 	notFoundMessage      string
+	unauthorizedMessage  string
 
 	Logger Logger
 }
@@ -25,6 +26,7 @@ func Configure() *Configuration {
 		maxHeaderBytes:       8192,
 		internalErrorMessage: "internal error",
 		notFoundMessage:      "not found",
+		unauthorizedMessage:  "unauthorized",
 		maxProcs:             runtime.NumCPU(),
 		readTimeout:          time.Second * 10,
 		address:              "tcp://127.0.0.1:6772",
@@ -79,6 +81,12 @@ func (c *Configuration) Middleware(factory MiddlewareFactory) *Configuration {
 // The body to use when replying with a 404 ["not found"]
 func (c *Configuration) NotFound(message string) *Configuration {
 	c.notFoundMessage = message
+	return c
+}
+
+// The body to use when replying with a 401 ["unauthorized"]
+func (c *Configuration) Unauthorized(message string) *Configuration {
+	c.unauthorizedMessage = message
 	return c
 }
 

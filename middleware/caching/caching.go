@@ -4,6 +4,7 @@ package caching
 import (
 	"github.com/karlseguin/garnish"
 	"github.com/karlseguin/garnish/caches"
+	"net/http"
 	"strconv"
 	"strings"
 	"sync"
@@ -20,18 +21,34 @@ func (c *Caching) Name() string {
 	return "caching"
 }
 
-var grace = func(c *Caching, key, vary string, context garnish.Context, next garnish.Next) {
-	go c.grace(key, vary, context, next)
-}
+var (
+	grace = func(c *Caching, key, vary string, context garnish.Context, next garnish.Next) {
+		go c.grace(key, vary, context, next)
+	}
+	purgeHitResponse  = garnish.Respond([]byte("")).Status(200)
+	purgeMissResponse = garnish.Respond([]byte("")).Status(204)
+)
 
 func (c *Caching) Run(context garnish.Context, next garnish.Next) garnish.Response {
-	request := context.RequestIn()
 	caching := context.Route().Caching
-	if request.Method != "GET" || caching == nil {
+	if caching == nil {
 		c.logger.Info(context, "not cacheable")
 		return next(context)
 	}
 
+	request := context.RequestIn()
+	switch request.Method {
+	case "GET":
+		return c.get(context, caching, request, next)
+	case "PURGE":
+		return c.purge(context, caching, request)
+	default:
+		c.logger.Info(context, "not cacheable")
+		return next(context)
+	}
+}
+
+func (c *Caching) get(context garnish.Context, caching *garnish.Caching, request *http.Request, next garnish.Next) garnish.Response {
 	key, vary := caching.KeyGenerator(context)
 	cached := c.cache.Get(key, vary)
 	if cached != nil {
@@ -131,4 +148,18 @@ func (c *Caching) unlockDownload(key string) {
 	c.lock.Lock()
 	delete(c.downloading, key)
 	c.lock.Unlock()
+}
+
+func (c *Caching) purge(context garnish.Context, caching *garnish.Caching, request *http.Request) garnish.Response {
+	if c.authorizePurge == nil || c.authorizePurge(context) == false {
+		c.logger.Info(context, "unauthorized purge")
+		return garnish.Unauthorized
+	}
+	key, _ := caching.KeyGenerator(context)
+	if c.cache.Delete(key) {
+		c.logger.Info(context, "purge hit")
+		return purgeHitResponse
+	}
+	c.logger.Info(context, "purge miss")
+	return purgeMissResponse
 }

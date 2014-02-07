@@ -18,13 +18,13 @@ func main() {
 
 	routerConfig := path.Configure(mainConfig)
 	routerConfig.Add("GET", "/", garnish.NewRoute("root").Cache(cacheKeyGenerator).TTL(time.Second*5))
-	routerConfig.Fallback(garnish.NewRoute("fallback"))
-	mainConfig.Router(path.Register(routerConfig))
 
-	routerConfig.Fallback(garnish.NewRoute("fallback"))
 	mainConfig.Router(path.Register(routerConfig))
 
 	cachingConfig := caching.Configure(mainConfig, ccache.New(ccache.Configure()))
+	cachingConfig.AuthorizePurge(func(context garnish.Context) bool {
+		return true
+	})
 	mainConfig.Middleware(cachingConfig)
 
 	upstreamConfig := upstream.Configure(mainConfig)

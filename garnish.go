@@ -29,6 +29,7 @@ func (g *Garnish) Start(config *Configuration) {
 
 	InternalError = Respond([]byte(config.internalErrorMessage)).Status(500)
 	NotFound = Respond([]byte(config.notFoundMessage)).Status(404)
+	Unauthorized = Respond([]byte(config.unauthorizedMessage)).Status(401)
 
 	var protocol = "tcp"
 	address := config.address

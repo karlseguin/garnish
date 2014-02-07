@@ -12,6 +12,9 @@ type ByteCloser interface {
 	Bytes() []byte
 }
 
+// A pre-built response for a 401
+var Unauthorized = Respond([]byte("unauthorized")).Status(401)
+
 // A pre-built response for a 404
 var NotFound = Respond([]byte("not found")).Status(404)
 

@@ -82,15 +82,27 @@ func (c *Configuration) compile() *Configuration {
 }
 
 func (c *Configuration) addInfo(info *RouteInfo) {
-	methods := strings.Split(strings.Replace(info.method, "*", "GET,PUT,POST,DELETE,PURGE,PATCH", -1), ",")
+	methods := strings.Split(strings.Replace(info.method, "*", "GET,PUT,POST,DELETE,PATCH", -1), ",")
 	for _, method := range methods {
 		method = strings.ToUpper(strings.TrimSpace(method))
+		if method == "PURGE" {
+			continue //automatically added on a GET
+		}
 		rm, exists := c.routes[method]
 		if exists == false {
 			rm = &RouteMap{routes: make(map[string]*RouteMap)}
 			c.routes[method] = rm
 		}
 		c.add(rm, info)
+
+		if method == "GET" {
+			rm, exists := c.routes["PURGE"]
+			if exists == false {
+				rm = &RouteMap{routes: make(map[string]*RouteMap)}
+				c.routes["PURGE"] = rm
+			}
+			c.add(rm, info)
+		}
 	}
 }
 
