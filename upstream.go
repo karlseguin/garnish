@@ -25,7 +25,7 @@ type Upstream struct {
 
 // Create an upstream service. scheme can either be http or https or
 // If host starts with unix:/, a unix socket is used
-func NewUpstream(name, scheme, host string) *Upstream {
+func NewUpstream(name, scheme, host string, routes ...string) *Upstream {
 	return &Upstream{
 		Name:                      name,
 		Host:                      host,

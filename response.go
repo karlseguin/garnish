@@ -74,6 +74,10 @@ func Json(body interface{}) *ResponseBuilder {
 // Creates a Response
 func Respond(body interface{}) *ResponseBuilder {
 	h := make(http.Header)
+	return RespondH(body, h)
+}
+
+func RespondH(body interface{}, h http.Header) *ResponseBuilder {
 	switch b := body.(type) {
 	case string:
 		return &ResponseBuilder{&InMemoryResponse{h, []byte(b), 200}}

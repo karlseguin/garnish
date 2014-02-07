@@ -55,11 +55,7 @@ func (u *Upstream) Run(context garnish.Context, next garnish.Next) garnish.Respo
 		length = len(body)
 	}
 
-	return &garnish.ResponseBuilder{
-		S: r.StatusCode,
-		B: body,
-		H: r.Header,
-	}
+	return garnish.RespondH(body, r.Header).Status(r.StatusCode)
 }
 
 func (u *Upstream) prepareRequest(context garnish.Context, upstream *garnish.Upstream) *http.Request {
