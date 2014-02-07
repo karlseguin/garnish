@@ -17,18 +17,18 @@ func main() {
 	mainConfig := garnish.Configure().LogInfo()
 
 	routerConfig := path.Configure(mainConfig)
-	routerConfig.Add("GET", "/", garnish.NewRoute("root", "openmymind").Cache(cacheKeyGenerator).TTL(time.Second*5))
-	routerConfig.Fallback(garnish.NewRoute("fallback", "openmymind"))
+	routerConfig.Add("GET", "/", garnish.NewRoute("root").Cache(cacheKeyGenerator).TTL(time.Second*5))
+	routerConfig.Fallback(garnish.NewRoute("fallback"))
 	mainConfig.Router(path.Register(routerConfig))
 
-	routerConfig.Fallback(garnish.NewRoute("fallback", "openmymind"))
+	routerConfig.Fallback(garnish.NewRoute("fallback"))
 	mainConfig.Router(path.Register(routerConfig))
 
 	cachingConfig := caching.Configure(mainConfig, ccache.New(ccache.Configure()))
 	mainConfig.Middleware(cachingConfig)
 
 	upstreamConfig := upstream.Configure(mainConfig)
-	upstreamConfig.Add(upstream.NewServer("openmymind", "http", "openmymind.net"))
+	upstreamConfig.Add(upstream.NewServer("openmymind", "http", "openmymind.net"), "root", "fallback")
 	mainConfig.Middleware(upstreamConfig)
 
 	g := garnish.New()

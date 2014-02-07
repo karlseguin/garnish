@@ -20,9 +20,9 @@ func (u *Upstream) Name() string {
 
 func (u *Upstream) Run(context garnish.Context, next garnish.Next) garnish.Response {
 	route := context.Route()
-	upstream, ok := u.upstreams[route.Upstream]
+	upstream, ok := u.routeLookup[route.Name]
 	if ok == false {
-		return context.Fatal(errors.New("Upstream not configured for host: " + route.Upstream))
+		return context.Fatal(errors.New("Upstream not configured for route: " + route.Name))
 	}
 
 	request := u.prepareRequest(context, upstream)

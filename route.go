@@ -15,9 +15,8 @@ type CacheKeyGenerator func(context Context) (string, string)
 
 // Route information
 type Route struct {
-	Name     string
-	Upstream string
-	Caching  *Caching
+	Name    string
+	Caching *Caching
 }
 
 type Caching struct {
@@ -25,10 +24,9 @@ type Caching struct {
 	KeyGenerator CacheKeyGenerator
 }
 
-func NewRoute(name, upstream string) *Route {
+func NewRoute(name string) *Route {
 	return &Route{
-		Name:     name,
-		Upstream: upstream,
+		Name: name,
 	}
 }
 

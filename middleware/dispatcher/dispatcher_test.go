@@ -14,14 +14,14 @@ func TestYieldsTheNextMiddlewareIfTheRouteIsntSetup(t *testing.T) {
 
 func TestYieldsTheNextMiddlewareIfTheRouteReturnsNil(t *testing.T) {
 	spec := gspec.New(t)
-	context := garnish.ContextBuilder().SetRoute(&garnish.Route{Upstream: "nil"})
+	context := garnish.ContextBuilder().SetRoute(&garnish.Route{Name: "nil"})
 	res := newDispatcher().Run(context, garnish.FakeNext(garnish.Respond(nil).Status(5554)))
 	spec.Expect(res.GetStatus()).ToEqual(5554)
 }
 
 func TestReturnsTheDispatchedResponse(t *testing.T) {
 	spec := gspec.New(t)
-	context := garnish.ContextBuilder().SetRoute(&garnish.Route{Upstream: "ok"})
+	context := garnish.ContextBuilder().SetRoute(&garnish.Route{Name: "ok"})
 	res := newDispatcher().Run(context, nil)
 	spec.Expect(res.GetStatus()).ToEqual(200)
 }
