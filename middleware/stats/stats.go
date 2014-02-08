@@ -22,7 +22,7 @@ func (s *Stats) Run(context garnish.Context, next garnish.Next) garnish.Response
 }
 
 func (s *Stats) hit(context garnish.Context, response garnish.Response, elapsed time.Duration) {
-	s.logger.Infof(context, "%d µs", elapsed / 1000)
+	s.logger.Infof(context, "%d µs", elapsed/1000)
 	stat, ok := s.routeLookup[context.Route().Name]
 	if ok == false {
 		stat = s.routeLookup["?"]

@@ -67,8 +67,8 @@ func buildHandler(route *Route, params Params, response Response, middlewares ..
 }
 
 type FakeRouter struct {
-	route *Route
-	params Params
+	route    *Route
+	params   Params
 	response Response
 }
 

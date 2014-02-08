@@ -11,7 +11,7 @@ import (
 )
 
 type Stat struct {
-	snapLock sync.RWMutex
+	snapLock   sync.RWMutex
 	sampleLock sync.Mutex
 	*Configuration
 	hits     int64
