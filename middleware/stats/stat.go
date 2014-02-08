@@ -11,17 +11,30 @@ import (
 )
 
 type Stat struct {
-	sync.Mutex
+	snapLock sync.RWMutex
+	sampleLock sync.Mutex
 	*Configuration
 	hits     int64
 	oks      int64
 	errors   int64
 	failures int64
 	samples  []int
+	scratch  []int
 	snapshot Snapshot
 }
 
+func newStat(c *Configuration) *Stat {
+	return &Stat{
+		Configuration: c,
+		snapshot:      make(Snapshot),
+		samples:       make([]int, c.sampleSize),
+		scratch:       make([]int, c.sampleSize),
+	}
+}
+
 func (s *Stat) hit(response garnish.Response, t time.Duration) {
+	s.snapLock.RLock()
+	defer s.snapLock.RUnlock()
 	hits := atomic.AddInt64(&s.hits, 1)
 	status := response.GetStatus()
 	if status > 499 {
@@ -42,29 +55,28 @@ func (s *Stat) sample(hits int64, t time.Duration) {
 		index = int(rand.Int31n(int32(s.sampleSize)))
 	}
 	if index != -1 {
-		s.Lock()
+		s.sampleLock.Lock()
 		s.samples[index] = int(t)
-		s.Unlock()
+		s.sampleLock.Unlock()
 	}
 }
 
-// To avoid needing a lock on each hit, it's posisble for
-// s.oks + s.errors + s.failure to be greater than s.hits (a snapshot could
-// easily happen when some of these have been incremented but others haven't).
-// (s.hits is still used for our reservoir sampling)
 func (s *Stat) Snapshot() Snapshot {
-	s.snapshot["2xx"] = atomic.SwapInt64(&s.oks, 0)
-	s.snapshot["4xx"] = atomic.SwapInt64(&s.errors, 0)
-	s.snapshot["5xx"] = atomic.SwapInt64(&s.failures, 0)
-	s.snapshot["hits"] = s.snapshot["2xx"] + s.snapshot["4xx"] + s.snapshot["5xx"]
+	s.snapLock.Lock()
+	hits := s.hits
+	s.snapshot["2xx"] = s.oks
+	s.snapshot["4xx"] = s.errors
+	s.snapshot["5xx"] = s.failures
+	s.snapshot["hits"] = hits
+	s.oks, s.errors, s.failures, s.hits = 0, 0, 0, 0
+	s.samples, s.scratch = s.scratch, s.samples
+	s.snapLock.Unlock()
 
-	hits := int(atomic.LoadInt64(&s.hits))
-	sample := s.samples[:hits]
-	sort.Ints(sample)
+	samples := s.samples[:hits]
+	sort.Ints(samples)
 	for key, value := range s.percentiles {
-		s.snapshot[key] = percentile(sample, value, hits)
+		s.snapshot[key] = percentile(samples, value, int(hits))
 	}
-	atomic.StoreInt64(&s.hits, 0)
 	return s.snapshot
 }
 

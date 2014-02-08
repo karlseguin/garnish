@@ -22,11 +22,10 @@ func (s *Stats) Run(context garnish.Context, next garnish.Next) garnish.Response
 }
 
 func (s *Stats) hit(context garnish.Context, response garnish.Response, elapsed time.Duration) {
-	s.logger.Infof(context, "%d ms", elapsed)
+	s.logger.Infof(context, "%d µs", elapsed / 1000)
 	stat, ok := s.routeLookup[context.Route().Name]
 	if ok == false {
-		s.logger.Errorf(context, "Stats middleware got an unknown route (this should not happen) %s", context.Route().Name)
-		return
+		stat = s.routeLookup["?"]
 	}
 	stat.hit(response, elapsed)
 }

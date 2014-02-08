@@ -38,12 +38,9 @@ func Configure(base *garnish.Configuration) *Configuration {
 func (c *Configuration) Create(routeNames []string) (garnish.Middleware, error) {
 	c.routeLookup = make(map[string]*Stat)
 	for _, name := range routeNames {
-		c.routeLookup[name] = &Stat{
-			Configuration: c,
-			snapshot:      make(Snapshot),
-			samples:       make([]int, c.sampleSize),
-		}
+		c.routeLookup[name] = newStat(c)
 	}
+	c.routeLookup["?"] = newStat(c)
 
 	if worker != nil {
 		worker.stop()
