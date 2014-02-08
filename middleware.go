@@ -30,9 +30,8 @@ func newMiddlewareWrapper(config *Configuration, routeNames []string, index int)
 }
 
 func (wrapper *MiddlewareWrapper) Yield(context Context) Response {
-	name := wrapper.middleware.Name()
-	wrapper.logger.Info(context, "+ ", name)
-	defer wrapper.logger.Info(context, "- ", name)
+	defer context.SetLocation(context.Location())
+	context.SetLocation(wrapper.middleware.Name())
 	var next Next
 	if wrapper.next != nil {
 		next = wrapper.next.Yield

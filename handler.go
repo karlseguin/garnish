@@ -44,9 +44,8 @@ func newHandler(config *Configuration) (*Handler, error) {
 
 func (h *Handler) ServeHTTP(output http.ResponseWriter, req *http.Request) {
 	context := newContext(req, h.logger)
-	h.logger.Infof(context, "+ router %q", req.URL)
+	h.logger.Info(context, req.URL)
 	route, params, response := h.router.Route(context)
-	defer h.logger.Info(context, "- router")
 
 	if response != nil {
 		h.reply(context, response, output)

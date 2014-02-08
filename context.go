@@ -16,11 +16,21 @@ type Context interface {
 	// The outgoing http.Request
 	RequestOut() *http.Request
 
+	// Get the route parameters
 	Params() Params
 
+	// Get the request's route
 	Route() *Route
 
+	// Generate a fatal response wrapping the specified error
 	Fatal(err error) Response
+
+	// Where the context is currently executing
+	// used for logging
+	Location() string
+
+	// Set the current location for logging
+	SetLocation(string)
 }
 
 type context struct {
@@ -30,6 +40,7 @@ type context struct {
 	route      *Route
 	logger     Logger
 	params     Params
+	location   string
 }
 
 func newContext(req *http.Request, logger Logger) *context {
@@ -46,6 +57,7 @@ func newContext(req *http.Request, logger Logger) *context {
 		requestId:  id,
 		requestOut: requestOut,
 		logger:     logger,
+		location:   "init",
 	}
 }
 
@@ -74,6 +86,14 @@ func (c *context) Fatal(err error) Response {
 	return InternalError
 }
 
+func (c *context) Location() string {
+	return c.location
+}
+
+func (c *context) SetLocation(location string) {
+	c.location = location
+}
+
 // Context Builder is largely available for testing
 // with a context from outside of the main package easy
 // The builder itself satifies the Context interface
@@ -83,6 +103,7 @@ type CB struct {
 	requestOut *http.Request
 	route      *Route
 	params     Params
+	location   string
 }
 
 func ContextBuilder() *CB {
@@ -92,6 +113,7 @@ func ContextBuilder() *CB {
 		requestOut: new(http.Request),
 		route:      new(Route),
 		params:     make(Params),
+		location:   "cb",
 	}
 }
 
@@ -131,4 +153,12 @@ func (c *CB) Params() Params {
 
 func (c *CB) Fatal(err error) Response {
 	return nil
+}
+
+func (c *CB) Location() string {
+	return c.location
+}
+
+func (c *CB) SetLocation(location string) {
+	c.location = location
 }

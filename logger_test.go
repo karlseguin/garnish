@@ -19,35 +19,35 @@ func TestLoggerLogsInfoMessagesWhenInfoIsOn(t *testing.T) {
 	spec := gspec.New(t)
 	l, buffer := testLogger(true)
 	l.Infof(nil, "info msg")
-	spec.Expect(buffer.String()).ToEqual("[internal] info msg\n")
+	spec.Expect(buffer.String()).ToEqual("[internal] [internal] info msg\n")
 }
 
 func TestLoggerIncludesTheRequestIdForInfoMessage(t *testing.T) {
 	spec := gspec.New(t)
 	l, buffer := testLogger(true)
 	l.Infof(ContextBuilder().SetId("4994"), "info msg")
-	spec.Expect(buffer.String()).ToEqual("[4994] info msg\n")
+	spec.Expect(buffer.String()).ToEqual("[4994] [cb] info msg\n")
 }
 
 func TestLoggerLogsErrorsWhenInfoIsOff(t *testing.T) {
 	spec := gspec.New(t)
 	l, buffer := testLogger(false)
 	l.Errorf(nil, "error msg1")
-	spec.Expect(buffer.String()).ToEqual("[internal] error msg1\n")
+	spec.Expect(buffer.String()).ToEqual("[internal] [internal] error msg1\n")
 }
 
 func TestLoggerLogsErrorsWhenInfoIsOn(t *testing.T) {
 	spec := gspec.New(t)
 	l, buffer := testLogger(true)
 	l.Errorf(nil, "error msg2")
-	spec.Expect(buffer.String()).ToEqual("[internal] error msg2\n")
+	spec.Expect(buffer.String()).ToEqual("[internal] [internal] error msg2\n")
 }
 
 func TestLoggerIncludesTheRequestIdForErrorMessage(t *testing.T) {
 	spec := gspec.New(t)
 	l, buffer := testLogger(true)
 	l.Errorf(ContextBuilder().SetId("8664"), "error msg")
-	spec.Expect(buffer.String()).ToEqual("[8664] error msg\n")
+	spec.Expect(buffer.String()).ToEqual("[8664] [cb] error msg\n")
 }
 
 func testLogger(info bool) (Logger, *bytes.Buffer) {

@@ -50,16 +50,20 @@ func (l *logger) Error(context Context, v ...interface{}) {
 
 func (l *logger) printf(context Context, format string, v ...interface{}) {
 	id := "internal"
+	location := "internal"
 	if context != nil {
 		id = context.RequestId()
+		location = context.Location()
 	}
-	l.logger.Println("["+id+"]", fmt.Sprintf(format, v...))
+	l.logger.Println("["+id+"] ["+location+"]", fmt.Sprintf(format, v...))
 }
 
 func (l *logger) print(context Context, v ...interface{}) {
 	id := "internal"
+	location := "internal"
 	if context != nil {
 		id = context.RequestId()
+		location = context.Location()
 	}
-	l.logger.Println("["+id+"]", fmt.Sprint(v...))
+	l.logger.Println("["+id+"] ["+location+"]", fmt.Sprint(v...))
 }
