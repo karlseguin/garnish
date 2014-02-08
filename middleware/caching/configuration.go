@@ -27,7 +27,7 @@ func Configure(base *garnish.Configuration, cache caches.Cache) *Configuration {
 }
 
 // Create the middleware from the configuration
-func (c *Configuration) Create() (garnish.Middleware, error) {
+func (c *Configuration) Create(routeNames []string) (garnish.Middleware, error) {
 	return &Caching{Configuration: c, downloading: make(map[string]time.Time)}, nil
 }
 

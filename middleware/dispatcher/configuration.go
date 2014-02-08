@@ -21,7 +21,7 @@ func Configure(base *garnish.Configuration) *Configuration {
 }
 
 // Create the middleware from the configuration
-func (c *Configuration) Create() (garnish.Middleware, error) {
+func (c *Configuration) Create(routeNames []string) (garnish.Middleware, error) {
 	return &Dispatcher{c}, nil
 }
 

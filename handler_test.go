@@ -56,7 +56,7 @@ func TestLogsInternalServerErrors(t *testing.T) {
 }
 
 func buildHandler(route *Route, params Params, response Response, middlewares ...MiddlewareFactory) *Handler {
-	router := func(context Context) (*Route, Params, Response) { return route, params, response }
+	router := &FakeRouter{route, params, response}
 	config := Configure().Router(router)
 	for _, middleware := range middlewares {
 		config.Middleware(middleware)
@@ -64,6 +64,20 @@ func buildHandler(route *Route, params Params, response Response, middlewares ..
 	config.Logger = new(FakeLogger)
 	handler, _ := newHandler(config)
 	return handler
+}
+
+type FakeRouter struct {
+	route *Route
+	params Params
+	response Response
+}
+
+func (r *FakeRouter) Route(context Context) (*Route, Params, Response) {
+	return r.route, r.params, r.response
+}
+
+func (r *FakeRouter) RouteNames() []string {
+	return []string{}
 }
 
 type nilMiddleware struct{}
@@ -76,7 +90,7 @@ func (m *nilMiddleware) Run(context Context, next Next) Response {
 	return nil
 }
 
-func (m *nilMiddleware) Create() (Middleware, error) {
+func (m *nilMiddleware) Create(routeNames []string) (Middleware, error) {
 	return m, nil
 }
 
@@ -90,7 +104,7 @@ func (m *nextMiddleware) Run(context Context, next Next) Response {
 	return next(context)
 }
 
-func (m *nextMiddleware) Create() (Middleware, error) {
+func (m *nextMiddleware) Create(routeNames []string) (Middleware, error) {
 	return m, nil
 }
 
@@ -116,6 +130,6 @@ func (m *responseMiddleware) Run(context Context, next Next) Response {
 	return m.response
 }
 
-func (m *responseMiddleware) Create() (Middleware, error) {
+func (m *responseMiddleware) Create(routeNames []string) (Middleware, error) {
 	return m, nil
 }

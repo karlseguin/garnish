@@ -13,7 +13,7 @@ var originalGrace = grace
 func TestDoesNotCacheNonGetRequests(t *testing.T) {
 	spec := gspec.New(t)
 	context := garnish.ContextBuilder().SetRequestIn(gspec.Request().Method("POST").Req)
-	caching, _ := Configure(garnish.Configure(), nil).Create()
+	caching, _ := Configure(garnish.Configure(), nil).Create(nil)
 	res := caching.Run(context, garnish.FakeNext(garnish.Respond(nil).Status(123)))
 	spec.Expect(res.GetStatus()).ToEqual(123)
 }
@@ -22,7 +22,7 @@ func TestDoesNotCachingRoutesWhichArentConfiguredForCaching(t *testing.T) {
 	spec := gspec.New(t)
 	context := garnish.ContextBuilder().SetRequestIn(gspec.Request().Method("GET").Req)
 	context.Route().Caching = nil
-	caching, _ := Configure(garnish.Configure(), nil).Create()
+	caching, _ := Configure(garnish.Configure(), nil).Create(nil)
 	res := caching.Run(context, garnish.FakeNext(garnish.Respond(nil).Status(123)))
 	spec.Expect(res.GetStatus()).ToEqual(123)
 }
@@ -31,7 +31,7 @@ func TestReturnsAFreshResult(t *testing.T) {
 	spec := gspec.New(t)
 	context := garnish.ContextBuilder().SetRequestIn(gspec.Request().Method("GET").Req)
 	context.Route().Caching = buildCaching("goku", "power")
-	caching, _ := Configure(garnish.Configure(), newFakeStorage()).Create()
+	caching, _ := Configure(garnish.Configure(), newFakeStorage()).Create(nil)
 	res := caching.Run(context, nil)
 	spec.Expect(res.GetStatus()).ToEqual(9001)
 }
@@ -42,7 +42,7 @@ func TestReturnsASlightlyStaleResult(t *testing.T) {
 	spec := gspec.New(t)
 	context := garnish.ContextBuilder().SetRequestIn(gspec.Request().Method("GET").Req)
 	context.Route().Caching = buildCaching("goku", "level")
-	caching, _ := Configure(garnish.Configure(), newFakeStorage()).Create()
+	caching, _ := Configure(garnish.Configure(), newFakeStorage()).Create(nil)
 	res := caching.Run(context, nil)
 	spec.Expect(res.GetStatus()).ToEqual(3)
 	spec.Expect(graceCalled).ToEqual(true)
@@ -52,7 +52,7 @@ func TestReturnsAStaleResultIfTheNewResultIsAnError(t *testing.T) {
 	spec := gspec.New(t)
 	context := garnish.ContextBuilder().SetRequestIn(gspec.Request().Method("GET").Req)
 	context.Route().Caching = buildCaching("goku", "age")
-	caching, _ := Configure(garnish.Configure(), newFakeStorage()).Create()
+	caching, _ := Configure(garnish.Configure(), newFakeStorage()).Create(nil)
 	now := time.Now()
 	res := caching.Run(context, garnish.FakeNext(garnish.Respond(nil).Status(500)))
 	spec.Expect(res.GetStatus()).ToEqual(20)
@@ -63,7 +63,7 @@ func TestReturnsAndCachesAnUpdatedResult(t *testing.T) {
 	spec := gspec.New(t)
 	context := garnish.ContextBuilder().SetRequestIn(gspec.Request().Method("GET").Req)
 	context.Route().Caching = buildCaching("goku", "age")
-	caching, _ := Configure(garnish.Configure(), newFakeStorage()).Create()
+	caching, _ := Configure(garnish.Configure(), newFakeStorage()).Create(nil)
 	res := caching.Run(context, garnish.FakeNext(garnish.Respond([]byte("21")).Status(200).Cache(200)))
 	spec.Expect(res.GetStatus()).ToEqual(200)
 	spec.Expect(string(caching.(*Caching).cache.Get("goku", "age").GetBody())).ToEqual("21")
@@ -73,7 +73,7 @@ func TestReturnsAndCachesANewResult(t *testing.T) {
 	spec := gspec.New(t)
 	context := garnish.ContextBuilder().SetRequestIn(gspec.Request().Method("GET").Req)
 	context.Route().Caching = buildCaching("goku", "other")
-	caching, _ := Configure(garnish.Configure(), newFakeStorage()).Create()
+	caching, _ := Configure(garnish.Configure(), newFakeStorage()).Create(nil)
 	res := caching.Run(context, garnish.FakeNext(garnish.Respond([]byte("otherother")).Status(200).Cache(200)))
 	spec.Expect(res.GetStatus()).ToEqual(200)
 	spec.Expect(string(caching.(*Caching).cache.Get("goku", "other").GetBody())).ToEqual("otherother")

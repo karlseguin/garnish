@@ -18,14 +18,22 @@ import (
 
 func Register(config *Configuration) garnish.Router {
 	r := &Router{config.compile()}
-	return r.router
+	return r
 }
 
 type Router struct {
 	*Configuration
 }
 
-func (r *Router) router(context garnish.Context) (*garnish.Route, garnish.Params, garnish.Response) {
+func (r *Router) RouteNames() []string {
+	names := make([]string, 0, len(r.routes))
+	for key, _ := range r.routes {
+		names = append(names, key)
+	}
+	return names
+}
+
+func (r *Router) Route(context garnish.Context) (*garnish.Route, garnish.Params, garnish.Response) {
 	request := context.RequestIn()
 
 	rm, ok := r.routes[request.Method]

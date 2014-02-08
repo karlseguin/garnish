@@ -5,6 +5,7 @@ import (
 	"github.com/karlseguin/garnish"
 	"github.com/karlseguin/garnish/caches/ccache"
 	"github.com/karlseguin/garnish/middleware/caching"
+	"github.com/karlseguin/garnish/middleware/stats"
 	"github.com/karlseguin/garnish/middleware/upstream"
 	"github.com/karlseguin/garnish/routing/path"
 	"os"
@@ -20,6 +21,9 @@ func main() {
 	routerConfig.Add("GET", "/", garnish.NewRoute("root").Cache(cacheKeyGenerator).TTL(time.Second*5))
 
 	mainConfig.Router(path.Register(routerConfig))
+
+	statsConfig := stats.Configure(mainConfig).Percentiles(45, 80, 90, 99)
+	mainConfig.Middleware(statsConfig)
 
 	cachingConfig := caching.Configure(mainConfig, ccache.New(ccache.Configure()))
 	cachingConfig.AuthorizePurge(func(context garnish.Context) bool {

@@ -24,7 +24,7 @@ func Configure(base *garnish.Configuration) *Configuration {
 }
 
 // Create the middleware from the configuration
-func (c *Configuration) Create() (garnish.Middleware, error) {
+func (c *Configuration) Create(routeNames []string) (garnish.Middleware, error) {
 	upstream := &Upstream{c}
 	dns := dnscache.New(c.dnsRefresh)
 	for _, server := range c.routeLookup {

@@ -8,7 +8,10 @@ import (
 type Params map[string]string
 
 // Map an http.Request to a Route
-type Router func(context Context) (*Route, Params, Response)
+type Router interface {
+	Route(context Context) (*Route, Params, Response)
+	RouteNames() []string
+}
 
 // Generate a cache key and the vary parameters
 type CacheKeyGenerator func(context Context) (string, string)

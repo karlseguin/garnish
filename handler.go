@@ -20,14 +20,14 @@ func newHandler(config *Configuration) (*Handler, error) {
 		router: config.router,
 		logger: config.Logger,
 	}
-
-	prev, err := newMiddlewareWrapper(config, 0)
+	routeNames := config.router.RouteNames()
+	prev, err := newMiddlewareWrapper(config, routeNames, 0)
 	if err != nil {
 		return nil, err
 	}
 	h.head = prev
 	for i := 1; i < len(config.middlewareFactories); i++ {
-		link, err := newMiddlewareWrapper(config, i)
+		link, err := newMiddlewareWrapper(config, routeNames, i)
 		if err != nil {
 			return nil, err
 		}
@@ -45,7 +45,7 @@ func newHandler(config *Configuration) (*Handler, error) {
 func (h *Handler) ServeHTTP(output http.ResponseWriter, req *http.Request) {
 	context := newContext(req, h.logger)
 	h.logger.Infof(context, "+ router %q", req.URL)
-	route, params, response := h.router(context)
+	route, params, response := h.router.Route(context)
 	defer h.logger.Info(context, "- router")
 
 	if response != nil {

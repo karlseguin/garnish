@@ -6,7 +6,7 @@ type Middleware interface {
 }
 
 type MiddlewareFactory interface {
-	Create() (Middleware, error)
+	Create(routeNames []string) (Middleware, error)
 }
 
 type Next func(context Context) Response
@@ -17,9 +17,9 @@ type MiddlewareWrapper struct {
 	logger     Logger
 }
 
-func newMiddlewareWrapper(config *Configuration, index int) (*MiddlewareWrapper, error) {
+func newMiddlewareWrapper(config *Configuration, routeNames []string, index int) (*MiddlewareWrapper, error) {
 	factory := config.middlewareFactories[index]
-	middleware, err := factory.Create()
+	middleware, err := factory.Create(routeNames)
 	if err != nil {
 		return nil, err
 	}
