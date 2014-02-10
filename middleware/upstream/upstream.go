@@ -5,7 +5,7 @@ package upstream
 import (
 	"bytes"
 	"errors"
-	"github.com/karlseguin/garnish"
+	"github.com/karlseguin/garnish/core"
 	"io"
 	"net/http"
 )
@@ -18,7 +18,7 @@ func (u *Upstream) Name() string {
 	return "upstream"
 }
 
-func (u *Upstream) Run(context garnish.Context, next garnish.Next) garnish.Response {
+func (u *Upstream) Run(context core.Context, next core.Next) core.Response {
 	route := context.Route()
 	upstream, ok := u.routeLookup[route.Name]
 	if ok == false {
@@ -37,7 +37,7 @@ func (u *Upstream) Run(context garnish.Context, next garnish.Next) garnish.Respo
 	if length > 0 && length < upstream.PoolItemSize {
 		buffer := upstream.Pool.Checkout()
 		buffer.ReadFrom(r.Body)
-		return &garnish.ClosableResponse{
+		return &core.ClosableResponse{
 			S: r.StatusCode,
 			B: buffer,
 			H: r.Header,
@@ -55,10 +55,10 @@ func (u *Upstream) Run(context garnish.Context, next garnish.Next) garnish.Respo
 		length = len(body)
 	}
 
-	return garnish.RespondH(body, r.Header).Status(r.StatusCode)
+	return core.RespondH(body, r.Header).Status(r.StatusCode)
 }
 
-func (u *Upstream) prepareRequest(context garnish.Context, server *Server) *http.Request {
+func (u *Upstream) prepareRequest(context core.Context, server *Server) *http.Request {
 	out := context.RequestOut()
 	in := context.RequestIn()
 	if len(out.Host) == 0 {

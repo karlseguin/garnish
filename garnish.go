@@ -24,7 +24,7 @@ func (g *Garnish) Start(config *Configuration) {
 	runtime.GOMAXPROCS(config.maxProcs)
 
 	if len(config.middlewareFactories) == 0 {
-		config.Logger.Error(nil, "must configure at least 1 middleware")
+		config.logger.Error(nil, "must configure at least 1 middleware")
 		os.Exit(1)
 	}
 
@@ -44,24 +44,24 @@ func (g *Garnish) Start(config *Configuration) {
 
 	l, err := net.Listen(protocol, address)
 	if err != nil {
-		config.Logger.Error(nil, err)
+		config.logger.Error(nil, err)
 		os.Exit(1)
 	}
 
 	handler, err := newHandler(config)
 	if err != nil {
-		config.Logger.Error(nil, err)
+		config.logger.Error(nil, err)
 		os.Exit(1)
 	}
 	g.handler = handler
-	g.logger = config.Logger
+	g.logger = config.logger
 	s := &http.Server{
 		Handler:        g,
 		ReadTimeout:    config.readTimeout,
 		MaxHeaderBytes: config.maxHeaderBytes,
 	}
-	config.Logger.Infof(nil, "listening on %v", config.address)
-	config.Logger.Error(nil, s.Serve(l))
+	config.logger.Infof(nil, "listening on %v", config.address)
+	config.logger.Error(nil, s.Serve(l))
 }
 
 func (g *Garnish) ServeHTTP(output http.ResponseWriter, req *http.Request) {
@@ -74,10 +74,10 @@ func (g *Garnish) Reload(config *Configuration) {
 	g.logger.Info(nil, "reloading")
 	handler, err := newHandler(config)
 	if err != nil {
-		config.Logger.Error(nil, err)
+		config.logger.Error(nil, err)
 	} else {
 		g.Lock()
-		g.logger = config.Logger
+		g.logger = config.logger
 		g.handler = handler
 		g.Unlock()
 		g.logger.Info(nil, "reloaded")

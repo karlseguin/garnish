@@ -23,9 +23,9 @@ func (s *Stats) Run(context core.Context, next core.Next) core.Response {
 
 func (s *Stats) hit(context core.Context, response core.Response, elapsed time.Duration) {
 	s.logger.Infof(context, "%d µs", elapsed/1000)
-	stat, ok := s.routeLookup[context.Route().Name]
+	stat, ok := s.routeStats[context.Route().Name]
 	if ok == false {
-		stat = s.routeLookup["?"]
+		stat = s.routeStats["?"]
 	}
 	stat.hit(response, elapsed)
 }

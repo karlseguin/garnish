@@ -19,16 +19,16 @@ func newHandler(config *Configuration) (*Handler, error) {
 	}
 	h := &Handler{
 		router: config.router,
-		logger: config.Logger,
+		logger: config.logger,
 	}
-	routeNames := config.router.Compile()
-	prev, err := newMiddlewareWrapper(config, routeNames, 0)
+	config.router.Compile()
+	prev, err := newMiddlewareWrapper(config, 0)
 	if err != nil {
 		return nil, err
 	}
 	h.head = prev
 	for i := 1; i < len(config.middlewareFactories); i++ {
-		link, err := newMiddlewareWrapper(config, routeNames, i)
+		link, err := newMiddlewareWrapper(config, i)
 		if err != nil {
 			return nil, err
 		}
@@ -36,7 +36,7 @@ func newHandler(config *Configuration) (*Handler, error) {
 		prev = link
 	}
 	prev.next = &middlewareWrapper{
-		logger:     config.Logger,
+		logger:     config.logger,
 		middleware: new(NotFoundMiddleware),
 	}
 
@@ -71,8 +71,8 @@ func (h *Handler) reply(context core.Context, response core.Response, output htt
 	status := response.GetStatus()
 
 	if status >= 500 {
-		if fatal, ok := response.(*FatalResponse); ok {
-			h.logger.Errorf(context, "%q - %v", context.RequestIn().URL, fatal.err)
+		if fatal, ok := response.(*core.FatalResponse); ok {
+			h.logger.Errorf(context, "%q - %v", context.RequestIn().URL, fatal.Err)
 		} else {
 			LogError(h.logger, context, status, body)
 		}
@@ -103,14 +103,14 @@ func (wrapper *middlewareWrapper) Yield(context core.Context) core.Response {
 	return wrapper.middleware.Run(context, next)
 }
 
-func newMiddlewareWrapper(config *Configuration, routeNames []string, index int) (*middlewareWrapper, error) {
+func newMiddlewareWrapper(config *Configuration, index int) (*middlewareWrapper, error) {
 	factory := config.middlewareFactories[index]
-	middleware, err := factory.Create(routeNames)
+	middleware, err := factory.Create(config)
 	if err != nil {
 		return nil, err
 	}
 	return &middlewareWrapper{
-		logger:     config.Logger,
+		logger:     config.logger,
 		middleware: middleware,
 	}, nil
 }

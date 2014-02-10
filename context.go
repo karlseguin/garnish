@@ -30,7 +30,7 @@ func newContext(req *http.Request, logger core.Logger) *context {
 		requestId:  id,
 		requestOut: requestOut,
 		logger:     logger,
-		location:   "init",
+		location:   "handler",
 	}
 }
 

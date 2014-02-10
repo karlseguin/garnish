@@ -14,11 +14,12 @@ type Persister interface {
 
 // Configuration for the Stats middleware
 type Configuration struct {
+	overriding  *Stat
 	logger      core.Logger
 	window      time.Duration
 	sampleSize  int64
 	sampleSizeF float64
-	routeLookup map[string]*Stat
+	routeStats  map[string]*Stat
 	persister   Persister
 	percentiles map[string]float64
 }
@@ -28,18 +29,22 @@ func Configure() *Configuration {
 		window:      time.Second * 5,
 		sampleSize:  50,
 		sampleSizeF: float64(50),
+		routeStats: make(map[string]*Stat),
 		percentiles: map[string]float64{"50p": 0.5, "75p": 0.75, "95p": 0.95},
 		persister:   &FilePersister{"./stats.json"},
 	}
 }
 
 // Create the middleware from the configuration
-func (c *Configuration) Create(routeNames []string) (core.Middleware, error) {
-	c.routeLookup = make(map[string]*Stat)
-	for _, name := range routeNames {
-		c.routeLookup[name] = newStat(c)
+func (c *Configuration) Create(config core.Configuration) (core.Middleware, error) {
+	c.logger = config.Logger()
+
+	for name, _ := range config.Router().Routes() {
+		if _, ok := c.routeStats[name]; ok == false {
+			c.routeStats[name] = newStat(c)
+		}
 	}
-	c.routeLookup["?"] = newStat(c)
+	c.routeStats["?"] = newStat(c)
 
 	if worker != nil {
 		worker.stop()
@@ -57,30 +62,49 @@ func (c *Configuration) Create(routeNames []string) (core.Middleware, error) {
 // memory. The accuracy suffers from diminishing return, so there's no point
 // setting this too high.
 
+// Can be set globally or on a per-route basis
+
 // [500]
 func (c *Configuration) SampleSize(size int) *Configuration {
-	c.sampleSize = int64(size)
-	c.sampleSizeF = float64(size)
+	if c.overriding != nil {
+		c.overriding.sampleSize = int64(size)
+		c.overriding.sampleSizeF = float64(size)
+	} else {
+		c.sampleSize = int64(size)
+		c.sampleSizeF = float64(size)
+	}
 	return c
 }
 
 // The period of time to group statistics in.
 
+// Can be set globally
+
 // [1 minute]
 func (c *Configuration) Window(window time.Duration) *Configuration {
+	if c.overriding != nil  {
+		panic("stats window can only be configured globally")
+	}
 	c.window = window
 	return c
 }
 
 // The persister responsible for saving the statistics
 
+// Can be set globally
+
 // [FilePersister("./stats.json")]
 func (c *Configuration) Persister(persister Persister) *Configuration {
+	if c.overriding != nil {
+		panic("stats persister can only be configured globally")
+	}
 	c.persister = persister
 	return c
 }
 
 // The percentiles to track
+
+// Can be set globally
 
 // [50, 75, 95]
 func (c *Configuration) Percentiles(percentiles ...int) *Configuration {
@@ -88,6 +112,16 @@ func (c *Configuration) Percentiles(percentiles ...int) *Configuration {
 	for _, p := range percentiles {
 		lookup[strconv.Itoa(p)+"p"] = float64(p) / 100
 	}
-	c.percentiles = lookup
+	if c.overriding != nil {
+		c.overriding.percentiles = lookup
+	} else {
+		c.percentiles = lookup
+	}
 	return c
+}
+
+func (c *Configuration) OverrideFor(route *core.Route) {
+	stat := newStat(c)
+	c.routeStats[route.Name] = newStat(c)
+	c.overriding = stat
 }

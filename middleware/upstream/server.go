@@ -12,7 +12,6 @@ type DnsResolver func(address string) (string, error)
 
 // Configuration for an Server service
 type Server struct {
-	Name                      string
 	Host                      string
 	Scheme                    string
 	Pool                      *bytepool.Pool
@@ -25,9 +24,8 @@ type Server struct {
 
 // Create am upstream Server. scheme can either be http or https or
 // If host starts with unix:/, a unix socket is used
-func NewServer(name, scheme, host string, routes ...string) *Server {
+func newServer(scheme, host string) *Server {
 	return &Server{
-		Name:                      name,
 		Host:                      host,
 		Scheme:                    scheme,
 		PoolItemSize:              65536,

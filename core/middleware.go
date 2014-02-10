@@ -6,8 +6,8 @@ type Middleware interface {
 }
 
 type MiddlewareFactory interface {
-	Create(routeNames []string) (Middleware, error)
-	Logger(logger Logger)
+	Create(Configuration) (Middleware, error)
+	OverrideFor(*Route)
 }
 
 type Next func(context Context) Response

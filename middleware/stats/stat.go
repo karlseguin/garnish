@@ -13,6 +13,8 @@ import (
 type Stat struct {
 	snapLock   sync.RWMutex
 	sampleLock sync.Mutex
+	sampleSize int64
+	sampleSizeF float64
 	*Configuration
 	hits     int64
 	oks      int64
@@ -21,14 +23,15 @@ type Stat struct {
 	samples  []int
 	scratch  []int
 	snapshot Snapshot
+	percentiles map[string]float64
 }
 
 func newStat(c *Configuration) *Stat {
 	return &Stat{
-		Configuration: c,
 		snapshot:      make(Snapshot),
 		samples:       make([]int, c.sampleSize),
 		scratch:       make([]int, c.sampleSize),
+		percentiles:   c.percentiles,
 	}
 }
 

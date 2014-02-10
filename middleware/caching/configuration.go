@@ -1,25 +1,24 @@
 package caching
 
 import (
-	"github.com/karlseguin/garnish"
+	"github.com/karlseguin/garnish/core"
 	"github.com/karlseguin/garnish/caches"
 	"time"
 )
 
-type AuthorizePurge func(context garnish.Context) bool
+type AuthorizePurge func(context core.Context) bool
 
 // Configuration for the Caching middleware
 type Configuration struct {
-	logger         garnish.Logger
+	logger         core.Logger
 	cache          caches.Cache
 	grace          time.Duration
 	saint          time.Duration
 	authorizePurge AuthorizePurge
 }
 
-func Configure(base *garnish.Configuration, cache caches.Cache) *Configuration {
+func Configure(cache caches.Cache) *Configuration {
 	return &Configuration{
-		logger: base.Logger,
 		grace:  time.Second * 10,
 		saint:  time.Hour * 4,
 		cache:  cache,
@@ -27,7 +26,8 @@ func Configure(base *garnish.Configuration, cache caches.Cache) *Configuration {
 }
 
 // Create the middleware from the configuration
-func (c *Configuration) Create(routeNames []string) (garnish.Middleware, error) {
+func (c *Configuration) Create(config core.Configuration) (core.Middleware, error) {
+	c.logger = config.Logger()
 	return &Caching{Configuration: c, downloading: make(map[string]time.Time)}, nil
 }
 

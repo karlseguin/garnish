@@ -2,7 +2,7 @@
 package caching
 
 import (
-	"github.com/karlseguin/garnish"
+	"github.com/karlseguin/garnish/core"
 	"github.com/karlseguin/garnish/caches"
 	"net/http"
 	"strconv"
@@ -22,14 +22,14 @@ func (c *Caching) Name() string {
 }
 
 var (
-	grace = func(c *Caching, key, vary string, context garnish.Context, next garnish.Next) {
+	grace = func(c *Caching, key, vary string, context core.Context, next core.Next) {
 		go c.grace(key, vary, context, next)
 	}
-	purgeHitResponse  = garnish.Respond([]byte("")).Status(200)
-	purgeMissResponse = garnish.Respond([]byte("")).Status(204)
+	purgeHitResponse  = core.Respond([]byte("")).Status(200)
+	purgeMissResponse = core.Respond([]byte("")).Status(204)
 )
 
-func (c *Caching) Run(context garnish.Context, next garnish.Next) garnish.Response {
+func (c *Caching) Run(context core.Context, next core.Next) core.Response {
 	caching := context.Route().Caching
 	if caching == nil {
 		c.logger.Info(context, "not cacheable")
@@ -48,7 +48,7 @@ func (c *Caching) Run(context garnish.Context, next garnish.Next) garnish.Respon
 	}
 }
 
-func (c *Caching) get(context garnish.Context, caching *garnish.Caching, request *http.Request, next garnish.Next) garnish.Response {
+func (c *Caching) get(context core.Context, caching *core.Caching, request *http.Request, next core.Next) core.Response {
 	key, vary := caching.KeyGenerator(context)
 	cached := c.cache.Get(key, vary)
 	if cached != nil {
@@ -68,7 +68,7 @@ func (c *Caching) get(context garnish.Context, caching *garnish.Caching, request
 	response := next(context)
 	if response.GetStatus() >= 500 && c.saint.Nanoseconds() > 0 {
 		// log this here since the final handler will never see this 500 error
-		garnish.LogError(c.logger, context, response.GetStatus(), response.GetBody())
+		core.LogError(c.logger, context, response.GetStatus(), response.GetBody())
 		c.logger.Info(context, "saint")
 		cached.Expires = time.Now().Add(c.saint)
 		return cached
@@ -76,7 +76,7 @@ func (c *Caching) get(context garnish.Context, caching *garnish.Caching, request
 	return c.set(key, vary, context, response)
 }
 
-func (c *Caching) set(key, vary string, context garnish.Context, response garnish.Response) garnish.Response {
+func (c *Caching) set(key, vary string, context core.Context, response core.Response) core.Response {
 	ttl, ok := ttl(context.Route().Caching, response)
 	if ok == false {
 		c.logger.Error(context, "configured to cache but no expiry was given")
@@ -90,7 +90,7 @@ func (c *Caching) set(key, vary string, context garnish.Context, response garnis
 	return cr
 }
 
-func ttl(caching *garnish.Caching, response garnish.Response) (time.Duration, bool) {
+func ttl(caching *core.Caching, response core.Response) (time.Duration, bool) {
 	status := response.GetStatus()
 	if status >= 200 && status <= 400 && caching.TTL.Nanoseconds() > 0 {
 		return caching.TTL, true
@@ -108,7 +108,7 @@ func ttl(caching *garnish.Caching, response garnish.Response) (time.Duration, bo
 	return time.Second, false
 }
 
-func (c *Caching) grace(key, vary string, context garnish.Context, next garnish.Next) {
+func (c *Caching) grace(key, vary string, context core.Context, next core.Next) {
 	downloadKey := key + vary
 	if c.isDownloading(downloadKey) {
 		return
@@ -123,7 +123,7 @@ func (c *Caching) grace(key, vary string, context garnish.Context, next garnish.
 		c.logger.Infof(context, "grace %d", response.GetStatus())
 		c.set(key, vary, context, response)
 	} else {
-		garnish.LogError(c.logger, context, response.GetStatus(), response.GetBody())
+		core.LogError(c.logger, context, response.GetStatus(), response.GetBody())
 	}
 }
 
@@ -150,10 +150,10 @@ func (c *Caching) unlockDownload(key string) {
 	c.lock.Unlock()
 }
 
-func (c *Caching) purge(context garnish.Context, caching *garnish.Caching, request *http.Request) garnish.Response {
+func (c *Caching) purge(context core.Context, caching *core.Caching, request *http.Request) core.Response {
 	if c.authorizePurge == nil || c.authorizePurge(context) == false {
 		c.logger.Info(context, "unauthorized purge")
-		return garnish.Unauthorized
+		return core.Unauthorized
 	}
 	key, _ := caching.KeyGenerator(context)
 	if c.cache.Delete(key) {

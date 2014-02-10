@@ -12,21 +12,26 @@ import (
 	// "os"
 	// "os/signal"
 	// "syscall"
-	// "time"
+	"time"
 )
 
 func main() {
-	// stats := garnish.Stats
-	config := garnish.Configure().LogInfo() //.Middleware(stats)
+	stats, upstream := garnish.Stats, garnish.Upstream
+	config := garnish.Configure().LogInfo().Middleware(stats, upstream)
 	router := config.NewRouter()
 
-	// stats.Percentiles(50, 75, 95).Treshold(time.Milliseconds * 25)
-	// caching.Generator(cacheKeyGenerator)
-	// upstream.Server("openmymind", "http", "openmymind.net")
+	stats.Percentiles(50, 75, 95)//.Treshold(time.Milliseconds * 25)
 
-	router.Add("root", "GET", "/") //, stats.Treshold(time.Milliseconds * 25))
-	// caching.TTL(time.Seconds * 5),
-	// upstream.To("openmymind")
+	// caching.Generator(cacheKeyGenerator).TTL(time.Seconds * 5)
+
+	upstream.DnsRefresh(time.Minute)
+	upstream.Add("openmymind", "http", "openmymind.net")
+
+	router.Add("root", "GET", "/", func() {
+		upstream.Is("openmymind")
+		stats.Percentiles(50)
+	})
+
 
 	// routerConfig := path.Configure(mainConfig)
 	// routerConfig.Add("GET", "/", garnish.NewRoute("root").Cache(cacheKeyGenerator).TTL(time.Second*5))

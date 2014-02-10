@@ -38,13 +38,20 @@ type Router struct {
 	info     []*RouteInfo
 	fallback *core.Route
 	routes   map[string]*RouteMap
+	lookup   map[string]*core.Route
+	middlewares []core.MiddlewareFactory
 }
 
-func New(logger core.Logger) *Router {
+func New(logger core.Logger, middlewares []core.MiddlewareFactory) *Router {
 	return &Router{
 		logger: logger,
 		info:   make([]*RouteInfo, 0, 16),
+		middlewares: middlewares,
 	}
+}
+
+func (r *Router) Routes() map[string]*core.Route {
+	return r.lookup
 }
 
 func (r *Router) Route(context core.Context) (*core.Route, core.Params, core.Response) {
@@ -105,30 +112,40 @@ func (r *Router) Route(context core.Context) (*core.Route, core.Params, core.Res
 // The path can include named captures: /product/:id
 
 // This method is not thread safe. It is expected
-func (r *Router) Add(name, method, path string) {
+func (r *Router) Add(name, method, path string, override ...interface{}) {
 	ri := &RouteInfo{
 		method:      method,
 		path:        path,
 		route:       core.NewRoute(name),
 		constraints: make(map[string]Contraints),
 	}
+	if len(override) == 1 {
+		for _, middleware := range r.middlewares {
+			middleware.OverrideFor(ri.route)
+		}
+		override[0].(func())()
+	}
 	r.info = append(r.info, ri)
 }
 
-func (r *Router) Compile() []string {
+func (r *Router) Compile() {
 	routeNames := make(map[string]struct{})
 	r.routes = make(map[string]*RouteMap, len(r.info))
+	r.lookup = make(map[string]*core.Route, len(r.info))
+
 	for _, ri := range r.info {
 		routeName := ri.route.Name
+		r.lookup[routeName] = ri.route
 		if _, exists := routeNames[routeName]; exists {
 			panic(fmt.Sprintf("Route names must be unique, %q used twice", routeName))
+		} else if routeName == "fallback" {
+			r.fallback = ri.route
 		} else {
 			routeNames[routeName] = struct{}{}
 		}
 		r.addInfo(ri)
 	}
 	r.info = nil
-	return nil
 }
 
 func (r *Router) addInfo(info *RouteInfo) {
@@ -160,7 +177,7 @@ func (r *Router) add(root *RouteMap, info *RouteInfo) {
 	path := info.path
 	route := info.route
 	if len(path) == 0 {
-		r.addRoot(root, route)
+		root.route = route
 		return
 	}
 
@@ -173,7 +190,7 @@ func (r *Router) add(root *RouteMap, info *RouteInfo) {
 	}
 
 	if len(path) == 0 {
-		r.addRoot(root, route)
+		root.route = route
 		return
 	}
 
@@ -200,7 +217,4 @@ func (r *Router) add(root *RouteMap, info *RouteInfo) {
 		root = leaf
 	}
 	leaf.route = route
-}
-func (r *Router) addRoot(root *RouteMap, route *core.Route) {
-	root.route = route
 }

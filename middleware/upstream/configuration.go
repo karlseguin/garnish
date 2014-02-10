@@ -2,38 +2,40 @@ package upstream
 
 import (
 	"github.com/karlseguin/dnscache"
-	"github.com/karlseguin/garnish"
+	"github.com/karlseguin/garnish/core"
 	"time"
 )
 
 // Configuration for upstreams middleware
 type Configuration struct {
-	logger         garnish.Logger
+	overriding     string
+	logger         core.Logger
 	forwardHeaders []string
 	dnsRefresh     time.Duration
+	serverLookup   map[string]*Server
 	routeLookup    map[string]*Server
 }
 
-func Configure(base *garnish.Configuration) *Configuration {
+func Configure() *Configuration {
 	return &Configuration{
-		logger:         base.Logger,
 		forwardHeaders: make([]string, 0, 1),
 		dnsRefresh:     time.Minute,
+		serverLookup:   make(map[string]*Server),
 		routeLookup:    make(map[string]*Server),
 	}
 }
 
 // Create the middleware from the configuration
-func (c *Configuration) Create(routeNames []string) (garnish.Middleware, error) {
-	upstream := &Upstream{c}
+func (c *Configuration) Create(config core.Configuration) (core.Middleware, error) {
+	c.logger = config.Logger()
 	dns := dnscache.New(c.dnsRefresh)
-	for _, server := range c.routeLookup {
+	for _, server := range c.serverLookup {
 		if server.resolver == nil {
 			server.Resolver(dns.FetchOneString)
 		}
 		server.Finalize()
 	}
-	return upstream, nil
+	return &Upstream{c}, nil
 }
 
 // Forward the specified headers from the input request to the
@@ -49,11 +51,17 @@ func (c *Configuration) DnsRefresh(frequency time.Duration) *Configuration {
 	return c
 }
 
-// Adds an upstream. The upstream is picked based on the Route's
-// upstream, matching by name
-func (c *Configuration) Add(upstream *Server, routes ...string) *Configuration {
-	for _, route := range routes {
-		c.routeLookup[route] = upstream
-	}
-	return c
+// Defines an upstream server
+func (c *Configuration) Add(name, scheme, address string) *Server {
+	server := newServer(scheme, address)
+	c.serverLookup[name] = server
+	return server
+}
+
+func (c *Configuration) OverrideFor(route *core.Route) {
+	c.overriding = route.Name
+}
+
+func (c *Configuration) Is(name string) {
+	c.routeLookup[c.overriding] = c.serverLookup[name]
 }

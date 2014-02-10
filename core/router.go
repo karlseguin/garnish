@@ -6,8 +6,9 @@ type Params map[string]string
 // Map an http.Request to a Route
 type Router interface {
 	Route(context Context) (*Route, Params, Response)
-	Add(name, method, path string)
-	Compile() []string
+	Add(name, method, path string, override ...interface{})
+	Routes() map[string]*Route
+	Compile()
 }
 
 // Route information

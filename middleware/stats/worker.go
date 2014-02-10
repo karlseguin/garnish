@@ -34,7 +34,7 @@ func (w *Worker) snapshot() bool {
 	}
 
 	snapshots := make(map[string]Snapshot)
-	for key, stat := range w.routeLookup {
+	for key, stat := range w.routeStats {
 		ss := stat.Snapshot()
 		if ss["hits"] > 0 {
 			snapshots[key] = ss

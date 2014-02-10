@@ -19,7 +19,7 @@ type Configuration struct {
 	notFoundMessage      string
 	unauthorizedMessage  string
 	router               core.Router
-	Logger               core.Logger
+	logger               core.Logger
 }
 
 func Configure() *Configuration {
@@ -32,7 +32,7 @@ func Configure() *Configuration {
 		readTimeout:          time.Second * 10,
 		address:              "tcp://127.0.0.1:6772",
 		middlewareFactories:  make([]core.MiddlewareFactory, 0, 1),
-		Logger:               &logger{logger: log.New(os.Stdout, "[garnish] ", log.Ldate|log.Lmicroseconds)},
+		logger:               &logger{logger: log.New(os.Stdout, "[garnish] ", log.Ldate|log.Lmicroseconds)},
 	}
 }
 
@@ -63,14 +63,16 @@ func (c *Configuration) MaxiumOSThreads(count int) *Configuration {
 
 // Enable logging info messages
 func (c *Configuration) LogInfo() *Configuration {
-	c.Logger.(*logger).info = true
+	c.logger.(*logger).info = true
 	return c
 }
 
 // Registers the middlewares to use. Middleware will be executed in the order
 // which they are supplied.
-func (c *Configuration) Middleware(factories ...[]core.MiddlewareFactory) *Configuration {
-	// c.middlewareFactories = append(c.middlewareFactories, factory)
+func (c *Configuration) Middleware(factories ...core.MiddlewareFactory) *Configuration {
+	for _, factory := range factories {
+		c.middlewareFactories = append(c.middlewareFactories, factory)
+	}
 	return c
 }
 
@@ -96,6 +98,16 @@ func (c *Configuration) InternalError(message string) *Configuration {
 // As this breaks the chainable configuration, it'll normally be the last
 // step in configuration.
 func (c *Configuration) NewRouter() core.Router {
-	c.router = router.New(c.Logger)
+	c.router = router.New(c.logger, c.middlewareFactories)
+	return c.router
+}
+
+// Gets the logger
+func (c *Configuration) Logger() core.Logger {
+	return c.logger
+}
+
+// Gets the router
+func (c *Configuration) Router() core.Router {
 	return c.router
 }
