@@ -1,7 +1,7 @@
 package stats
 
 import (
-	"github.com/karlseguin/garnish"
+	"github.com/karlseguin/garnish/core"
 	"math"
 	"math/rand"
 	"sort"
@@ -32,7 +32,7 @@ func newStat(c *Configuration) *Stat {
 	}
 }
 
-func (s *Stat) hit(response garnish.Response, t time.Duration) {
+func (s *Stat) hit(response core.Response, t time.Duration) {
 	s.snapLock.RLock()
 	defer s.snapLock.RUnlock()
 	hits := atomic.AddInt64(&s.hits, 1)

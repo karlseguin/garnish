@@ -1,6 +1,8 @@
 package garnish
 
 import (
+	"github.com/karlseguin/garnish/core"
+	"github.com/karlseguin/garnish/router"
 	"log"
 	"os"
 	"runtime"
@@ -11,14 +13,13 @@ type Configuration struct {
 	maxProcs             int
 	address              string
 	maxHeaderBytes       int
-	router               Router
 	readTimeout          time.Duration
-	middlewareFactories  []MiddlewareFactory
+	middlewareFactories  []core.MiddlewareFactory
 	internalErrorMessage string
 	notFoundMessage      string
 	unauthorizedMessage  string
-
-	Logger Logger
+	router               core.Router
+	Logger               core.Logger
 }
 
 func Configure() *Configuration {
@@ -30,7 +31,7 @@ func Configure() *Configuration {
 		maxProcs:             runtime.NumCPU(),
 		readTimeout:          time.Second * 10,
 		address:              "tcp://127.0.0.1:6772",
-		middlewareFactories:  make([]MiddlewareFactory, 0, 1),
+		middlewareFactories:  make([]core.MiddlewareFactory, 0, 1),
 		Logger:               &logger{logger: log.New(os.Stdout, "[garnish] ", log.Ldate|log.Lmicroseconds)},
 	}
 }
@@ -39,12 +40,6 @@ func Configure() *Configuration {
 // With unix socket: unix:/tmp/garnish.sock
 func (c *Configuration) Listen(address string) *Configuration {
 	c.address = address
-	return c
-}
-
-// The router which takes an http.Request and createa Route
-func (c *Configuration) Router(router Router) *Configuration {
-	c.router = router
 	return c
 }
 
@@ -72,9 +67,10 @@ func (c *Configuration) LogInfo() *Configuration {
 	return c
 }
 
-// Enable logging info messages
-func (c *Configuration) Middleware(factory MiddlewareFactory) *Configuration {
-	c.middlewareFactories = append(c.middlewareFactories, factory)
+// Registers the middlewares to use. Middleware will be executed in the order
+// which they are supplied.
+func (c *Configuration) Middleware(factories ...[]core.MiddlewareFactory) *Configuration {
+	// c.middlewareFactories = append(c.middlewareFactories, factory)
 	return c
 }
 
@@ -91,7 +87,15 @@ func (c *Configuration) Unauthorized(message string) *Configuration {
 }
 
 // The body to use when replying with a 500 ["internal error"]
-func (c *Configuration) internalError(message string) *Configuration {
+func (c *Configuration) InternalError(message string) *Configuration {
 	c.internalErrorMessage = message
 	return c
+}
+
+// Creates and returns a new router
+// As this breaks the chainable configuration, it'll normally be the last
+// step in configuration.
+func (c *Configuration) NewRouter() core.Router {
+	c.router = router.New(c.Logger)
+	return c.router
 }

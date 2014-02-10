@@ -1,7 +1,7 @@
-package path
+package router
 
 import (
-	"github.com/karlseguin/garnish"
+	"github.com/karlseguin/garnish/core"
 	"github.com/karlseguin/gspec"
 	"testing"
 )

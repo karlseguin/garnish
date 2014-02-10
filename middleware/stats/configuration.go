@@ -1,7 +1,7 @@
 package stats
 
 import (
-	"github.com/karlseguin/garnish"
+	"github.com/karlseguin/garnish/core"
 	"strconv"
 	"time"
 )
@@ -14,7 +14,7 @@ type Persister interface {
 
 // Configuration for the Stats middleware
 type Configuration struct {
-	logger      garnish.Logger
+	logger      core.Logger
 	window      time.Duration
 	sampleSize  int64
 	sampleSizeF float64
@@ -23,9 +23,8 @@ type Configuration struct {
 	percentiles map[string]float64
 }
 
-func Configure(base *garnish.Configuration) *Configuration {
+func Configure() *Configuration {
 	return &Configuration{
-		logger:      base.Logger,
 		window:      time.Second * 5,
 		sampleSize:  50,
 		sampleSizeF: float64(50),
@@ -35,7 +34,7 @@ func Configure(base *garnish.Configuration) *Configuration {
 }
 
 // Create the middleware from the configuration
-func (c *Configuration) Create(routeNames []string) (garnish.Middleware, error) {
+func (c *Configuration) Create(routeNames []string) (core.Middleware, error) {
 	c.routeLookup = make(map[string]*Stat)
 	for _, name := range routeNames {
 		c.routeLookup[name] = newStat(c)

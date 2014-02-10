@@ -1,4 +1,4 @@
-package garnish
+package core
 
 import (
 	"bytes"

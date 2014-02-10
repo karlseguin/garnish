@@ -2,14 +2,15 @@ package garnish
 
 import (
 	"errors"
+	"github.com/karlseguin/garnish/core"
 	"net/http"
 	"strconv"
 )
 
 type Handler struct {
-	router Router
-	head   *MiddlewareWrapper
-	logger Logger
+	router core.Router
+	logger core.Logger
+	head   *middlewareWrapper
 }
 
 func newHandler(config *Configuration) (*Handler, error) {
@@ -20,7 +21,7 @@ func newHandler(config *Configuration) (*Handler, error) {
 		router: config.router,
 		logger: config.Logger,
 	}
-	routeNames := config.router.RouteNames()
+	routeNames := config.router.Compile()
 	prev, err := newMiddlewareWrapper(config, routeNames, 0)
 	if err != nil {
 		return nil, err
@@ -34,9 +35,9 @@ func newHandler(config *Configuration) (*Handler, error) {
 		prev.next = link
 		prev = link
 	}
-	prev.next = &MiddlewareWrapper{
+	prev.next = &middlewareWrapper{
 		logger:     config.Logger,
-		middleware: new(notFoundMiddleware),
+		middleware: new(NotFoundMiddleware),
 	}
 
 	return h, nil
@@ -59,7 +60,7 @@ func (h *Handler) ServeHTTP(output http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func (h *Handler) reply(context Context, response Response, output http.ResponseWriter) {
+func (h *Handler) reply(context core.Context, response core.Response, output http.ResponseWriter) {
 	defer response.Close()
 	outHeader := output.Header()
 	for k, v := range response.GetHeader() {
@@ -82,6 +83,34 @@ func (h *Handler) reply(context Context, response Response, output http.Response
 	output.Write(body)
 }
 
-func LogError(logger Logger, context Context, status int, body []byte) {
+func LogError(logger core.Logger, context core.Context, status int, body []byte) {
 	logger.Errorf(context, "%q %d %v", context.RequestIn().URL, status, string(body))
+}
+
+type middlewareWrapper struct {
+	next       *middlewareWrapper
+	middleware core.Middleware
+	logger     core.Logger
+}
+
+func (wrapper *middlewareWrapper) Yield(context core.Context) core.Response {
+	defer context.SetLocation(context.Location())
+	context.SetLocation(wrapper.middleware.Name())
+	var next core.Next
+	if wrapper.next != nil {
+		next = wrapper.next.Yield
+	}
+	return wrapper.middleware.Run(context, next)
+}
+
+func newMiddlewareWrapper(config *Configuration, routeNames []string, index int) (*middlewareWrapper, error) {
+	factory := config.middlewareFactories[index]
+	middleware, err := factory.Create(routeNames)
+	if err != nil {
+		return nil, err
+	}
+	return &middlewareWrapper{
+		logger:     config.Logger,
+		middleware: middleware,
+	}, nil
 }

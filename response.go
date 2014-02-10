@@ -1,54 +1,24 @@
 package garnish
 
 import (
+	"github.com/karlseguin/garnish/core"
 	"net/http"
 	"strconv"
 )
 
-// An interface used for a Closable response
-type ByteCloser interface {
-	Len() int
-	Close() error
-	Bytes() []byte
-}
-
-// A pre-built response for a 401
-var Unauthorized = Respond([]byte("unauthorized")).Status(401)
-
-// A pre-built response for a 404
-var NotFound = Respond([]byte("not found")).Status(404)
-
-// A pre-built response for a 500
-var InternalError = Respond([]byte("internal error")).Status(500)
-
-type Response interface {
-	// Get the response's header
-	GetHeader() http.Header
-
-	// Get the response's body
-	GetBody() []byte
-
-	// Get the response's status
-	GetStatus() int
-
-	//set the response's status
-	SetStatus(status int)
-
-	// Close the response
-	Close() error
-
-	// Detaches the response from any underlying resourcs.
-	// In cases where Close is a no-op, this should probably
-	// return self. Otherwise, the response should do whatever
-	// it has to so that it can be long-lived (clone itself into
-	// a normal response and close itself)
-	Detach() Response
-}
+var (
+	// A pre-built response for a 401
+	Unauthorized = Respond([]byte("unauthorized")).Status(401)
+	// A pre-built response for a 404
+	NotFound = Respond([]byte("not found")).Status(404)
+	// A pre-built response for a 500
+	InternalError = Respond([]byte("internal error")).Status(500)
+)
 
 // A in-memory response with a chainable API. Should be created
 // via the Respond() method
 type ResponseBuilder struct {
-	Response
+	core.Response
 }
 
 // Set a cache-control for the specified duration
@@ -86,7 +56,7 @@ func RespondH(body interface{}, h http.Header) *ResponseBuilder {
 		return &ResponseBuilder{&InMemoryResponse{h, []byte(b), 200}}
 	case []byte:
 		return &ResponseBuilder{&InMemoryResponse{h, b, 200}}
-	case ByteCloser:
+	case core.ByteCloser:
 		return &ResponseBuilder{&ClosableResponse{h, b, 200}}
 	default:
 		return &ResponseBuilder{&InMemoryResponse{h, []byte("invalid body"), 500}}
@@ -125,7 +95,7 @@ func (r *InMemoryResponse) Close() error {
 }
 
 // deatches the response from any underlying resources (noop)
-func (r *InMemoryResponse) Detach() Response {
+func (r *InMemoryResponse) Detach() core.Response {
 	return r
 }
 
@@ -133,7 +103,7 @@ func (r *InMemoryResponse) Detach() Response {
 // as the body
 type ClosableResponse struct {
 	H http.Header
-	B ByteCloser
+	B core.ByteCloser
 	S int
 }
 
@@ -164,7 +134,7 @@ func (r *ClosableResponse) Close() error {
 
 // Detaches the response from the underlying bytepool,
 // turning this into an InMemoryResponse
-func (r *ClosableResponse) Detach() Response {
+func (r *ClosableResponse) Detach() core.Response {
 	defer r.B.Close()
 	clone := &InMemoryResponse{
 		S: r.S,

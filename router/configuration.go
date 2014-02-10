@@ -1,26 +1,10 @@
-package path
+package router
 
 import (
 	"fmt"
-	"github.com/karlseguin/garnish"
+	"github.com/karlseguin/garnish/core"
 	"strings"
 )
-
-type Contraints map[string]struct{}
-
-type RouteMap struct {
-	route         *garnish.Route
-	parameterName string
-	constraints   Contraints
-	routes        map[string]*RouteMap
-}
-
-type RouteInfo struct {
-	method      string
-	path        string
-	route       *garnish.Route
-	constraints map[string]Contraints
-}
 
 func (ri *RouteInfo) ParamContraint(param string, values ...string) *RouteInfo {
 	s := make(Contraints, len(values))
@@ -33,28 +17,27 @@ func (ri *RouteInfo) ParamContraint(param string, values ...string) *RouteInfo {
 
 // Configuration for router middleware
 type Configuration struct {
-	logger   garnish.Logger
-	fallback *garnish.Route
+	logger   core.Logger
+	fallback *core.Route
 	info     []*RouteInfo
 	routes   map[string]*RouteMap
 }
 
-func Configure(base *garnish.Configuration) *Configuration {
+func Configure() *Configuration {
 	return &Configuration{
-		logger: base.Logger,
-		info:   make([]*RouteInfo, 0, 10),
+		info: make([]*RouteInfo, 0, 10),
 	}
 }
 
 // The fallback route to use when no match is found
-func (c *Configuration) Fallback(route *garnish.Route) *Configuration {
+func (c *Configuration) Fallback(route *core.Route) *Configuration {
 	c.fallback = route
 	return c
 }
 
 // Adds a route. A method of * will be expanded to include GET, PUT, POST,
 // DELETE, PURGE and PATCH
-func (c *Configuration) Add(method, path string, route *garnish.Route) *RouteInfo {
+func (c *Configuration) Add(method, path string, route *core.Route) *RouteInfo {
 	ri := &RouteInfo{
 		method:      method,
 		path:        path,
@@ -151,7 +134,7 @@ func (c *Configuration) add(root *RouteMap, info *RouteInfo) {
 	}
 	leaf.route = route
 }
-func (c *Configuration) addRoot(root *RouteMap, route *garnish.Route) *Configuration {
+func (c *Configuration) addRoot(root *RouteMap, route *core.Route) *Configuration {
 	root.route = route
 	return c
 }
