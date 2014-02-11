@@ -16,6 +16,7 @@ type Persister interface {
 type Configuration struct {
 	overriding  *Stat
 	window      time.Duration
+	treshhold    time.Duration
 	sampleSize  int64
 	sampleSizeF float64
 	routeStats  map[string]*Stat
@@ -28,6 +29,7 @@ func Configure() *Configuration {
 		window:      time.Second * 5,
 		sampleSize:  50,
 		sampleSizeF: float64(50),
+		treshhold:   time.Millisecond * 500,
 		routeStats:  make(map[string]*Stat),
 		percentiles: map[string]float64{"50p": 0.5, "75p": 0.75, "95p": 0.95},
 		persister:   &FilePersister{"./stats.json"},
@@ -109,7 +111,7 @@ func (c *Configuration) Persister(persister Persister) *Configuration {
 
 // The percentiles to track
 
-// Can be set globally
+// Can be set globally or on a per-route basis
 
 // [50, 75, 95]
 func (c *Configuration) Percentiles(percentiles ...int) *Configuration {
@@ -121,6 +123,20 @@ func (c *Configuration) Percentiles(percentiles ...int) *Configuration {
 		c.overriding.percentiles = lookup
 	} else {
 		c.percentiles = lookup
+	}
+	return c
+}
+
+// Requests slower than the specified thresshold will be counted as "slow"
+
+// Can be set globally or on a per-route basis
+
+// [500ms]
+func (c *Configuration) Treshhold(t time.Duration) *Configuration {
+	if c.overriding != nil {
+		c.overriding.treshhold = t
+	} else {
+		c.treshhold = t
 	}
 	return c
 }
