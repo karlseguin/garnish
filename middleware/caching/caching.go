@@ -77,21 +77,22 @@ func (c *Caching) get(context core.Context, config *RouteConfig, request *http.R
 		cached.Expires = time.Now().Add(config.saint)
 		return cached
 	}
-	return c.set(key, vary, context, config, response)
+	c.set(key, vary, context, config, response)
+	return response
 }
 
-func (c *Caching) set(key, vary string, context core.Context, config *RouteConfig, response core.Response) core.Response {
+func (c *Caching) set(key, vary string, context core.Context, config *RouteConfig, response core.Response) {
 	ttl, ok := ttl(config, response)
 	if ok == false {
 		c.logger.Error(context, "configured to cache but no expiry was given")
-		return response
+		return
 	}
 	cr := &caches.CachedResponse{
 		Expires:  time.Now().Add(ttl),
 		Response: response.Detach(),
 	}
+	cr.Response.GetHeader().Set("X-Cache", "hit")
 	c.cache.Set(key, vary, cr)
-	return cr
 }
 
 func ttl(config *RouteConfig, response core.Response) (time.Duration, bool) {

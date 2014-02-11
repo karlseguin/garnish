@@ -20,7 +20,7 @@ func main() {
 	config := garnish.Configure().LogInfo().Middleware(stats, caching, dispatch, upstream)
 	router := config.NewRouter()
 
-	stats.Percentiles(50, 75, 95) //.Treshold(time.Milliseconds * 25)
+	stats.Percentiles(50, 75, 95).Window(time.Second * 5) //.Treshold(time.Milliseconds * 25)
 	caching.TTL(time.Second * 5)
 
 	dispatch.Dispatch(dp)

@@ -2,6 +2,7 @@ package stats
 
 import (
 	"github.com/karlseguin/garnish/core"
+	"github.com/karlseguin/garnish/caches"
 	"math"
 	"math/rand"
 	"sort"
@@ -15,9 +16,10 @@ type Stat struct {
 	sampleLock  sync.Mutex
 	sampleSize  int64
 	sampleSizeF float64
-	treshhold    time.Duration
+	treshhold   time.Duration
 	*Configuration
 	hits        int64
+	cache       int64
 	oks         int64
 	errors      int64
 	failures    int64
@@ -41,9 +43,6 @@ func (s *Stat) hit(response core.Response, t time.Duration) {
 	s.snapLock.RLock()
 	defer s.snapLock.RUnlock()
 	hits := atomic.AddInt64(&s.hits, 1)
-	if t > s.treshhold {
-		atomic.AddInt64(&s.slow, 1)
-	}
 	status := response.GetStatus()
 	if status > 499 {
 		atomic.AddInt64(&s.failures, 1)
@@ -52,7 +51,15 @@ func (s *Stat) hit(response core.Response, t time.Duration) {
 	} else {
 		atomic.AddInt64(&s.oks, 1)
 	}
-	s.sample(hits, t)
+
+	if isCacheHit(response) {
+		atomic.AddInt64(&s.cache, 1)
+	} else {
+		if t > s.treshhold {
+			atomic.AddInt64(&s.slow, 1)
+		}
+		s.sample(hits, t)
+	}
 }
 
 func (s *Stat) sample(hits int64, t time.Duration) {
@@ -77,7 +84,8 @@ func (s *Stat) Snapshot() Snapshot {
 	s.snapshot["5xx"] = s.failures
 	s.snapshot["slow"] = s.slow
 	s.snapshot["hits"] = hits
-	s.oks, s.errors, s.failures, s.hits, s.slow = 0, 0, 0, 0, 0
+	s.snapshot["cache"] = s.cache
+	s.oks, s.errors, s.failures, s.hits, s.slow, s.cache = 0, 0, 0, 0, 0, 0
 	s.samples, s.scratch = s.scratch, s.samples
 	s.snapLock.Unlock()
 
@@ -106,4 +114,9 @@ func percentile(values []int, p float64, size int) int64 {
 	valueK := float64(values[k])
 	_, f := math.Modf(p*s1 + 1)
 	return int64(math.Ceil(valueK + (f * (float64(values[k+1]) - valueK))))
+}
+
+func isCacheHit(response core.Response) bool {
+	_, ok  := response.(*caches.CachedResponse)
+	return ok
 }

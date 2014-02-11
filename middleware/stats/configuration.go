@@ -16,7 +16,7 @@ type Persister interface {
 type Configuration struct {
 	overriding  *Stat
 	window      time.Duration
-	treshhold    time.Duration
+	treshhold   time.Duration
 	sampleSize  int64
 	sampleSizeF float64
 	routeStats  map[string]*Stat
