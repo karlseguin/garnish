@@ -44,7 +44,7 @@ func ContextBuilder() *CB {
 	return &CB{
 		requestId:  "9001!",
 		request:  new(http.Request),
-		route:      new(Route),
+		route:      &Route{Name: "home"},
 		params:     make(Params),
 		location:   "cb",
 	}
@@ -55,7 +55,7 @@ func (c *CB) SetId(id string) *CB {
 	return c
 }
 
-func (c *CB) SetRequestIn(request *http.Request) *CB {
+func (c *CB) SetRequest(request *http.Request) *CB {
 	c.request = request
 	return c
 }

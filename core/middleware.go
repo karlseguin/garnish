@@ -11,3 +11,10 @@ type MiddlewareFactory interface {
 }
 
 type Next func(context Context) Response
+
+
+func FakeNext(r Response) Next {
+	return func(context Context) Response {
+		return r
+	}
+}

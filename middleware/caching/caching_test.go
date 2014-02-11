@@ -12,26 +12,25 @@ var originalGrace = grace
 
 func TestDoesNotCacheNonGetRequests(t *testing.T) {
 	spec := gspec.New(t)
-	context := core.ContextBuilder().SetRequestIn(gspec.Request().Method("POST").Req)
-	caching, _ := Configure(core.Configure(), nil).Create(nil)
+	context := core.ContextBuilder().SetRequest(gspec.Request().Method("POST").Req)
+	caching, _ := Configure(nil).Create(core.DummyConfig)
 	res := caching.Run(context, core.FakeNext(core.Respond(nil).Status(123)))
 	spec.Expect(res.GetStatus()).ToEqual(123)
 }
 
 func TestDoesNotCachingRoutesWhichArentConfiguredForCaching(t *testing.T) {
 	spec := gspec.New(t)
-	context := core.ContextBuilder().SetRequestIn(gspec.Request().Method("GET").Req)
-	context.Route().Caching = nil
-	caching, _ := Configure(core.Configure(), nil).Create(nil)
+	context := core.ContextBuilder().SetRequest(gspec.Request().Method("GET").Req)
+	caching, _ := Configure(nil).Create(core.DummyConfig)
 	res := caching.Run(context, core.FakeNext(core.Respond(nil).Status(123)))
 	spec.Expect(res.GetStatus()).ToEqual(123)
 }
 
 func TestReturnsAFreshResult(t *testing.T) {
 	spec := gspec.New(t)
-	context := core.ContextBuilder().SetRequestIn(gspec.Request().Method("GET").Req)
-	context.Route().Caching = buildCaching("goku", "power")
-	caching, _ := Configure(core.Configure(), newFakeStorage()).Create(nil)
+	context := core.ContextBuilder().SetRequest(gspec.Request().Method("GET").Req)
+	caching, _ := Configure(newFakeStorage()).Create(core.DummyConfig)
+	buildCaching(caching, "goku", "power")
 	res := caching.Run(context, nil)
 	spec.Expect(res.GetStatus()).ToEqual(9001)
 }
@@ -40,9 +39,9 @@ func TestReturnsASlightlyStaleResult(t *testing.T) {
 	graceCalled := false
 	stubGrace(&graceCalled)
 	spec := gspec.New(t)
-	context := core.ContextBuilder().SetRequestIn(gspec.Request().Method("GET").Req)
-	context.Route().Caching = buildCaching("goku", "level")
-	caching, _ := Configure(core.Configure(), newFakeStorage()).Create(nil)
+	context := core.ContextBuilder().SetRequest(gspec.Request().Method("GET").Req)
+	caching, _ := Configure(newFakeStorage()).Create(core.DummyConfig)
+	buildCaching(caching, "goku", "level")
 	res := caching.Run(context, nil)
 	spec.Expect(res.GetStatus()).ToEqual(3)
 	spec.Expect(graceCalled).ToEqual(true)
@@ -50,9 +49,9 @@ func TestReturnsASlightlyStaleResult(t *testing.T) {
 
 func TestReturnsAStaleResultIfTheNewResultIsAnError(t *testing.T) {
 	spec := gspec.New(t)
-	context := core.ContextBuilder().SetRequestIn(gspec.Request().Method("GET").Req)
-	context.Route().Caching = buildCaching("goku", "age")
-	caching, _ := Configure(core.Configure(), newFakeStorage()).Create(nil)
+	context := core.ContextBuilder().SetRequest(gspec.Request().Method("GET").Req)
+	caching, _ := Configure(newFakeStorage()).Create(core.DummyConfig)
+	buildCaching(caching, "goku", "age")
 	now := time.Now()
 	res := caching.Run(context, core.FakeNext(core.Respond(nil).Status(500)))
 	spec.Expect(res.GetStatus()).ToEqual(20)
@@ -61,9 +60,9 @@ func TestReturnsAStaleResultIfTheNewResultIsAnError(t *testing.T) {
 
 func TestReturnsAndCachesAnUpdatedResult(t *testing.T) {
 	spec := gspec.New(t)
-	context := core.ContextBuilder().SetRequestIn(gspec.Request().Method("GET").Req)
-	context.Route().Caching = buildCaching("goku", "age")
-	caching, _ := Configure(core.Configure(), newFakeStorage()).Create(nil)
+	context := core.ContextBuilder().SetRequest(gspec.Request().Method("GET").Req)
+	caching, _ := Configure(newFakeStorage()).Create(core.DummyConfig)
+	buildCaching(caching, "goku", "age")
 	res := caching.Run(context, core.FakeNext(core.Respond([]byte("21")).Status(200).Cache(200)))
 	spec.Expect(res.GetStatus()).ToEqual(200)
 	spec.Expect(string(caching.(*Caching).cache.Get("goku", "age").GetBody())).ToEqual("21")
@@ -71,9 +70,9 @@ func TestReturnsAndCachesAnUpdatedResult(t *testing.T) {
 
 func TestReturnsAndCachesANewResult(t *testing.T) {
 	spec := gspec.New(t)
-	context := core.ContextBuilder().SetRequestIn(gspec.Request().Method("GET").Req)
-	context.Route().Caching = buildCaching("goku", "other")
-	caching, _ := Configure(core.Configure(), newFakeStorage()).Create(nil)
+	context := core.ContextBuilder().SetRequest(gspec.Request().Method("GET").Req)
+	caching, _ := Configure(newFakeStorage()).Create(core.DummyConfig)
+	buildCaching(caching, "goku", "other")
 	res := caching.Run(context, core.FakeNext(core.Respond([]byte("otherother")).Status(200).Cache(200)))
 	spec.Expect(res.GetStatus()).ToEqual(200)
 	spec.Expect(string(caching.(*Caching).cache.Get("goku", "other").GetBody())).ToEqual("otherother")
@@ -81,48 +80,48 @@ func TestReturnsAndCachesANewResult(t *testing.T) {
 
 func TestTTLReturnsTheConfiguredTimeForAGoodRespone(t *testing.T) {
 	spec := gspec.New(t)
-	duration, ok := ttl(&core.Caching{TTL: time.Second * 24}, core.Respond(nil).Status(200))
+	duration, ok := ttl(&RouteConfig{ttl: time.Second * 24}, core.Respond(nil).Status(200))
 	spec.Expect(duration).ToEqual(time.Second * 24)
 	spec.Expect(ok).ToEqual(true)
 }
 
 func TestTTLReturnsTheHeaderTimeForAGoodRespone(t *testing.T) {
 	spec := gspec.New(t)
-	duration, ok := ttl(new(core.Caching), core.Respond(nil).Status(200).Header("Cache-Control", "max-age=33"))
+	duration, ok := ttl(new(RouteConfig), core.Respond(nil).Status(200).Header("Cache-Control", "max-age=33"))
 	spec.Expect(duration).ToEqual(time.Second * 33)
 	spec.Expect(ok).ToEqual(true)
 }
 
 func TestTTLReturnsTheHeaderTimeForAGoodRespone2(t *testing.T) {
 	spec := gspec.New(t)
-	duration, ok := ttl(new(core.Caching), core.Respond(nil).Status(200).Header("Cache-Control", "private,max-age=22"))
+	duration, ok := ttl(new(RouteConfig), core.Respond(nil).Status(200).Header("Cache-Control", "private,max-age=22"))
 	spec.Expect(duration).ToEqual(time.Second * 22)
 	spec.Expect(ok).ToEqual(true)
 }
 
 func TestTTLDoesNotHandleInvalidExpiryTimes(t *testing.T) {
 	spec := gspec.New(t)
-	_, ok := ttl(new(core.Caching), core.Respond(nil).Status(200).Header("Cache-Control", "private,max-age=fail"))
+	_, ok := ttl(new(RouteConfig), core.Respond(nil).Status(200).Header("Cache-Control", "private,max-age=fail"))
 	spec.Expect(ok).ToEqual(false)
 }
 
 func TestTTLDoesNotHandleInvalidMissingExpiryTime(t *testing.T) {
 	spec := gspec.New(t)
-	_, ok := ttl(new(core.Caching), core.Respond(nil).Status(200))
+	_, ok := ttl(new(RouteConfig), core.Respond(nil).Status(200))
 	spec.Expect(ok).ToEqual(false)
 }
 
-func buildCaching(key, vary string) *core.Caching {
-	kg := func(context core.Context) (string, string) {
-		return key, vary
-	}
-	return &core.Caching{
-		KeyGenerator: kg,
+func buildCaching(caching core.Middleware, key, vary string) {
+	kg := func(context core.Context) (string, string) {return key, vary}
+	caching.(*Caching).routeConfigs["home"] = &RouteConfig{
+		keyGenerator: kg,
+		grace: time.Minute,
+		saint: time.Minute,
 	}
 }
 
 func stubGrace(flag *bool) {
-	grace = func(c *Caching, key, vary string, context core.Context, next core.Next) {
+	grace = func(c *Caching, key, vary string, context core.Context, config *RouteConfig, next core.Next) {
 		grace = originalGrace
 		*flag = true
 	}

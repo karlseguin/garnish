@@ -27,10 +27,11 @@ func TestReturnsTheDispatchedResponse(t *testing.T) {
 }
 
 func newDispatcher() *Dispatcher {
-	config := Configure(core.Configure()).Dispatch(func(action interface{}, context core.Context) core.Response {
+	config := Configure().Dispatch(func(action interface{}, context core.Context) core.Response {
 		return action.(func() core.Response)()
 	})
 	config.Action("nil", func() core.Response { return nil })
 	config.Action("ok", func() core.Response { return core.Respond(nil).Status(200) })
-	return &Dispatcher{config}
+	d, _ := config.Create(core.DummyConfig)
+	return d.(*Dispatcher)
 }

@@ -1,5 +1,9 @@
 package core
 
+import (
+	"github.com/karlseguin/gofake"
+)
+
 // Route parameters
 type Params map[string]string
 
@@ -22,4 +26,28 @@ type Route struct {
 
 func NewRoute(name string) *Route {
 	return &Route{Name: name}
+}
+
+
+type FakeRouter struct {
+  gofake.Fake
+}
+
+func newFakeRouter() *FakeRouter {
+  return &FakeRouter{gofake.New()}
+}
+
+func (f *FakeRouter) Route(context Context) (*Route, Params, Response) {
+  f.Called(context)
+  return nil, nil, nil
+}
+
+func (f *FakeRouter) Add(name, method, path string) RouteConfig {
+  f.Called(name, method, path)
+  return nil
+}
+
+func (f *FakeRouter) Routes() map[string]*Route {
+  f.Called()
+  return nil
 }
