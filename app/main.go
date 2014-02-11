@@ -3,8 +3,8 @@ package main
 
 import (
 	"github.com/karlseguin/garnish"
+	"github.com/karlseguin/garnish/caches/ccache"
 	"github.com/karlseguin/garnish/core"
-	// "github.com/karlseguin/garnish/caches/ccache"
 	// "github.com/karlseguin/garnish/middleware/caching"
 	// "github.com/karlseguin/garnish/middleware/stats"
 	// "github.com/karlseguin/garnish/middleware/upstream"
@@ -16,18 +16,18 @@ import (
 )
 
 func main() {
-	stats, upstream := garnish.Stats, garnish.Upstream
-	config := garnish.Configure().LogInfo().Middleware(stats, upstream)
+	stats, caching, upstream := garnish.Stats, garnish.Caching(ccache.New(ccache.Configure())), garnish.Upstream
+	config := garnish.Configure().LogInfo().Middleware(stats, caching, upstream)
 	router := config.NewRouter()
 
-	stats.Percentiles(50, 75, 95)//.Treshold(time.Milliseconds * 25)
+	stats.Percentiles(50, 75, 95) //.Treshold(time.Milliseconds * 25)
 
 	// caching.Generator(cacheKeyGenerator).TTL(time.Seconds * 5)
 
 	upstream.DnsRefresh(time.Minute)
 	upstream.Add("openmymind", "http", "openmymind.net")
 
-	router.Add("root", "GET", "/").Constrain("type", "music").Override(func() {
+	router.Add("root", "GET", "/").Override(func() {
 		upstream.Is("openmymind")
 		stats.Percentiles(50)
 	})

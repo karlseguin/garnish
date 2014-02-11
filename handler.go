@@ -73,17 +73,13 @@ func (h *Handler) reply(context core.Context, response core.Response, output htt
 		if fatal, ok := response.(*core.FatalResponse); ok {
 			h.logger.Errorf(context, "%q - %v", context.RequestIn().URL, fatal.Err)
 		} else {
-			LogError(h.logger, context, status, body)
+			h.logger.Errorf(context, "%q %d %v", context.RequestIn().URL, status, string(body))
 		}
 	}
 
 	outHeader["Content-Length"] = []string{strconv.Itoa(len(body))}
 	output.WriteHeader(status)
 	output.Write(body)
-}
-
-func LogError(logger core.Logger, context core.Context, status int, body []byte) {
-	logger.Errorf(context, "%q %d %v", context.RequestIn().URL, status, string(body))
 }
 
 type middlewareWrapper struct {

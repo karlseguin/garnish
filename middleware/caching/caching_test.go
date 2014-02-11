@@ -1,8 +1,8 @@
 package caching
 
 import (
-	"github.com/karlseguin/garnish/core"
 	"github.com/karlseguin/garnish/caches"
+	"github.com/karlseguin/garnish/core"
 	"github.com/karlseguin/gspec"
 	"testing"
 	"time"

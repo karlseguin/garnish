@@ -29,23 +29,23 @@ type RouteMap struct {
 type Segments []*Segment
 
 type Segment struct {
-	name string
+	name          string
 	parameterName string
 }
 
 type Router struct {
-	logger   core.Logger
-	fallback *core.Route
-	routes   map[string]*RouteMap
-	routeLookup   map[string]*core.Route
+	logger      core.Logger
+	fallback    *core.Route
+	routes      map[string]*RouteMap
+	routeLookup map[string]*core.Route
 	middlewares []core.MiddlewareFactory
 }
 
 func New(logger core.Logger, middlewares []core.MiddlewareFactory) *Router {
 	return &Router{
-		logger: logger,
+		logger:      logger,
 		routeLookup: make(map[string]*core.Route),
-		routes: make(map[string]*RouteMap),
+		routes:      make(map[string]*RouteMap),
 		middlewares: middlewares,
 	}
 }
@@ -171,9 +171,9 @@ func (r *Router) add(root *RouteMap, route *core.Route, segments Segments) {
 }
 
 type RouteConfig struct {
-	router *Router
-	route *core.Route
-	methods []string
+	router   *Router
+	route    *core.Route
+	methods  []string
 	segments Segments
 }
 

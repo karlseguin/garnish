@@ -2,8 +2,8 @@
 package caching
 
 import (
-	"github.com/karlseguin/garnish/core"
 	"github.com/karlseguin/garnish/caches"
+	"github.com/karlseguin/garnish/core"
 	"net/http"
 	"strconv"
 	"strings"
@@ -13,10 +13,10 @@ import (
 
 type Caching struct {
 	routeConfigs map[string]*RouteConfig
-	logger core.Logger
-	cache          caches.Cache
-	lock        sync.RWMutex
-	downloading map[string]time.Time
+	logger       core.Logger
+	cache        caches.Cache
+	lock         sync.RWMutex
+	downloading  map[string]time.Time
 }
 
 func (c *Caching) Name() string {
@@ -24,8 +24,8 @@ func (c *Caching) Name() string {
 }
 
 var (
-	grace = func(c *Caching, key, vary string, context core.Context, next core.Next) {
-		go c.grace(key, vary, context, next)
+	grace = func(c *Caching, key, vary string, context core.Context, config *RouteConfig, next core.Next) {
+		go c.grace(key, vary, context, config, next)
 	}
 	purgeHitResponse  = core.Respond([]byte("")).Status(200)
 	purgeMissResponse = core.Respond([]byte("")).Status(204)
@@ -61,7 +61,7 @@ func (c *Caching) get(context core.Context, config *RouteConfig, request *http.R
 		}
 		if cached.Expires.Add(config.grace).After(now) {
 			c.logger.Info(context, "grace")
-			grace(c, key, vary, context, next)
+			grace(c, key, vary, context, config, next)
 			return cached
 		}
 	}
@@ -69,17 +69,16 @@ func (c *Caching) get(context core.Context, config *RouteConfig, request *http.R
 	c.logger.Info(context, "miss")
 	response := next(context)
 	if response.GetStatus() >= 500 && config.saint.Nanoseconds() > 0 {
-		// log this here since the final handler will never see this 500 error
-		core.LogError(c.logger, context, response.GetStatus(), response.GetBody())
+		c.logger.Errorf(context, "%q %d %v", context.RequestIn().URL, response.GetStatus(), string(response.GetBody()))
 		c.logger.Info(context, "saint")
 		cached.Expires = time.Now().Add(config.saint)
 		return cached
 	}
-	return c.set(key, vary, context, response)
+	return c.set(key, vary, context, config, response)
 }
 
-func (c *Caching) set(key, vary string, context core.Context, response core.Response) core.Response {
-	ttl, ok := ttl(context.Route().Caching, response)
+func (c *Caching) set(key, vary string, context core.Context, config *RouteConfig, response core.Response) core.Response {
+	ttl, ok := ttl(config, response)
 	if ok == false {
 		c.logger.Error(context, "configured to cache but no expiry was given")
 		return response
@@ -92,10 +91,10 @@ func (c *Caching) set(key, vary string, context core.Context, response core.Resp
 	return cr
 }
 
-func ttl(caching *core.Caching, response core.Response) (time.Duration, bool) {
+func ttl(config *RouteConfig, response core.Response) (time.Duration, bool) {
 	status := response.GetStatus()
-	if status >= 200 && status <= 400 && caching.TTL.Nanoseconds() > 0 {
-		return caching.TTL, true
+	if status >= 200 && status <= 400 && config.ttl.Nanoseconds() > 0 {
+		return config.ttl, true
 	}
 
 	for _, value := range response.GetHeader()["Cache-Control"] {
@@ -110,7 +109,7 @@ func ttl(caching *core.Caching, response core.Response) (time.Duration, bool) {
 	return time.Second, false
 }
 
-func (c *Caching) grace(key, vary string, context core.Context, next core.Next) {
+func (c *Caching) grace(key, vary string, context core.Context, config *RouteConfig, next core.Next) {
 	downloadKey := key + vary
 	if c.isDownloading(downloadKey) {
 		return
@@ -123,9 +122,9 @@ func (c *Caching) grace(key, vary string, context core.Context, next core.Next) 
 	response := next(context)
 	if response.GetStatus() < 500 {
 		c.logger.Infof(context, "grace %d", response.GetStatus())
-		c.set(key, vary, context, response)
+		c.set(key, vary, context, config, response)
 	} else {
-		core.LogError(c.logger, context, response.GetStatus(), response.GetBody())
+		c.logger.Errorf(context, "%q %d %v", context.RequestIn().URL, response.GetStatus(), string(response.GetBody()))
 	}
 }
 
@@ -152,12 +151,12 @@ func (c *Caching) unlockDownload(key string) {
 	c.lock.Unlock()
 }
 
-func (c *Caching) purge(context core.Context, caching *core.Caching, request *http.Request) core.Response {
-	if c.authorizePurge == nil || c.authorizePurge(context) == false {
+func (c *Caching) purge(context core.Context, config *RouteConfig, request *http.Request) core.Response {
+	if config.authorizePurge == nil || config.authorizePurge(context) == false {
 		c.logger.Info(context, "unauthorized purge")
 		return core.Unauthorized
 	}
-	key, _ := caching.KeyGenerator(context)
+	key, _ := config.keyGenerator(context)
 	if c.cache.Delete(key) {
 		c.logger.Info(context, "purge hit")
 		return purgeHitResponse

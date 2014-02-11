@@ -36,7 +36,6 @@ type Response interface {
 	Detach() Response
 }
 
-
 var (
 	// A pre-built response for a 401
 	Unauthorized = Respond([]byte("unauthorized")).Status(401)

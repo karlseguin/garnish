@@ -28,7 +28,7 @@ func Configure() *Configuration {
 		window:      time.Second * 5,
 		sampleSize:  50,
 		sampleSizeF: float64(50),
-		routeStats: make(map[string]*Stat),
+		routeStats:  make(map[string]*Stat),
 		percentiles: map[string]float64{"50p": 0.5, "75p": 0.75, "95p": 0.95},
 		persister:   &FilePersister{"./stats.json"},
 	}
@@ -48,15 +48,15 @@ func (c *Configuration) Create(config core.Configuration) (core.Middleware, erro
 	}
 
 	worker = &Worker{
-		logger: config.Logger(),
-		window: c.window,
-		persister: c.persister,
+		logger:     config.Logger(),
+		window:     c.window,
+		persister:  c.persister,
 		routeStats: c.routeStats,
 	}
 	go worker.start()
 	return &Stats{
 		routeStats: c.routeStats,
-		logger: config.Logger(),
+		logger:     config.Logger(),
 	}, nil
 
 }
@@ -87,7 +87,7 @@ func (c *Configuration) SampleSize(size int) *Configuration {
 
 // [1 minute]
 func (c *Configuration) Window(window time.Duration) *Configuration {
-	if c.overriding != nil  {
+	if c.overriding != nil {
 		panic("stats window can only be configured globally")
 	}
 	c.window = window

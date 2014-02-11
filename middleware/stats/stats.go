@@ -6,7 +6,7 @@ import (
 )
 
 type Stats struct {
-	logger core.Logger
+	logger     core.Logger
 	routeStats map[string]*Stat
 }
 
