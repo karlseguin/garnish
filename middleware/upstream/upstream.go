@@ -84,7 +84,6 @@ func (u *Upstream) prepareRequest(context core.Context, server *Server) *http.Re
 	return out
 }
 
-
 func createRequest(id string) *http.Request {
 	return &http.Request{
 		Close:      false,

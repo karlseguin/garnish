@@ -33,20 +33,20 @@ type Context interface {
 // with a context from outside of the main package easy
 // The builder itself satifies the Context interface
 type CB struct {
-	requestId  string
-	request  *http.Request
-	route      *Route
-	params     Params
-	location   string
+	requestId string
+	request   *http.Request
+	route     *Route
+	params    Params
+	location  string
 }
 
 func ContextBuilder() *CB {
 	return &CB{
-		requestId:  "9001!",
-		request:  new(http.Request),
-		route:      &Route{Name: "home"},
-		params:     make(Params),
-		location:   "cb",
+		requestId: "9001!",
+		request:   new(http.Request),
+		route:     &Route{Name: "home"},
+		params:    make(Params),
+		location:  "cb",
 	}
 }
 

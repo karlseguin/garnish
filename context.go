@@ -7,21 +7,21 @@ import (
 )
 
 type context struct {
-	requestId  string
-	request  *http.Request
-	route      *core.Route
-	logger     core.Logger
-	params     core.Params
-	location   string
+	requestId string
+	request   *http.Request
+	route     *core.Route
+	logger    core.Logger
+	params    core.Params
+	location  string
 }
 
 func newContext(req *http.Request, logger core.Logger) *context {
 	id := nd.Guidv4String()
 	return &context{
-		request:  req,
-		requestId:  id,
-		logger:     logger,
-		location:   "handler",
+		request:   req,
+		requestId: id,
+		logger:    logger,
+		location:  "handler",
 	}
 }
 

@@ -1,11 +1,9 @@
 package core
 
-
 type Configuration interface {
 	Router() Router
 	Logger() Logger
 }
-
 
 var DummyConfig = &dummyConfiguration{newFakeLogger(), newFakeRouter()}
 
@@ -21,4 +19,3 @@ func (c *dummyConfiguration) Logger() Logger {
 func (c *dummyConfiguration) Router() Router {
 	return c.router
 }
-

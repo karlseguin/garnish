@@ -23,25 +23,25 @@ type Logger interface {
 }
 
 type FakeLogger struct {
-  gofake.Fake
+	gofake.Fake
 }
 
 func newFakeLogger() *FakeLogger {
-  return &FakeLogger{gofake.New()}
+	return &FakeLogger{gofake.New()}
 }
 
 func (f *FakeLogger) Infof(context Context, format string, v ...interface{}) {
-  f.Called(context, format, v)
+	f.Called(context, format, v)
 }
 
-func (f *FakeLogger) Info(context Context,v ...interface{}) {
-  f.Called(context, v)
+func (f *FakeLogger) Info(context Context, v ...interface{}) {
+	f.Called(context, v)
 }
 
 func (f *FakeLogger) Errorf(context Context, format string, v ...interface{}) {
-  f.Called(context, format, v)
+	f.Called(context, format, v)
 }
 
 func (f *FakeLogger) Error(context Context, v ...interface{}) {
-  f.Called(context, v)
+	f.Called(context, v)
 }

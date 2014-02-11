@@ -9,8 +9,8 @@ type Dispatch func(action interface{}, context core.Context) core.Response
 // Configuration for upstreams middleware
 type Configuration struct {
 	overriding string
-	actions  map[string]interface{}
-	dispatch Dispatch
+	actions    map[string]interface{}
+	dispatch   Dispatch
 }
 
 func Configure() *Configuration {
@@ -22,9 +22,9 @@ func Configure() *Configuration {
 // Create the middleware from the configuration
 func (c *Configuration) Create(config core.Configuration) (core.Middleware, error) {
 	return &Dispatcher{
-		actions: c.actions,
+		actions:  c.actions,
 		dispatch: c.dispatch,
-		logger: config.Logger(),
+		logger:   config.Logger(),
 	}, nil
 }
 

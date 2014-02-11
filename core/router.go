@@ -28,26 +28,25 @@ func NewRoute(name string) *Route {
 	return &Route{Name: name}
 }
 
-
 type FakeRouter struct {
-  gofake.Fake
+	gofake.Fake
 }
 
 func newFakeRouter() *FakeRouter {
-  return &FakeRouter{gofake.New()}
+	return &FakeRouter{gofake.New()}
 }
 
 func (f *FakeRouter) Route(context Context) (*Route, Params, Response) {
-  f.Called(context)
-  return nil, nil, nil
+	f.Called(context)
+	return nil, nil, nil
 }
 
 func (f *FakeRouter) Add(name, method, path string) RouteConfig {
-  f.Called(name, method, path)
-  return nil
+	f.Called(name, method, path)
+	return nil
 }
 
 func (f *FakeRouter) Routes() map[string]*Route {
-  f.Called()
-  return nil
+	f.Called()
+	return nil
 }

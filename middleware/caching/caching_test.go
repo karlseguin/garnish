@@ -112,11 +112,11 @@ func TestTTLDoesNotHandleInvalidMissingExpiryTime(t *testing.T) {
 }
 
 func buildCaching(caching core.Middleware, key, vary string) {
-	kg := func(context core.Context) (string, string) {return key, vary}
+	kg := func(context core.Context) (string, string) { return key, vary }
 	caching.(*Caching).routeConfigs["home"] = &RouteConfig{
 		keyGenerator: kg,
-		grace: time.Minute,
-		saint: time.Minute,
+		grace:        time.Minute,
+		saint:        time.Minute,
 	}
 }
 

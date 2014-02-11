@@ -215,8 +215,13 @@ func segment(path string) Segments {
 	if path[0] == '/' {
 		path = path[1:]
 	}
+	if path[len(path)-1] == '/' {
+		path = path[0 : len(path)-1]
+	}
+
 	parts := strings.Split(path, "/")
 	segments := make(Segments, len(parts))
+
 	for index, part := range parts {
 		segment := new(Segment)
 		if part[0] == ':' {

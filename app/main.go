@@ -68,11 +68,9 @@ func main() {
 	g.Start(config)
 }
 
-
 func dp(action interface{}, base core.Context) core.Response {
 	return action.(func(base core.Context) core.Response)(base)
 }
-
 
 func hah(context core.Context) core.Response {
 	println("aa")

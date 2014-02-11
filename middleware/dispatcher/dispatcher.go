@@ -6,7 +6,7 @@ import (
 
 type Dispatcher struct {
 	dispatch Dispatch
-	logger core.Logger
+	logger   core.Logger
 	actions  map[string]interface{}
 }
 

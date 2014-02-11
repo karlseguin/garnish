@@ -1,8 +1,9 @@
-package core
+package garnish
 
 import (
 	"bytes"
 	"fmt"
+	"github.com/karlseguin/garnish/core"
 	"github.com/karlseguin/gspec"
 	"log"
 	"testing"
@@ -25,7 +26,7 @@ func TestLoggerLogsInfoMessagesWhenInfoIsOn(t *testing.T) {
 func TestLoggerIncludesTheRequestIdForInfoMessage(t *testing.T) {
 	spec := gspec.New(t)
 	l, buffer := testLogger(true)
-	l.Infof(ContextBuilder().SetId("4994"), "info msg")
+	l.Infof(core.ContextBuilder().SetId("4994"), "info msg")
 	spec.Expect(buffer.String()).ToEqual("[4994] [cb] info msg\n")
 }
 
@@ -46,11 +47,11 @@ func TestLoggerLogsErrorsWhenInfoIsOn(t *testing.T) {
 func TestLoggerIncludesTheRequestIdForErrorMessage(t *testing.T) {
 	spec := gspec.New(t)
 	l, buffer := testLogger(true)
-	l.Errorf(ContextBuilder().SetId("8664"), "error msg")
+	l.Errorf(core.ContextBuilder().SetId("8664"), "error msg")
 	spec.Expect(buffer.String()).ToEqual("[8664] [cb] error msg\n")
 }
 
-func testLogger(info bool) (Logger, *bytes.Buffer) {
+func testLogger(info bool) (core.Logger, *bytes.Buffer) {
 	buffer := bytes.NewBuffer(make([]byte, 0, 1024))
 	return &logger{info, log.New(buffer, "", 0)}, buffer
 }
@@ -64,19 +65,19 @@ type FakeLogMessage struct {
 	message string
 }
 
-func (l *FakeLogger) Infof(context Context, format string, v ...interface{}) {
+func (l *FakeLogger) Infof(context core.Context, format string, v ...interface{}) {
 	l.printf(true, format, v...)
 }
 
-func (l *FakeLogger) Info(context Context, v ...interface{}) {
+func (l *FakeLogger) Info(context core.Context, v ...interface{}) {
 	l.print(true, v...)
 }
 
-func (l *FakeLogger) Errorf(context Context, format string, v ...interface{}) {
+func (l *FakeLogger) Errorf(context core.Context, format string, v ...interface{}) {
 	l.printf(false, format, v...)
 }
 
-func (l *FakeLogger) Error(context Context, v ...interface{}) {
+func (l *FakeLogger) Error(context core.Context, v ...interface{}) {
 	l.print(false, v...)
 }
 
