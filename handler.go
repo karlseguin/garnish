@@ -71,9 +71,9 @@ func (h *Handler) reply(context core.Context, response core.Response, output htt
 
 	if status >= 500 {
 		if fatal, ok := response.(*core.FatalResponse); ok {
-			h.logger.Errorf(context, "%q - %v", context.RequestIn().URL, fatal.Err)
+			h.logger.Errorf(context, "%q - %v", context.Request().URL, fatal.Err)
 		} else {
-			h.logger.Errorf(context, "%q %d %v", context.RequestIn().URL, status, string(body))
+			h.logger.Errorf(context, "%q %d %v", context.Request().URL, status, string(body))
 		}
 	}
 

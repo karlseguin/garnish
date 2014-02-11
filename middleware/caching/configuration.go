@@ -158,7 +158,7 @@ func newRouteConfig(c *Configuration) *RouteConfig {
 }
 
 func UrlKeyGenerator(context core.Context) (string, string) {
-	url := context.RequestIn().URL
+	url := context.Request().URL
 	path := url.Path
 	secondary := url.RawQuery
 	if extensionIndex := strings.LastIndex(path, "."); extensionIndex != -1 {

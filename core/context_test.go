@@ -24,5 +24,5 @@ func TestNewContextSetsUpstreamsRequestIdHeader(t *testing.T) {
 func TestNewContextReferencesIncomingRequest(t *testing.T) {
 	spec := gspec.New(t)
 	context := newContext(&http.Request{Method: "TEST"}, nil)
-	spec.Expect(context.RequestIn().Method).ToEqual("TEST")
+	spec.Expect(context.Request().Method).ToEqual("TEST")
 }

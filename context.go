@@ -8,8 +8,7 @@ import (
 
 type context struct {
 	requestId  string
-	requestIn  *http.Request
-	requestOut *http.Request
+	request  *http.Request
 	route      *core.Route
 	logger     core.Logger
 	params     core.Params
@@ -18,17 +17,9 @@ type context struct {
 
 func newContext(req *http.Request, logger core.Logger) *context {
 	id := nd.Guidv4String()
-	requestOut := &http.Request{
-		Close:      false,
-		Proto:      "HTTP/1.1",
-		ProtoMajor: 1,
-		ProtoMinor: 1,
-		Header:     http.Header{"X-Request-Id": []string{id}},
-	}
 	return &context{
-		requestIn:  req,
+		request:  req,
 		requestId:  id,
-		requestOut: requestOut,
 		logger:     logger,
 		location:   "handler",
 	}
@@ -38,12 +29,8 @@ func (c *context) RequestId() string {
 	return c.requestId
 }
 
-func (c *context) RequestIn() *http.Request {
-	return c.requestIn
-}
-
-func (c *context) RequestOut() *http.Request {
-	return c.requestOut
+func (c *context) Request() *http.Request {
+	return c.request
 }
 
 func (c *context) Route() *core.Route {

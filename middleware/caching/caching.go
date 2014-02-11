@@ -38,7 +38,7 @@ func (c *Caching) Run(context core.Context, next core.Next) core.Response {
 		return next(context)
 	}
 
-	request := context.RequestIn()
+	request := context.Request()
 	switch request.Method {
 	case "GET":
 		return c.get(context, config, request, next)
@@ -69,7 +69,10 @@ func (c *Caching) get(context core.Context, config *RouteConfig, request *http.R
 	c.logger.Info(context, "miss")
 	response := next(context)
 	if response.GetStatus() >= 500 && config.saint.Nanoseconds() > 0 {
-		c.logger.Errorf(context, "%q %d %v", context.RequestIn().URL, response.GetStatus(), string(response.GetBody()))
+		if cached == nil {
+			return response
+		}
+		c.logger.Errorf(context, "%q %d %v", context.Request().URL, response.GetStatus(), string(response.GetBody()))
 		c.logger.Info(context, "saint")
 		cached.Expires = time.Now().Add(config.saint)
 		return cached
@@ -124,7 +127,7 @@ func (c *Caching) grace(key, vary string, context core.Context, config *RouteCon
 		c.logger.Infof(context, "grace %d", response.GetStatus())
 		c.set(key, vary, context, config, response)
 	} else {
-		c.logger.Errorf(context, "%q %d %v", context.RequestIn().URL, response.GetStatus(), string(response.GetBody()))
+		c.logger.Errorf(context, "%q %d %v", context.Request().URL, response.GetStatus(), string(response.GetBody()))
 	}
 }
 

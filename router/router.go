@@ -55,7 +55,7 @@ func (r *Router) Routes() map[string]*core.Route {
 }
 
 func (r *Router) Route(context core.Context) (*core.Route, core.Params, core.Response) {
-	request := context.RequestIn()
+	request := context.Request()
 
 	rm, ok := r.routes[request.Method]
 	if ok == false {

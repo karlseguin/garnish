@@ -29,6 +29,7 @@ func main() {
 	upstream.Add("openmymind", "http", "openmymind.net")
 
 	router.Add("root", "GET", "/").Override(func() {
+		upstream.Is("openmymind")
 		stats.Percentiles(50)
 	})
 

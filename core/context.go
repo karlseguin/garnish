@@ -10,10 +10,7 @@ type Context interface {
 	RequestId() string
 
 	// The incoming http.Request
-	RequestIn() *http.Request
-
-	// The outgoing http.Request
-	RequestOut() *http.Request
+	Request() *http.Request
 
 	// Get the route parameters
 	Params() Params
@@ -37,8 +34,7 @@ type Context interface {
 // The builder itself satifies the Context interface
 type CB struct {
 	requestId  string
-	requestIn  *http.Request
-	requestOut *http.Request
+	request  *http.Request
 	route      *Route
 	params     Params
 	location   string
@@ -47,8 +43,7 @@ type CB struct {
 func ContextBuilder() *CB {
 	return &CB{
 		requestId:  "9001!",
-		requestIn:  new(http.Request),
-		requestOut: new(http.Request),
+		request:  new(http.Request),
 		route:      new(Route),
 		params:     make(Params),
 		location:   "cb",
@@ -61,7 +56,7 @@ func (c *CB) SetId(id string) *CB {
 }
 
 func (c *CB) SetRequestIn(request *http.Request) *CB {
-	c.requestIn = request
+	c.request = request
 	return c
 }
 func (c *CB) SetRoute(route *Route) *CB {
@@ -73,12 +68,8 @@ func (c *CB) RequestId() string {
 	return c.requestId
 }
 
-func (c *CB) RequestIn() *http.Request {
-	return c.requestIn
-}
-
-func (c *CB) RequestOut() *http.Request {
-	return c.requestOut
+func (c *CB) Request() *http.Request {
+	return c.request
 }
 
 func (c *CB) Route() *Route {

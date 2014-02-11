@@ -59,8 +59,8 @@ func (u *Upstream) Run(context core.Context, next core.Next) core.Response {
 }
 
 func (u *Upstream) prepareRequest(context core.Context, server *Server) *http.Request {
-	out := context.RequestOut()
-	in := context.RequestIn()
+	in := context.Request()
+	out := createRequest(context.RequestId())
 	if len(out.Host) == 0 {
 		out.Host = server.Host
 	}
@@ -82,4 +82,15 @@ func (u *Upstream) prepareRequest(context core.Context, server *Server) *http.Re
 		}
 	}
 	return out
+}
+
+
+func createRequest(id string) *http.Request {
+	return &http.Request{
+		Close:      false,
+		Proto:      "HTTP/1.1",
+		ProtoMajor: 1,
+		ProtoMinor: 1,
+		Header:     http.Header{"X-Request-Id": []string{id}},
+	}
 }
