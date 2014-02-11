@@ -16,19 +16,19 @@ import (
 )
 
 func main() {
-	stats, caching, upstream := garnish.Stats, garnish.Caching(ccache.New(ccache.Configure())), garnish.Upstream
-	config := garnish.Configure().LogInfo().Middleware(stats, caching, upstream)
+	stats, caching, dispatch, upstream := garnish.Stats, garnish.Caching(ccache.New(ccache.Configure())), garnish.Dispatcher, garnish.Upstream
+	config := garnish.Configure().LogInfo().Middleware(stats, caching, dispatch, upstream)
 	router := config.NewRouter()
 
 	stats.Percentiles(50, 75, 95) //.Treshold(time.Milliseconds * 25)
+	caching.TTL(time.Second * 5)
 
-	// caching.Generator(cacheKeyGenerator).TTL(time.Seconds * 5)
+	dispatch.Dispatch(dp)
 
 	upstream.DnsRefresh(time.Minute)
 	upstream.Add("openmymind", "http", "openmymind.net")
 
 	router.Add("root", "GET", "/").Override(func() {
-		upstream.Is("openmymind")
 		stats.Percentiles(50)
 	})
 
@@ -67,6 +67,13 @@ func main() {
 	g.Start(config)
 }
 
-func cacheKeyGenerator(context core.Context) (string, string) {
-	return "/", ""
+
+func dp(action interface{}, base core.Context) core.Response {
+	return action.(func(base core.Context) core.Response)(base)
+}
+
+
+func hah(context core.Context) core.Response {
+	println("aa")
+	return garnish.NotFound
 }

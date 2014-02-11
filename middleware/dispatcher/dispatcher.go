@@ -1,18 +1,20 @@
 package dispatcher
 
 import (
-	"github.com/karlseguin/garnish"
+	"github.com/karlseguin/garnish/core"
 )
 
 type Dispatcher struct {
-	*Configuration
+	dispatch Dispatch
+	logger core.Logger
+	actions  map[string]interface{}
 }
 
 func (d *Dispatcher) Name() string {
 	return "dispatcher"
 }
 
-func (d *Dispatcher) Run(context garnish.Context, next garnish.Next) garnish.Response {
+func (d *Dispatcher) Run(context core.Context, next core.Next) core.Response {
 	route := context.Route()
 	action, exists := d.actions[route.Name]
 	if exists == false {
