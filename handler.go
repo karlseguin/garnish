@@ -21,7 +21,6 @@ func newHandler(config *Configuration) (*Handler, error) {
 		router: config.router,
 		logger: config.logger,
 	}
-	config.router.Compile()
 	prev, err := newMiddlewareWrapper(config, 0)
 	if err != nil {
 		return nil, err

@@ -26,32 +26,32 @@ type RouteMap struct {
 	routes        map[string]*RouteMap
 }
 
-type RouteInfo struct {
-	method      string
-	path        string
-	route       *core.Route
-	constraints map[string]Contraints
+type Segments []*Segment
+
+type Segment struct {
+	name string
+	parameterName string
 }
 
 type Router struct {
 	logger   core.Logger
-	info     []*RouteInfo
 	fallback *core.Route
 	routes   map[string]*RouteMap
-	lookup   map[string]*core.Route
+	routeLookup   map[string]*core.Route
 	middlewares []core.MiddlewareFactory
 }
 
 func New(logger core.Logger, middlewares []core.MiddlewareFactory) *Router {
 	return &Router{
 		logger: logger,
-		info:   make([]*RouteInfo, 0, 16),
+		routeLookup: make(map[string]*core.Route),
+		routes: make(map[string]*RouteMap),
 		middlewares: middlewares,
 	}
 }
 
 func (r *Router) Routes() map[string]*core.Route {
-	return r.lookup
+	return r.routeLookup
 }
 
 func (r *Router) Route(context core.Context) (*core.Route, core.Params, core.Response) {
@@ -88,7 +88,7 @@ func (r *Router) Route(context core.Context) (*core.Route, core.Params, core.Res
 		} else if node, exists := rm.routes["*"]; exists {
 			if node.constraints != nil {
 				if _, constrained := node.constraints[part]; constrained == false {
-					continue
+					return nil, nil, nil
 				}
 			}
 			if node.route != nil {
@@ -112,109 +112,120 @@ func (r *Router) Route(context core.Context) (*core.Route, core.Params, core.Res
 // The path can include named captures: /product/:id
 
 // This method is not thread safe. It is expected
-func (r *Router) Add(name, method, path string, override ...interface{}) {
-	ri := &RouteInfo{
-		method:      method,
-		path:        path,
-		route:       core.NewRoute(name),
-		constraints: make(map[string]Contraints),
+func (r *Router) Add(name, method, path string) core.RouteConfig {
+	if _, exists := r.routeLookup[name]; exists {
+		panic(fmt.Sprintf("Route names must be unique, %q used twice", name))
 	}
-	if len(override) == 1 {
-		for _, middleware := range r.middlewares {
-			middleware.OverrideFor(ri.route)
-		}
-		override[0].(func())()
+
+	route := core.NewRoute(name)
+	r.routeLookup[name] = route
+
+	config := &RouteConfig{router: r, route: route}
+	if name == "fallback" {
+		r.fallback = route
+		return nil
 	}
-	r.info = append(r.info, ri)
-}
 
-func (r *Router) Compile() {
-	routeNames := make(map[string]struct{})
-	r.routes = make(map[string]*RouteMap, len(r.info))
-	r.lookup = make(map[string]*core.Route, len(r.info))
-
-	for _, ri := range r.info {
-		routeName := ri.route.Name
-		r.lookup[routeName] = ri.route
-		if _, exists := routeNames[routeName]; exists {
-			panic(fmt.Sprintf("Route names must be unique, %q used twice", routeName))
-		} else if routeName == "fallback" {
-			r.fallback = ri.route
-		} else {
-			routeNames[routeName] = struct{}{}
-		}
-		r.addInfo(ri)
-	}
-	r.info = nil
-}
-
-func (r *Router) addInfo(info *RouteInfo) {
-	methods := strings.Split(strings.Replace(info.method, "*", "GET,PUT,POST,DELETE,PATCH", -1), ",")
+	segments := segment(path)
+	methods := strings.Split(strings.Replace(strings.Replace(method, "GET", "GET,PURGE", -1), "*", "GET,PUT,POST,DELETE,PATCH,PURGE", -1), ",")
 	for _, method := range methods {
 		method = strings.ToUpper(strings.TrimSpace(method))
-		if method == "PURGE" {
-			continue //automatically added on a GET
-		}
-		rm, exists := r.routes[method]
+		root, exists := r.routes[method]
 		if exists == false {
-			rm = &RouteMap{routes: make(map[string]*RouteMap)}
-			r.routes[method] = rm
+			root = &RouteMap{routes: make(map[string]*RouteMap)}
+			r.routes[method] = root
 		}
-		r.add(rm, info)
-
-		if method == "GET" {
-			rm, exists := r.routes["PURGE"]
-			if exists == false {
-				rm = &RouteMap{routes: make(map[string]*RouteMap)}
-				r.routes["PURGE"] = rm
+		if segments == nil {
+			if root.route != nil {
+				panic(fmt.Sprintf("Multiple root routes are being defined for %q", method))
 			}
-			r.add(rm, info)
+			root.route = route
+		} else {
+			r.add(root, route, segments)
 		}
+	}
+	config.methods = methods
+	config.segments = segments
+	return config
+}
+
+func (r *Router) add(root *RouteMap, route *core.Route, segments Segments) {
+	node := root
+	var added bool
+	for _, segment := range segments {
+		name := segment.name
+		leaf, exists := node.routes[name]
+		if exists == false {
+			added = true
+			leaf = &RouteMap{routes: make(map[string]*RouteMap)}
+			node.routes[name] = leaf
+		}
+		leaf.parameterName = segment.parameterName
+		leaf.route = route
+		node = leaf
+	}
+
+	if added == false {
+		panic(fmt.Sprintf("%q's path appears to duplicate another route", route.Name))
 	}
 }
 
-func (r *Router) add(root *RouteMap, info *RouteInfo) {
-	path := info.path
-	route := info.route
-	if len(path) == 0 {
-		root.route = route
-		return
-	}
+type RouteConfig struct {
+	router *Router
+	route *core.Route
+	methods []string
+	segments Segments
+}
 
-	if path[len(path)-1] == '/' {
-		path = path[0 : len(path)-1]
+func (r *RouteConfig) Constrain(parameterName string, values ...string) core.RouteConfig {
+	for _, method := range r.methods {
+		root := r.router.routes[method]
+		r.applyConstraint(root, r.segments, parameterName, values...)
 	}
+	return r
+}
 
-	if len(path) > 0 && path[0] == '/' {
+func (r *RouteConfig) Override(override func()) core.RouteConfig {
+	for _, middleware := range r.router.middlewares {
+		middleware.OverrideFor(r.route)
+	}
+	override()
+	return r
+}
+
+func (r *RouteConfig) applyConstraint(root *RouteMap, segments Segments, parameterName string, values ...string) {
+	node := root
+	for _, segment := range segments {
+		node = node.routes[segment.name]
+		if node.parameterName == parameterName {
+			node.constraints = make(Contraints)
+			for _, value := range values {
+				node.constraints[value] = struct{}{}
+			}
+			return
+		}
+	}
+	panic(fmt.Sprintf("Constraint to parameter %q on route %q does not appear to match a valid parameter", parameterName, r.route.Name))
+}
+
+func segment(path string) Segments {
+	if len(path) == 0 || path == "/" {
+		return nil //todo
+	}
+	if path[0] == '/' {
 		path = path[1:]
 	}
-
-	if len(path) == 0 {
-		root.route = route
-		return
-	}
-
 	parts := strings.Split(path, "/")
-	var leaf *RouteMap
-	ok := false
-	for _, part := range parts {
-		var parameterName string
+	segments := make(Segments, len(parts))
+	for index, part := range parts {
+		segment := new(Segment)
 		if part[0] == ':' {
-			parameterName = part[1:]
-			part = "*"
+			segment.parameterName = part[1:]
+			segment.name = "*"
+		} else {
+			segment.name = part
 		}
-		leaf, ok = root.routes[part]
-		if ok == false {
-			leaf = &RouteMap{
-				routes:        make(map[string]*RouteMap),
-				parameterName: parameterName,
-			}
-			if constraints, exists := info.constraints[parameterName]; exists {
-				leaf.constraints = constraints
-			}
-			root.routes[part] = leaf
-		}
-		root = leaf
+		segments[index] = segment
 	}
-	leaf.route = route
+	return segments
 }

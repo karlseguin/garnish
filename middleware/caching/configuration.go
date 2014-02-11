@@ -8,12 +8,18 @@ import (
 
 type AuthorizePurge func(context core.Context) bool
 
+// Generate a cache key and the vary parameters
+type CacheKeyGenerator func(context Context) (string, string)
+
 // Configuration for the Caching middleware
 type Configuration struct {
 	logger         core.Logger
 	cache          caches.Cache
 	grace          time.Duration
 	saint          time.Duration
+	ttl time.Duration
+	keyGenerator   CacheKeyGenerator
+	routeConfigs    map[string]*RouteConfig
 	authorizePurge AuthorizePurge
 }
 
@@ -28,6 +34,11 @@ func Configure(cache caches.Cache) *Configuration {
 // Create the middleware from the configuration
 func (c *Configuration) Create(config core.Configuration) (core.Middleware, error) {
 	c.logger = config.Logger()
+	for name, _ := range config.Router().Routes() {
+		if _, ok := c.routeConfigs[name]; ok == false {
+			c.routeConfigs[name] = newRouteConfig(c)
+		}
+	}
 	return &Caching{Configuration: c, downloading: make(map[string]time.Time)}, nil
 }
 
@@ -62,6 +73,20 @@ func (c *Configuration) Saint(duration time.Duration) *Configuration {
 
 // [nil - purging is not enabled]
 func (c *Configuration) AuthorizePurge(callback AuthorizePurge) *Configuration {
+
 	c.authorizePurge = callback
 	return c
+}
+
+func (c *Configuration) OverrideFor(route *core.Route) {
+	routeConfig := newRouteConfig(c)
+	c.routeConfigs[route.Name] = routeConfig
+	c.overriding = routeConfig
+}
+
+
+type RouteConfig struct {
+	keyGenerator CacheKeyGenerator
+	grace time.Duration
+	saint time.Duration
 }

@@ -3,14 +3,18 @@ package stats
 import (
 	"sync"
 	"time"
+	"github.com/karlseguin/garnish/core"
 )
 
 type Snapshot map[string]int64
 
 type Worker struct {
-	*Configuration
 	sync.Mutex
 	running bool
+	window time.Duration
+	logger core.Logger
+	routeStats map[string]*Stat
+	persister   Persister
 }
 
 func (w *Worker) start() {

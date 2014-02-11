@@ -12,7 +12,9 @@ import (
 )
 
 type Caching struct {
-	*Configuration
+	routeConfigs map[string]*RouteConfig
+	logger core.Logger
+	cache          caches.Cache
 	lock        sync.RWMutex
 	downloading map[string]time.Time
 }
@@ -30,8 +32,8 @@ var (
 )
 
 func (c *Caching) Run(context core.Context, next core.Next) core.Response {
-	caching := context.Route().Caching
-	if caching == nil {
+	config := c.routeConfigs[context.Route().Name]
+	if config == nil {
 		c.logger.Info(context, "not cacheable")
 		return next(context)
 	}
@@ -39,17 +41,17 @@ func (c *Caching) Run(context core.Context, next core.Next) core.Response {
 	request := context.RequestIn()
 	switch request.Method {
 	case "GET":
-		return c.get(context, caching, request, next)
+		return c.get(context, config, request, next)
 	case "PURGE":
-		return c.purge(context, caching, request)
+		return c.purge(context, config, request)
 	default:
 		c.logger.Info(context, "not cacheable")
 		return next(context)
 	}
 }
 
-func (c *Caching) get(context core.Context, caching *core.Caching, request *http.Request, next core.Next) core.Response {
-	key, vary := caching.KeyGenerator(context)
+func (c *Caching) get(context core.Context, config *RouteConfig, request *http.Request, next core.Next) core.Response {
+	key, vary := config.keyGenerator(context)
 	cached := c.cache.Get(key, vary)
 	if cached != nil {
 		now := time.Now()
@@ -57,7 +59,7 @@ func (c *Caching) get(context core.Context, caching *core.Caching, request *http
 			c.logger.Info(context, "hit")
 			return cached
 		}
-		if cached.Expires.Add(c.Configuration.grace).After(now) {
+		if cached.Expires.Add(config.grace).After(now) {
 			c.logger.Info(context, "grace")
 			grace(c, key, vary, context, next)
 			return cached
@@ -66,11 +68,11 @@ func (c *Caching) get(context core.Context, caching *core.Caching, request *http
 
 	c.logger.Info(context, "miss")
 	response := next(context)
-	if response.GetStatus() >= 500 && c.saint.Nanoseconds() > 0 {
+	if response.GetStatus() >= 500 && config.saint.Nanoseconds() > 0 {
 		// log this here since the final handler will never see this 500 error
 		core.LogError(c.logger, context, response.GetStatus(), response.GetBody())
 		c.logger.Info(context, "saint")
-		cached.Expires = time.Now().Add(c.saint)
+		cached.Expires = time.Now().Add(config.saint)
 		return cached
 	}
 	return c.set(key, vary, context, response)

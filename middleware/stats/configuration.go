@@ -15,7 +15,6 @@ type Persister interface {
 // Configuration for the Stats middleware
 type Configuration struct {
 	overriding  *Stat
-	logger      core.Logger
 	window      time.Duration
 	sampleSize  int64
 	sampleSizeF float64
@@ -37,8 +36,6 @@ func Configure() *Configuration {
 
 // Create the middleware from the configuration
 func (c *Configuration) Create(config core.Configuration) (core.Middleware, error) {
-	c.logger = config.Logger()
-
 	for name, _ := range config.Router().Routes() {
 		if _, ok := c.routeStats[name]; ok == false {
 			c.routeStats[name] = newStat(c)
@@ -49,10 +46,18 @@ func (c *Configuration) Create(config core.Configuration) (core.Middleware, erro
 	if worker != nil {
 		worker.stop()
 	}
-	stats := &Stats{Configuration: c}
-	worker = &Worker{Configuration: c}
+
+	worker = &Worker{
+		logger: config.Logger(),
+		window: c.window,
+		persister: c.persister,
+		routeStats: c.routeStats,
+	}
 	go worker.start()
-	return stats, nil
+	return &Stats{
+		routeStats: c.routeStats,
+		logger: config.Logger(),
+	}, nil
 
 }
 
@@ -122,6 +127,6 @@ func (c *Configuration) Percentiles(percentiles ...int) *Configuration {
 
 func (c *Configuration) OverrideFor(route *core.Route) {
 	stat := newStat(c)
-	c.routeStats[route.Name] = newStat(c)
+	c.routeStats[route.Name] = stat
 	c.overriding = stat
 }

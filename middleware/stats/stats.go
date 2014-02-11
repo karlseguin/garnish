@@ -6,7 +6,8 @@ import (
 )
 
 type Stats struct {
-	*Configuration
+	logger core.Logger
+	routeStats map[string]*Stat
 }
 
 func (s *Stats) Name() string {

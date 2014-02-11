@@ -27,11 +27,15 @@ func main() {
 	upstream.DnsRefresh(time.Minute)
 	upstream.Add("openmymind", "http", "openmymind.net")
 
-	router.Add("root", "GET", "/", func() {
+	router.Add("root", "GET", "/").Constrain("type", "music").Override(func() {
 		upstream.Is("openmymind")
 		stats.Percentiles(50)
 	})
 
+	router.Add("other", "GET", "/videos/:type/:id").Constrain("type", "music").Override(func() {
+		upstream.Is("openmymind")
+		stats.Percentiles(50)
+	})
 
 	// routerConfig := path.Configure(mainConfig)
 	// routerConfig.Add("GET", "/", garnish.NewRoute("root").Cache(cacheKeyGenerator).TTL(time.Second*5))
