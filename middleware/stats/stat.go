@@ -59,7 +59,7 @@ func (s *Stat) sample(hits int64, t time.Duration) {
 	}
 	if index != -1 {
 		s.sampleLock.Lock()
-		s.samples[index] = int(t)
+		s.samples[index] = int(t / 1000)
 		s.sampleLock.Unlock()
 	}
 }
