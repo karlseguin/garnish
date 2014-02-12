@@ -25,9 +25,11 @@ type Stat struct {
 	failures    int64
 	slow        int64
 	samples     []int
+	sampleCount int64
 	scratch     []int
 	snapshot    Snapshot
 	percentiles map[string]float64
+	max         int64
 }
 
 func newStat(c *Configuration) *Stat {
@@ -35,6 +37,9 @@ func newStat(c *Configuration) *Stat {
 		snapshot:    make(Snapshot),
 		samples:     make([]int, c.sampleSize),
 		scratch:     make([]int, c.sampleSize),
+		sampleSize:   c.sampleSize,
+		sampleSizeF:  c.sampleSizeF,
+		treshhold: c.treshhold,
 		percentiles: c.percentiles,
 	}
 }
@@ -64,8 +69,10 @@ func (s *Stat) hit(response core.Response, t time.Duration) {
 
 func (s *Stat) sample(hits int64, t time.Duration) {
 	index := -1
-	if hits < s.sampleSize {
-		index = int(hits)
+	sampleCount := atomic.LoadInt64(&s.sampleCount)
+	if sampleCount < s.sampleSize {
+		index = int(sampleCount)
+		atomic.AddInt64(&s.sampleCount, 1)
 	} else if s.sampleSizeF/float64(hits) > rand.Float64() {
 		index = int(rand.Int31n(int32(s.sampleSize)))
 	}
@@ -79,20 +86,21 @@ func (s *Stat) sample(hits int64, t time.Duration) {
 func (s *Stat) Snapshot() Snapshot {
 	s.snapLock.Lock()
 	hits := s.hits
+	sampleCount := s.sampleCount
 	s.snapshot["2xx"] = s.oks
 	s.snapshot["4xx"] = s.errors
 	s.snapshot["5xx"] = s.failures
 	s.snapshot["slow"] = s.slow
 	s.snapshot["hits"] = hits
 	s.snapshot["cache"] = s.cache
-	s.oks, s.errors, s.failures, s.hits, s.slow, s.cache = 0, 0, 0, 0, 0, 0
+	s.oks, s.errors, s.failures, s.hits, s.slow, s.cache, s.sampleCount = 0, 0, 0, 0, 0, 0, 0
 	s.samples, s.scratch = s.scratch, s.samples
 	s.snapLock.Unlock()
 
-	samples := s.samples[:hits]
+	samples := s.scratch[:sampleCount]
 	sort.Ints(samples)
 	for key, value := range s.percentiles {
-		s.snapshot[key] = percentile(samples, value, int(hits))
+		s.snapshot[key] = percentile(samples, value, int(sampleCount))
 	}
 	return s.snapshot
 }

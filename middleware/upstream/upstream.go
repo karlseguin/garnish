@@ -54,7 +54,6 @@ func (u *Upstream) Run(context core.Context, next core.Next) core.Response {
 		body = buffer.Bytes()
 		length = len(body)
 	}
-
 	return core.RespondH(body, r.Header).Status(r.StatusCode)
 }
 

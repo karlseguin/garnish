@@ -45,7 +45,14 @@ func New(logger core.Logger, middlewares []core.MiddlewareFactory) *Router {
 	return &Router{
 		logger:      logger,
 		routeLookup: make(map[string]*core.Route),
-		routes:      make(map[string]*RouteMap),
+		routes:      map[string]*RouteMap{
+			"GET": newRouteMap(),
+			"POST": newRouteMap(),
+			"PUT": newRouteMap(),
+			"DELETE": newRouteMap(),
+			"PURGE": newRouteMap(),
+			"PATCH": newRouteMap(),
+		},
 		middlewares: middlewares,
 	}
 }
@@ -123,7 +130,7 @@ func (r *Router) Add(name, method, path string) core.RouteConfig {
 	config := &RouteConfig{router: r, route: route}
 	if name == "fallback" {
 		r.fallback = route
-		return nil
+		return config
 	}
 
 	segments := segment(path)
@@ -132,7 +139,7 @@ func (r *Router) Add(name, method, path string) core.RouteConfig {
 		method = strings.ToUpper(strings.TrimSpace(method))
 		root, exists := r.routes[method]
 		if exists == false {
-			root = &RouteMap{routes: make(map[string]*RouteMap)}
+			root = newRouteMap()
 			r.routes[method] = root
 		}
 		if segments == nil {
@@ -157,7 +164,7 @@ func (r *Router) add(root *RouteMap, route *core.Route, segments Segments) {
 		leaf, exists := node.routes[name]
 		if exists == false {
 			added = true
-			leaf = &RouteMap{routes: make(map[string]*RouteMap)}
+			leaf = newRouteMap()
 			node.routes[name] = leaf
 		}
 		leaf.parameterName = segment.parameterName
@@ -233,4 +240,8 @@ func segment(path string) Segments {
 		segments[index] = segment
 	}
 	return segments
+}
+
+func newRouteMap() *RouteMap {
+	return &RouteMap{routes: make(map[string]*RouteMap)}
 }
