@@ -1,14 +1,14 @@
 package hydrate
 
 import (
-	"github.com/karlseguin/garnish/core"
-	"github.com/karlseguin/bytepool"
 	"bytes"
+	"github.com/karlseguin/bytepool"
+	"github.com/karlseguin/garnish/core"
 )
 
 type Hydrate struct {
-	logger       core.Logger
-	pool *bytepool.Pool
+	logger core.Logger
+	pool   *bytepool.Pool
 }
 
 func (h *Hydrate) Name() string {
@@ -54,10 +54,10 @@ func (h *Hydrate) parse(response core.Response) core.Response {
 		body = b
 	}
 	r := &Response{
-		pool: h.pool,
+		pool:     h.pool,
 		segments: segments,
-		status: response.GetStatus(),
-		header: response.GetHeader(),
+		status:   response.GetStatus(),
+		header:   response.GetHeader(),
 	}
 	r.header.Del("Content-Length")
 	r.header.Del("X-Hydrate")

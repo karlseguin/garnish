@@ -1,16 +1,16 @@
 package hydrate
 
 import (
-	"net/http"
-	"github.com/karlseguin/garnish/core"
 	"github.com/karlseguin/bytepool"
+	"github.com/karlseguin/garnish/core"
+	"net/http"
 )
 
 type Response struct {
-	pool *bytepool.Pool
-	status int
+	pool     *bytepool.Pool
+	status   int
 	segments []Segment
-	header http.Header
+	header   http.Header
 }
 
 func (r *Response) GetHeader() http.Header {
@@ -30,7 +30,7 @@ func (r *Response) GetStatus() int {
 	return r.status
 }
 
-func (r *Response) SetStatus(status int)  {
+func (r *Response) SetStatus(status int) {
 	r.status = status
 }
 

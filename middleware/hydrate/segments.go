@@ -12,7 +12,6 @@ func (s *LiteralSegment) Render() []byte {
 	return s.data
 }
 
-
 type PlaceholderSegment struct {
 	id string
 }
