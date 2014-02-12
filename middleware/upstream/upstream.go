@@ -20,22 +20,22 @@ func (u *Upstream) Name() string {
 
 func (u *Upstream) Run(context core.Context, next core.Next) core.Response {
 	route := context.Route()
-	upstream, ok := u.routeLookup[route.Name]
+	server, ok := u.routeLookup[route.Name]
 	if ok == false {
 		return context.Fatal(errors.New("Upstream not configured for route: " + route.Name))
 	}
 
-	request := u.prepareRequest(context, upstream)
+	request := u.prepareRequest(context, server)
 	u.logger.Infof(context, "request to %v", request.URL.String())
-	r, err := upstream.Transport.RoundTrip(request)
+	r, err := server.Transport.RoundTrip(request)
 	if err != nil {
 		return context.Fatal(err)
 	}
 	defer r.Body.Close()
 	length := int(r.ContentLength)
 	defer u.logger.Infof(context, "%d response %d bytes", r.StatusCode, length)
-	if length > 0 && length < upstream.PoolItemSize {
-		buffer := upstream.Pool.Checkout()
+	if length > 0 && length < server.PoolItemSize {
+		buffer := server.Pool.Checkout()
 		buffer.ReadFrom(r.Body)
 		return &core.ClosableResponse{
 			S: r.StatusCode,
@@ -49,7 +49,7 @@ func (u *Upstream) Run(context core.Context, next core.Next) core.Response {
 		body = make([]byte, r.ContentLength)
 		io.ReadFull(r.Body, body)
 	} else if length == -1 {
-		buffer := bytes.NewBuffer(make([]byte, 0, upstream.PoolItemSize))
+		buffer := bytes.NewBuffer(make([]byte, 0, server.PoolItemSize))
 		io.Copy(buffer, r.Body)
 		body = buffer.Bytes()
 		length = len(body)

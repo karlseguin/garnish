@@ -16,8 +16,8 @@ import (
 )
 
 func main() {
-	stats, caching, dispatch, upstream := garnish.Stats, garnish.Caching(ccache.New(ccache.Configure())), garnish.Dispatcher, garnish.Upstream
-	config := garnish.Configure().LogInfo().Middleware(stats, caching, dispatch, upstream)
+	stats, caching, hydrate, dispatch := garnish.Stats, garnish.Caching(ccache.New(ccache.Configure())), garnish.Hydrate, garnish.Dispatch
+	config := garnish.Configure().LogInfo().Middleware(stats, caching, hydrate, dispatch)
 	router := config.NewRouter()
 
 	stats.Percentiles(50, 75, 95).Window(time.Second * 5) //.Treshold(time.Milliseconds * 25)
@@ -25,16 +25,11 @@ func main() {
 
 	dispatch.Dispatch(dp)
 
-	upstream.DnsRefresh(time.Minute)
-	upstream.Add("openmymind", "http", "openmymind.net")
+	// upstream.DnsRefresh(time.Minute)
+	// upstream.Add("openmymind", "http", "openmymind.net")
 
 	router.Add("root", "GET", "/").Override(func() {
-		upstream.Is("openmymind")
-		stats.Percentiles(50)
-	})
-
-	router.Add("other", "GET", "/videos/:type/:id").Constrain("type", "music").Override(func() {
-		upstream.Is("openmymind")
+		dispatch.To(hah)
 		stats.Percentiles(50)
 	})
 
@@ -73,6 +68,9 @@ func dp(action interface{}, base core.Context) core.Response {
 }
 
 func hah(context core.Context) core.Response {
-	println("aa")
-	return garnish.NotFound
+	return garnish.Respond(`
+				{
+					"name": "test",
+					"data": <% 123 %>
+				}`).Header("X-Hydrate", "true")
 }

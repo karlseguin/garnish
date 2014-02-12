@@ -7,6 +7,7 @@ import (
 	"time"
 )
 
+// Authorize a purge request
 type AuthorizePurge func(context core.Context) bool
 
 // Generate a cache key and the vary parameters

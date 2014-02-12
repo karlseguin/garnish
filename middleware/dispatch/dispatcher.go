@@ -21,9 +21,7 @@ func (d *Dispatch) Run(context core.Context, next core.Next) core.Response {
 		d.logger.Info(context, "404")
 		return next(context)
 	}
-	d.logger.Info(context, "+ ", route.Name)
 	res := d.dispatcher(action, context)
-	d.logger.Info(context, "- ", route.Name)
 	if res != nil {
 		return res
 	}

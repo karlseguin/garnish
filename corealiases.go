@@ -5,6 +5,7 @@ import (
 	"github.com/karlseguin/garnish/middleware/caching"
 	"github.com/karlseguin/garnish/middleware/dispatch"
 	"github.com/karlseguin/garnish/middleware/stats"
+	"github.com/karlseguin/garnish/middleware/hydrate"
 	"github.com/karlseguin/garnish/middleware/upstream"
 )
 
@@ -13,6 +14,7 @@ var (
 	Upstream = upstream.Configure()
 	Caching  = caching.Configure
 	Dispatch = dispatch.Configure()
+	Hydrate    = hydrate.Configure()
 
 	Unauthorized  = core.Unauthorized
 	NotFound      = core.NotFound
