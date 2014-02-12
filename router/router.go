@@ -45,13 +45,13 @@ func New(logger core.Logger, middlewares []core.MiddlewareFactory) *Router {
 	return &Router{
 		logger:      logger,
 		routeLookup: make(map[string]*core.Route),
-		routes:      map[string]*RouteMap{
-			"GET": newRouteMap(),
-			"POST": newRouteMap(),
-			"PUT": newRouteMap(),
+		routes: map[string]*RouteMap{
+			"GET":    newRouteMap(),
+			"POST":   newRouteMap(),
+			"PUT":    newRouteMap(),
 			"DELETE": newRouteMap(),
-			"PURGE": newRouteMap(),
-			"PATCH": newRouteMap(),
+			"PURGE":  newRouteMap(),
+			"PATCH":  newRouteMap(),
 		},
 		middlewares: middlewares,
 	}

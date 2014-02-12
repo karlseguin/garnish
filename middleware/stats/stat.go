@@ -1,8 +1,8 @@
 package stats
 
 import (
-	"github.com/karlseguin/garnish/core"
 	"github.com/karlseguin/garnish/caches"
+	"github.com/karlseguin/garnish/core"
 	"math"
 	"math/rand"
 	"sort"
@@ -37,9 +37,9 @@ func newStat(c *Configuration) *Stat {
 		snapshot:    make(Snapshot),
 		samples:     make([]int, c.sampleSize),
 		scratch:     make([]int, c.sampleSize),
-		sampleSize:   c.sampleSize,
-		sampleSizeF:  c.sampleSizeF,
-		treshhold: c.treshhold,
+		sampleSize:  c.sampleSize,
+		sampleSizeF: c.sampleSizeF,
+		treshhold:   c.treshhold,
 		percentiles: c.percentiles,
 	}
 }
@@ -125,6 +125,6 @@ func percentile(values []int, p float64, size int) int64 {
 }
 
 func isCacheHit(response core.Response) bool {
-	_, ok  := response.(*caches.CachedResponse)
+	_, ok := response.(*caches.CachedResponse)
 	return ok
 }

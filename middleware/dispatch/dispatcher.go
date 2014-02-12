@@ -1,20 +1,20 @@
-package dispatcher
+package dispatch
 
 import (
 	"github.com/karlseguin/garnish/core"
 )
 
-type Dispatcher struct {
-	dispatch Dispatch
-	logger   core.Logger
-	actions  map[string]interface{}
+type Dispatch struct {
+	dispatcher Dispatcher
+	logger     core.Logger
+	actions    map[string]interface{}
 }
 
-func (d *Dispatcher) Name() string {
-	return "dispatcher"
+func (d *Dispatch) Name() string {
+	return "dispatch"
 }
 
-func (d *Dispatcher) Run(context core.Context, next core.Next) core.Response {
+func (d *Dispatch) Run(context core.Context, next core.Next) core.Response {
 	route := context.Route()
 	action, exists := d.actions[route.Name]
 	if exists == false {
@@ -22,7 +22,7 @@ func (d *Dispatcher) Run(context core.Context, next core.Next) core.Response {
 		return next(context)
 	}
 	d.logger.Info(context, "+ ", route.Name)
-	res := d.dispatch(action, context)
+	res := d.dispatcher(action, context)
 	d.logger.Info(context, "- ", route.Name)
 	if res != nil {
 		return res

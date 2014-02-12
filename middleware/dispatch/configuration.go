@@ -1,16 +1,16 @@
-package dispatcher
+package dispatch
 
 import (
 	"github.com/karlseguin/garnish/core"
 )
 
-type Dispatch func(action interface{}, context core.Context) core.Response
+type Dispatcher func(action interface{}, context core.Context) core.Response
 
 // Configuration for upstreams middleware
 type Configuration struct {
 	overriding string
 	actions    map[string]interface{}
-	dispatch   Dispatch
+	dispatcher Dispatcher
 }
 
 func Configure() *Configuration {
@@ -21,10 +21,10 @@ func Configure() *Configuration {
 
 // Create the middleware from the configuration
 func (c *Configuration) Create(config core.Configuration) (core.Middleware, error) {
-	return &Dispatcher{
-		actions:  c.actions,
-		dispatch: c.dispatch,
-		logger:   config.Logger(),
+	return &Dispatch{
+		actions:    c.actions,
+		dispatcher: c.dispatcher,
+		logger:     config.Logger(),
 	}, nil
 }
 
@@ -34,8 +34,8 @@ func (c *Configuration) Action(name string, action interface{}) *Configuration {
 	return c
 }
 
-func (c *Configuration) Dispatch(dispatch Dispatch) *Configuration {
-	c.dispatch = dispatch
+func (c *Configuration) Dispatch(dispatcher Dispatcher) *Configuration {
+	c.dispatcher = dispatcher
 	return c
 }
 
