@@ -1,6 +1,7 @@
 package caching
 
 import (
+	"errors"
 	"github.com/karlseguin/garnish/caches"
 	"github.com/karlseguin/garnish/core"
 	"strings"
@@ -25,11 +26,10 @@ type Configuration struct {
 	authorizePurge AuthorizePurge
 }
 
-func Configure(cache caches.Cache) *Configuration {
+func Configure() *Configuration {
 	return &Configuration{
 		grace:        time.Second * 10,
 		saint:        time.Hour * 4,
-		cache:        cache,
 		ttl:          time.Minute,
 		keyGenerator: UrlKeyGenerator,
 		routeConfigs: make(map[string]*RouteConfig),
@@ -38,6 +38,9 @@ func Configure(cache caches.Cache) *Configuration {
 
 // Create the middleware from the configuration
 func (c *Configuration) Create(config core.Configuration) (core.Middleware, error) {
+	if c.cache == nil {
+		return nil, errors.New("Cannot using caching middleware without specifying a Cache")
+	}
 	for name, _ := range config.Router().Routes() {
 		if _, ok := c.routeConfigs[name]; ok == false {
 			c.routeConfigs[name] = newRouteConfig(c)
@@ -48,6 +51,19 @@ func (c *Configuration) Create(config core.Configuration) (core.Middleware, erro
 		routeConfigs: c.routeConfigs,
 		downloading:  make(map[string]time.Time),
 	}, nil
+}
+
+// The cache engine to use. This is required and defaults to nil
+//
+// Can be set globally
+//
+// [nil]
+func (c *Configuration) Cache(cache caches.Cache) *Configuration {
+	if c.overriding != nil {
+		panic("cache cannot be specified on a per-route basis")
+	}
+	c.cache = cache
+	return c
 }
 
 // Serve a request even if it has expired within the specified

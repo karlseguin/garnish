@@ -12,7 +12,7 @@ import (
 var (
 	Stats    = stats.Configure()
 	Upstream = upstream.Configure()
-	Caching  = caching.Configure
+	Caching  = caching.Configure()
 	Dispatch = dispatch.Configure()
 	Hydrate  = hydrate.Configure()
 

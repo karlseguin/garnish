@@ -16,12 +16,12 @@ import (
 )
 
 func main() {
-	stats, caching, hydrate, dispatch := garnish.Stats, garnish.Caching(ccache.New(ccache.Configure())), garnish.Hydrate, garnish.Dispatch
+	stats, caching, hydrate, dispatch := garnish.Stats, garnish.Caching, garnish.Hydrate, garnish.Dispatch
 	config := garnish.Configure().LogInfo().Middleware(stats, caching, hydrate, dispatch)
 	router := config.NewRouter()
 
 	stats.Percentiles(50, 75, 95).Window(time.Second * 5) //.Treshold(time.Milliseconds * 25)
-	caching.TTL(time.Second * 5)
+	caching.Cache(ccache.New(ccache.Configure())).TTL(time.Second * 5)
 
 	dispatch.Dispatch(dp)
 

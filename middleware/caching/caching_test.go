@@ -13,7 +13,7 @@ var originalGrace = grace
 func TestDoesNotCacheNonGetRequests(t *testing.T) {
 	spec := gspec.New(t)
 	context := core.ContextBuilder().SetRequest(gspec.Request().Method("POST").Req)
-	caching, _ := Configure(nil).Create(core.DummyConfig)
+	caching, _ := Configure().Cache(newFakeStorage()).Create(core.DummyConfig)
 	buildCaching(caching, "goku", "power")
 	res := caching.Run(context, core.FakeNext(core.Respond(nil).Status(123)))
 	spec.Expect(res.GetStatus()).ToEqual(123)
@@ -22,7 +22,7 @@ func TestDoesNotCacheNonGetRequests(t *testing.T) {
 func TestDoesNotCacheRoutesWhichArentConfiguredForCaching(t *testing.T) {
 	spec := gspec.New(t)
 	context := core.ContextBuilder().SetRequest(gspec.Request().Method("GET").Req)
-	caching, _ := Configure(nil).Create(core.DummyConfig)
+	caching, _ := Configure().Cache(newFakeStorage()).Create(core.DummyConfig)
 	buildCaching(caching, "goku", "power").ttl = 0
 	res := caching.Run(context, core.FakeNext(core.Respond(nil).Status(123)))
 	spec.Expect(res.GetStatus()).ToEqual(123)
@@ -31,7 +31,7 @@ func TestDoesNotCacheRoutesWhichArentConfiguredForCaching(t *testing.T) {
 func TestReturnsAFreshResult(t *testing.T) {
 	spec := gspec.New(t)
 	context := core.ContextBuilder().SetRequest(gspec.Request().Method("GET").Req)
-	caching, _ := Configure(newFakeStorage()).Create(core.DummyConfig)
+	caching, _ := Configure().Cache(newFakeStorage()).Create(core.DummyConfig)
 	buildCaching(caching, "goku", "power")
 	res := caching.Run(context, nil)
 	spec.Expect(res.GetStatus()).ToEqual(9001)
@@ -42,7 +42,7 @@ func TestReturnsASlightlyStaleResult(t *testing.T) {
 	stubGrace(&graceCalled)
 	spec := gspec.New(t)
 	context := core.ContextBuilder().SetRequest(gspec.Request().Method("GET").Req)
-	caching, _ := Configure(newFakeStorage()).Create(core.DummyConfig)
+	caching, _ := Configure().Cache(newFakeStorage()).Create(core.DummyConfig)
 	buildCaching(caching, "goku", "level")
 	res := caching.Run(context, nil)
 	spec.Expect(res.GetStatus()).ToEqual(3)
@@ -52,7 +52,7 @@ func TestReturnsASlightlyStaleResult(t *testing.T) {
 func TestReturnsAStaleResultIfTheNewResultIsAnError(t *testing.T) {
 	spec := gspec.New(t)
 	context := core.ContextBuilder().SetRequest(gspec.Request().Method("GET").Req)
-	caching, _ := Configure(newFakeStorage()).Create(core.DummyConfig)
+	caching, _ := Configure().Cache(newFakeStorage()).Create(core.DummyConfig)
 	buildCaching(caching, "goku", "age")
 	now := time.Now()
 	res := caching.Run(context, core.FakeNext(core.Respond(nil).Status(500)))
@@ -63,7 +63,7 @@ func TestReturnsAStaleResultIfTheNewResultIsAnError(t *testing.T) {
 func TestReturnsAndCachesAnUpdatedResult(t *testing.T) {
 	spec := gspec.New(t)
 	context := core.ContextBuilder().SetRequest(gspec.Request().Method("GET").Req)
-	caching, _ := Configure(newFakeStorage()).Create(core.DummyConfig)
+	caching, _ := Configure().Cache(newFakeStorage()).Create(core.DummyConfig)
 	buildCaching(caching, "goku", "age")
 	res := caching.Run(context, core.FakeNext(core.Respond([]byte("21")).Status(200).Cache(200)))
 	spec.Expect(res.GetStatus()).ToEqual(200)
@@ -73,7 +73,7 @@ func TestReturnsAndCachesAnUpdatedResult(t *testing.T) {
 func TestReturnsAndCachesANewResult(t *testing.T) {
 	spec := gspec.New(t)
 	context := core.ContextBuilder().SetRequest(gspec.Request().Method("GET").Req)
-	caching, _ := Configure(newFakeStorage()).Create(core.DummyConfig)
+	caching, _ := Configure().Cache(newFakeStorage()).Create(core.DummyConfig)
 	buildCaching(caching, "goku", "other")
 	res := caching.Run(context, core.FakeNext(core.Respond([]byte("otherother")).Status(200).Cache(200)))
 	spec.Expect(res.GetStatus()).ToEqual(200)
