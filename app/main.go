@@ -30,6 +30,7 @@ func main() {
 
 	router.Add("root", "GET", "/").Override(func() {
 		dispatch.To(hah)
+		caching.Never()
 		stats.Percentiles(50)
 	})
 

@@ -32,7 +32,7 @@ var (
 
 func (c *Caching) Run(context core.Context, next core.Next) core.Response {
 	config := c.routeConfigs[context.Route().Name]
-	if config == nil {
+	if config.ttl == 0 {
 		context.Info("not cacheable")
 		return next(context)
 	}

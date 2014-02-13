@@ -131,6 +131,10 @@ func (c *Configuration) TTL(ttl time.Duration) *Configuration {
 	return c
 }
 
+func (c *Configuration) Never() *Configuration {
+	return c.TTL(0)
+}
+
 func (c *Configuration) OverrideFor(route *core.Route) {
 	routeConfig := newRouteConfig(c)
 	c.routeConfigs[route.Name] = routeConfig

@@ -14,14 +14,16 @@ func TestDoesNotCacheNonGetRequests(t *testing.T) {
 	spec := gspec.New(t)
 	context := core.ContextBuilder().SetRequest(gspec.Request().Method("POST").Req)
 	caching, _ := Configure(nil).Create(core.DummyConfig)
+	buildCaching(caching, "goku", "power")
 	res := caching.Run(context, core.FakeNext(core.Respond(nil).Status(123)))
 	spec.Expect(res.GetStatus()).ToEqual(123)
 }
 
-func TestDoesNotCachingRoutesWhichArentConfiguredForCaching(t *testing.T) {
+func TestDoesNotCacheRoutesWhichArentConfiguredForCaching(t *testing.T) {
 	spec := gspec.New(t)
 	context := core.ContextBuilder().SetRequest(gspec.Request().Method("GET").Req)
 	caching, _ := Configure(nil).Create(core.DummyConfig)
+	buildCaching(caching, "goku", "power").ttl = 0
 	res := caching.Run(context, core.FakeNext(core.Respond(nil).Status(123)))
 	spec.Expect(res.GetStatus()).ToEqual(123)
 }
@@ -111,13 +113,15 @@ func TestTTLDoesNotHandleInvalidMissingExpiryTime(t *testing.T) {
 	spec.Expect(ok).ToEqual(false)
 }
 
-func buildCaching(caching core.Middleware, key, vary string) {
+func buildCaching(caching core.Middleware, key, vary string) *RouteConfig {
 	kg := func(context core.Context) (string, string) { return key, vary }
 	caching.(*Caching).routeConfigs["home"] = &RouteConfig{
 		keyGenerator: kg,
 		grace:        time.Minute,
 		saint:        time.Minute,
+		ttl:          time.Second * 10,
 	}
+	return caching.(*Caching).routeConfigs["home"]
 }
 
 func stubGrace(flag *bool) {
