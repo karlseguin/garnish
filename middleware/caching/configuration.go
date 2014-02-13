@@ -16,7 +16,6 @@ type KeyGenerator func(context core.Context) (string, string)
 // Configuration for the Caching middleware
 type Configuration struct {
 	overriding     *RouteConfig
-	logger         core.Logger
 	cache          caches.Cache
 	grace          time.Duration
 	saint          time.Duration
@@ -39,7 +38,6 @@ func Configure(cache caches.Cache) *Configuration {
 
 // Create the middleware from the configuration
 func (c *Configuration) Create(config core.Configuration) (core.Middleware, error) {
-	c.logger = config.Logger()
 	for name, _ := range config.Router().Routes() {
 		if _, ok := c.routeConfigs[name]; ok == false {
 			c.routeConfigs[name] = newRouteConfig(c)
@@ -47,7 +45,6 @@ func (c *Configuration) Create(config core.Configuration) (core.Middleware, erro
 	}
 	return &Caching{
 		cache:        c.cache,
-		logger:       c.logger,
 		routeConfigs: c.routeConfigs,
 		downloading:  make(map[string]time.Time),
 	}, nil

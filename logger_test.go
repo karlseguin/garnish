@@ -12,43 +12,29 @@ import (
 func TestLoggerDoesNotLogInfoMessagesWhenInfoIsOff(t *testing.T) {
 	spec := gspec.New(t)
 	l, buffer := testLogger(false)
-	l.Infof(nil, "info msg")
+	l.Infof("info msg")
 	spec.Expect(buffer.Len()).ToEqual(0)
 }
 
 func TestLoggerLogsInfoMessagesWhenInfoIsOn(t *testing.T) {
 	spec := gspec.New(t)
 	l, buffer := testLogger(true)
-	l.Infof(nil, "info msg")
-	spec.Expect(buffer.String()).ToEqual("[internal] [internal] info msg\n")
-}
-
-func TestLoggerIncludesTheRequestIdForInfoMessage(t *testing.T) {
-	spec := gspec.New(t)
-	l, buffer := testLogger(true)
-	l.Infof(core.ContextBuilder().SetId("4994"), "info msg")
-	spec.Expect(buffer.String()).ToEqual("[4994] [cb] info msg\n")
-}
-
-func TestLoggerLogsErrorsWhenInfoIsOff(t *testing.T) {
-	spec := gspec.New(t)
-	l, buffer := testLogger(false)
-	l.Errorf(nil, "error msg1")
-	spec.Expect(buffer.String()).ToEqual("[internal] [internal] error msg1\n")
+	l.Infof("info msg")
+	spec.Expect(buffer.String()).ToEqual("info msg\n")
 }
 
 func TestLoggerLogsErrorsWhenInfoIsOn(t *testing.T) {
 	spec := gspec.New(t)
 	l, buffer := testLogger(true)
-	l.Errorf(nil, "error msg2")
-	spec.Expect(buffer.String()).ToEqual("[internal] [internal] error msg2\n")
+	l.Errorf("error msg2")
+	spec.Expect(buffer.String()).ToEqual("error msg2\n")
 }
 
 func TestLoggerIncludesTheRequestIdForErrorMessage(t *testing.T) {
 	spec := gspec.New(t)
 	l, buffer := testLogger(true)
-	l.Errorf(core.ContextBuilder().SetId("8664"), "error msg")
-	spec.Expect(buffer.String()).ToEqual("[8664] [cb] error msg\n")
+	l.Errorf("error msg")
+	spec.Expect(buffer.String()).ToEqual("error msg\n")
 }
 
 func testLogger(info bool) (core.Logger, *bytes.Buffer) {
@@ -65,20 +51,24 @@ type FakeLogMessage struct {
 	message string
 }
 
-func (l *FakeLogger) Infof(context core.Context, format string, v ...interface{}) {
+func (l *FakeLogger) Infof(format string, v ...interface{}) {
 	l.printf(true, format, v...)
 }
 
-func (l *FakeLogger) Info(context core.Context, v ...interface{}) {
+func (l *FakeLogger) Info(v ...interface{}) {
 	l.print(true, v...)
 }
 
-func (l *FakeLogger) Errorf(context core.Context, format string, v ...interface{}) {
+func (l *FakeLogger) Errorf(format string, v ...interface{}) {
 	l.printf(false, format, v...)
 }
 
-func (l *FakeLogger) Error(context core.Context, v ...interface{}) {
+func (l *FakeLogger) Error(v ...interface{}) {
 	l.print(false, v...)
+}
+
+func (l *FakeLogger) LogInfo() bool {
+	return true
 }
 
 func (l *FakeLogger) printf(info bool, format string, v ...interface{}) {

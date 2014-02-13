@@ -49,13 +49,6 @@ func TestHandlerWritesHeaders(t *testing.T) {
 	spec.Expect(rec.HeaderMap.Get("X-Test")).ToEqual("leto")
 }
 
-func TestLogsInternalServerErrors(t *testing.T) {
-	h := buildHandler(new(core.Route), nil, nil, newResponseMiddleware(505, "error", nil))
-	rec := httptest.NewRecorder()
-	h.ServeHTTP(rec, gspec.Request().Url("http://fake.garnish.io/fail").Req)
-	h.logger.(*FakeLogger).Assert(t, FakeLogMessage{false, `"http://fake.garnish.io/fail" 505 error`})
-}
-
 func buildHandler(route *core.Route, params core.Params, response core.Response, middlewares ...core.MiddlewareFactory) *Handler {
 	config := Configure()
 	config.router = &FakeRouter{route, params, response}

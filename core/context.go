@@ -6,6 +6,8 @@ import (
 
 // Represents information about the request
 type Context interface {
+	Logger
+
 	// A unique id for the request
 	RequestId() string
 
@@ -33,6 +35,7 @@ type Context interface {
 // with a context from outside of the main package easy
 // The builder itself satifies the Context interface
 type CB struct {
+	Logger
 	requestId string
 	request   *http.Request
 	route     *Route
@@ -42,6 +45,7 @@ type CB struct {
 
 func ContextBuilder() *CB {
 	return &CB{
+		Logger:    newFakeLogger(),
 		requestId: "9001!",
 		request:   new(http.Request),
 		route:     &Route{Name: "home"},

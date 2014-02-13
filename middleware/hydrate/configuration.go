@@ -19,8 +19,7 @@ func Configure() *Configuration {
 // Create the middleware from the configuration
 func (c *Configuration) Create(config core.Configuration) (core.Middleware, error) {
 	return &Hydrate{
-		pool:   c.pool,
-		logger: config.Logger(),
+		pool: c.pool,
 	}, nil
 }
 

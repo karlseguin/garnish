@@ -68,9 +68,5 @@ func dp(action interface{}, base core.Context) core.Response {
 }
 
 func hah(context core.Context) core.Response {
-	return garnish.Respond(`
-				{
-					"name": "test",
-					"data": <% 123 %>
-				}`).Header("X-Hydrate", "true")
+	return garnish.Respond("<%123 %>, <% abc%>, <%zzz%>").Header("X-Hydrate", "true")
 }

@@ -9,7 +9,6 @@ import (
 // Configuration for upstreams middleware
 type Configuration struct {
 	overriding     string
-	logger         core.Logger
 	forwardHeaders []string
 	dnsRefresh     time.Duration
 	serverLookup   map[string]*Server
@@ -27,7 +26,6 @@ func Configure() *Configuration {
 
 // Create the middleware from the configuration
 func (c *Configuration) Create(config core.Configuration) (core.Middleware, error) {
-	c.logger = config.Logger()
 	dns := dnscache.New(c.dnsRefresh)
 	for _, server := range c.serverLookup {
 		if server.resolver == nil {

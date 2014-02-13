@@ -34,16 +34,14 @@ type Segment struct {
 }
 
 type Router struct {
-	logger      core.Logger
 	fallback    *core.Route
 	routes      map[string]*RouteMap
 	routeLookup map[string]*core.Route
 	middlewares []core.MiddlewareFactory
 }
 
-func New(logger core.Logger, middlewares []core.MiddlewareFactory) *Router {
+func New(middlewares []core.MiddlewareFactory) *Router {
 	return &Router{
-		logger:      logger,
 		routeLookup: make(map[string]*core.Route),
 		routes: map[string]*RouteMap{
 			"GET":    newRouteMap(),
@@ -66,7 +64,7 @@ func (r *Router) Route(context core.Context) (*core.Route, core.Params, core.Res
 
 	rm, ok := r.routes[request.Method]
 	if ok == false {
-		r.logger.Infof(context, "unknown method %q", request.Method)
+		context.Infof("unknown method %q", request.Method)
 		return r.fallback, nil, nil
 	}
 

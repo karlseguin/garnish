@@ -58,7 +58,6 @@ func (c *Configuration) Create(config core.Configuration) (core.Middleware, erro
 	go worker.start()
 	return &Stats{
 		routeStats: c.routeStats,
-		logger:     config.Logger(),
 	}, nil
 
 }

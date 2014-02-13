@@ -24,7 +24,6 @@ func (c *Configuration) Create(config core.Configuration) (core.Middleware, erro
 	return &Dispatch{
 		actions:    c.actions,
 		dispatcher: c.dispatcher,
-		logger:     config.Logger(),
 	}, nil
 }
 

@@ -13,9 +13,9 @@ func (s *LiteralSegment) Render() []byte {
 }
 
 type PlaceholderSegment struct {
-	id string
+	id []byte
 }
 
 func (s *PlaceholderSegment) Render() []byte {
-	return []byte(s.id)
+	return s.id
 }

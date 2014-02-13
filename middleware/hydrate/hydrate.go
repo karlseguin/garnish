@@ -7,8 +7,7 @@ import (
 )
 
 type Hydrate struct {
-	logger core.Logger
-	pool   *bytepool.Pool
+	pool *bytepool.Pool
 }
 
 func (h *Hydrate) Name() string {
@@ -24,7 +23,7 @@ func (h *Hydrate) Run(context core.Context, next core.Next) core.Response {
 	if response.GetHeader().Get("X-Hydrate") != "true" || status < 200 || status > 299 {
 		return response
 	}
-	h.logger.Info(context, "hydrating")
+	context.Info("hydrating")
 	return h.parse(response)
 }
 
@@ -35,7 +34,7 @@ func (h *Hydrate) parse(response core.Response) core.Response {
 	for len(body) > 0 {
 		index := bytes.IndexByte(body, byte('<'))
 		if index == -1 {
-			segments = append(segments, &LiteralSegment{body})
+			segments = append(segments, &LiteralSegment{detach(body)})
 			break
 		}
 
@@ -44,7 +43,7 @@ func (h *Hydrate) parse(response core.Response) core.Response {
 		}
 
 		if index > 0 {
-			segments = append(segments, &LiteralSegment{body[position:index]})
+			segments = append(segments, &LiteralSegment{detach(body[position:index])})
 		}
 
 		segment, b := createPlaceholderSegment(body[index+2:])
@@ -72,11 +71,11 @@ func createPlaceholderSegment(data []byte) (Segment, []byte) {
 			break
 		}
 	}
-	var id string
+	var id []byte
 	for i, l := 0, len(data); i < l; i++ {
 		c := data[i]
 		if c == ' ' || c == '%' {
-			id = string(data[:i])
+			id = data[:i]
 			data = data[i:]
 			break
 		}
@@ -91,7 +90,13 @@ func createPlaceholderSegment(data []byte) (Segment, []byte) {
 
 	var segment *PlaceholderSegment
 	if len(id) > 0 {
-		segment = &PlaceholderSegment{id}
+		segment = &PlaceholderSegment{detach(id)}
 	}
 	return segment, data
+}
+
+func detach(data []byte) []byte {
+	clone := make([]byte, len(data))
+	copy(clone, data)
+	return clone
 }

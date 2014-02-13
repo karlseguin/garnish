@@ -26,14 +26,14 @@ func (u *Upstream) Run(context core.Context, next core.Next) core.Response {
 	}
 
 	request := u.prepareRequest(context, server)
-	u.logger.Infof(context, "request to %v", request.URL.String())
+	context.Infof("request to %v", request.URL.String())
 	r, err := server.Transport.RoundTrip(request)
 	if err != nil {
 		return context.Fatal(err)
 	}
 	defer r.Body.Close()
 	length := int(r.ContentLength)
-	defer u.logger.Infof(context, "%d response %d bytes", r.StatusCode, length)
+	defer context.Infof("%d response %d bytes", r.StatusCode, length)
 	if length > 0 && length < server.PoolItemSize {
 		buffer := server.Pool.Checkout()
 		buffer.ReadFrom(r.Body)

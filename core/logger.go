@@ -5,21 +5,21 @@ import (
 )
 
 type Logger interface {
-	// Log an informational message. If context is not nil, the
-	// RequestId is appended to the message
-	Infof(context Context, format string, v ...interface{})
+	// Log an informational message using the specified format
+	Infof(format string, v ...interface{})
 
-	// Log an informational message. If context is not nil, the
-	// RequestId is appended to the message
-	Info(context Context, v ...interface{})
+	// Log an informational message.
+	Info(v ...interface{})
 
-	// Log an error message. If context is not nil, the
-	// RequestId is appended to the message
-	Errorf(context Context, format string, v ...interface{})
+	// Log an error message using the specified format
+	Errorf(format string, v ...interface{})
 
-	// Log an error message. If context is not nil, the
-	// RequestId is appended to the message
-	Error(context Context, v ...interface{})
+	// Log an error message
+	Error(v ...interface{})
+
+	// Whether info messages should be logged
+	// Exposing this can allow implementers to take shortcuts and skip processing
+	LogInfo() bool
 }
 
 type FakeLogger struct {
@@ -30,18 +30,23 @@ func newFakeLogger() *FakeLogger {
 	return &FakeLogger{gofake.New()}
 }
 
-func (f *FakeLogger) Infof(context Context, format string, v ...interface{}) {
-	f.Called(context, format, v)
+func (f *FakeLogger) Infof(format string, v ...interface{}) {
+	f.Called(format, v)
 }
 
-func (f *FakeLogger) Info(context Context, v ...interface{}) {
-	f.Called(context, v)
+func (f *FakeLogger) Info(v ...interface{}) {
+	f.Called(v)
 }
 
-func (f *FakeLogger) Errorf(context Context, format string, v ...interface{}) {
-	f.Called(context, format, v)
+func (f *FakeLogger) Errorf(format string, v ...interface{}) {
+	f.Called(format, v)
 }
 
-func (f *FakeLogger) Error(context Context, v ...interface{}) {
-	f.Called(context, v)
+func (f *FakeLogger) Error(v ...interface{}) {
+	f.Called(v)
+}
+
+func (f *FakeLogger) LogInfo() bool {
+	returns := f.Called()
+	return returns.Bool(0, true)
 }

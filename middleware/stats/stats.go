@@ -6,7 +6,6 @@ import (
 )
 
 type Stats struct {
-	logger     core.Logger
 	routeStats map[string]*Stat
 }
 
@@ -23,7 +22,7 @@ func (s *Stats) Run(context core.Context, next core.Next) core.Response {
 }
 
 func (s *Stats) hit(context core.Context, response core.Response, elapsed time.Duration) {
-	s.logger.Infof(context, "%d µs", elapsed/1000)
+	context.Infof("%d µs", elapsed/1000)
 	stat, ok := s.routeStats[context.Route().Name]
 	if ok == false {
 		stat = s.routeStats["?"]

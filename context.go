@@ -4,13 +4,14 @@ import (
 	"github.com/karlseguin/garnish/core"
 	"github.com/karlseguin/nd"
 	"net/http"
+	"strings"
 )
 
 type context struct {
+	logger    core.Logger
 	requestId string
 	request   *http.Request
 	route     *core.Route
-	logger    core.Logger
 	params    core.Params
 	location  string
 }
@@ -18,9 +19,9 @@ type context struct {
 func newContext(req *http.Request, logger core.Logger) *context {
 	id := nd.Guidv4String()
 	return &context{
+		logger:    logger,
 		request:   req,
 		requestId: id,
-		logger:    logger,
 		location:  "handler",
 	}
 }
@@ -52,4 +53,32 @@ func (c *context) Location() string {
 
 func (c *context) SetLocation(location string) {
 	c.location = location
+}
+
+func (c *context) Info(v ...interface{}) {
+	if c.logger.LogInfo() {
+		c.infof(strings.Repeat("%q ", len(v)), v...)
+	}
+}
+
+func (c *context) Infof(format string, v ...interface{}) {
+	if c.logger.LogInfo() {
+		c.infof(format, v...)
+	}
+}
+
+func (c *context) infof(format string, v ...interface{}) {
+	c.logger.Infof("["+c.requestId+"] ["+c.location+"] "+format, v...)
+}
+
+func (c *context) Error(v ...interface{}) {
+	c.Errorf(strings.Repeat("%q ", len(v)), v)
+}
+
+func (c *context) Errorf(format string, v ...interface{}) {
+	c.logger.Errorf("["+c.requestId+"] ["+c.location+"] "+format, v...)
+}
+
+func (c *context) LogInfo() bool {
+	return c.logger.LogInfo()
 }

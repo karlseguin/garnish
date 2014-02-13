@@ -24,7 +24,7 @@ func (g *Garnish) Start(config *Configuration) {
 	runtime.GOMAXPROCS(config.maxProcs)
 
 	if len(config.middlewareFactories) == 0 {
-		config.logger.Error(nil, "must configure at least 1 middleware")
+		config.logger.Error("must configure at least 1 middleware")
 		os.Exit(1)
 	}
 
@@ -60,8 +60,8 @@ func (g *Garnish) Start(config *Configuration) {
 		ReadTimeout:    config.readTimeout,
 		MaxHeaderBytes: config.maxHeaderBytes,
 	}
-	config.logger.Infof(nil, "listening on %v", config.address)
-	config.logger.Error(nil, s.Serve(l))
+	config.logger.Infof("listening on %v", config.address)
+	config.logger.Error(s.Serve(l))
 }
 
 func (g *Garnish) ServeHTTP(output http.ResponseWriter, req *http.Request) {

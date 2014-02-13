@@ -98,7 +98,7 @@ func (c *Configuration) InternalError(message string) *Configuration {
 // As this breaks the chainable configuration, it'll normally be the last
 // step in configuration.
 func (c *Configuration) NewRouter() core.Router {
-	c.router = router.New(c.logger, c.middlewareFactories)
+	c.router = router.New(c.middlewareFactories)
 	return c.router
 }
 

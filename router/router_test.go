@@ -46,7 +46,7 @@ func TestRoutesMatchesANestedRouteAFailedConstraint(t *testing.T) {
 	spec := gspec.New(t)
 	req := gspec.Request().Url("/root/harkonnen.json").Req
 
-	router := New(core.DummyConfig.Logger(), nil)
+	router := New(nil)
 	router.Add("root", "GET", "/root")
 	router.Add("something", "GET", "/root/:something").Constrain("something", "one", "two")
 
@@ -59,7 +59,7 @@ func TestRoutesMatchesANestedRouteAPassedConstraint(t *testing.T) {
 	spec := gspec.New(t)
 	req := gspec.Request().Url("/root/one.json").Req
 
-	router := New(core.DummyConfig.Logger(), nil)
+	router := New(nil)
 	router.Add("root", "GET", "/root")
 	router.Add("something", "GET", "/root/:something").Constrain("something", "one", "two")
 
@@ -93,7 +93,7 @@ func TestRouterMatchesASimpleRoute(t *testing.T) {
 }
 
 func buildRouter(data ...string) *Router {
-	router := New(core.DummyConfig.Logger(), nil)
+	router := New(nil)
 	for i := 0; i < len(data); i += 2 {
 		router.Add(data[i+1], "GET", data[i])
 	}

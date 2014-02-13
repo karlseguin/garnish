@@ -34,23 +34,20 @@ func newHandler(config *Configuration) (*Handler, error) {
 		prev.next = link
 		prev = link
 	}
-	prev.next = &middlewareWrapper{
-		logger:     config.logger,
-		middleware: new(NotFoundMiddleware),
-	}
+	prev.next = &middlewareWrapper{middleware: new(NotFoundMiddleware)}
 
 	return h, nil
 }
 
 func (h *Handler) ServeHTTP(output http.ResponseWriter, req *http.Request) {
 	context := newContext(req, h.logger)
-	h.logger.Info(context, req.URL)
+	context.Info(req.URL)
 	route, params, response := h.router.Route(context)
 
 	if response != nil {
 		h.reply(context, response, output)
 	} else if route == nil {
-		h.logger.Info(context, "404")
+		context.Info("404")
 		h.reply(context, NotFound, output)
 	} else {
 		context.route = route
@@ -71,9 +68,9 @@ func (h *Handler) reply(context core.Context, response core.Response, output htt
 
 	if status >= 500 {
 		if fatal, ok := response.(*core.FatalResponse); ok {
-			h.logger.Errorf(context, "%q - %v", context.Request().URL, fatal.Err)
+			context.Errorf("%q - %v", context.Request().URL, fatal.Err)
 		} else {
-			h.logger.Errorf(context, "%q %d %v", context.Request().URL, status, string(body))
+			context.Errorf("%q %d %v", context.Request().URL, status, string(body))
 		}
 	}
 
@@ -85,7 +82,6 @@ func (h *Handler) reply(context core.Context, response core.Response, output htt
 type middlewareWrapper struct {
 	next       *middlewareWrapper
 	middleware core.Middleware
-	logger     core.Logger
 }
 
 func (wrapper *middlewareWrapper) Yield(context core.Context) core.Response {
@@ -104,8 +100,5 @@ func newMiddlewareWrapper(config *Configuration, index int) (*middlewareWrapper,
 	if err != nil {
 		return nil, err
 	}
-	return &middlewareWrapper{
-		logger:     config.logger,
-		middleware: middleware,
-	}, nil
+	return &middlewareWrapper{middleware: middleware}, nil
 }
