@@ -24,6 +24,7 @@ type RouteMap struct {
 	parameterName string
 	constraints   Contraints
 	routes        map[string]*RouteMap
+	prefixes      []*Prefix
 }
 
 type Segments []*Segment
@@ -31,6 +32,11 @@ type Segments []*Segment
 type Segment struct {
 	name          string
 	parameterName string
+}
+
+type Prefix struct {
+	value string
+	route *core.Route
 }
 
 type Router struct {
@@ -50,6 +56,7 @@ func New(middlewares []core.MiddlewareFactory) *Router {
 			"DELETE": newRouteMap(),
 			"PURGE":  newRouteMap(),
 			"PATCH":  newRouteMap(),
+			"OPTIONS": newRouteMap(),
 		},
 		middlewares: middlewares,
 	}
@@ -101,6 +108,13 @@ func (r *Router) Route(context core.Context) (*core.Route, core.Params, core.Res
 			}
 			params[node.parameterName] = part
 			rm = node
+		} else {
+			for _, prefix := range rm.prefixes {
+				if strings.HasPrefix(part, prefix.value) {
+					return prefix.route, params, nil
+				}
+			}
+			return nil, nil, nil
 		}
 	}
 	return route, params, nil
@@ -157,17 +171,25 @@ func (r *Router) Add(name, method, path string) core.RouteConfig {
 func (r *Router) add(root *RouteMap, route *core.Route, segments Segments) {
 	node := root
 	var added bool
-	for _, segment := range segments {
+	for index, segment := range segments {
 		name := segment.name
-		leaf, exists := node.routes[name]
-		if exists == false {
+		if name[len(name)-1] == '*' {
+			if index < len(segments) - 1 {
+				panic(fmt.Sprintf("The prefixed route %q is invalid. Nothing should come after '*'", route.Name))
+			}
+			prefix := &Prefix{value: name[:len(name)-1], route: route}
+			node.prefixes = append(node.prefixes, prefix)
 			added = true
-			leaf = newRouteMap()
-			node.routes[name] = leaf
+		} else {
+			leaf, exists := node.routes[name]
+			if exists == false {
+				added = true
+				leaf = newRouteMap()
+				node.routes[name] = leaf
+			}
+			leaf.parameterName = segment.parameterName
+			leaf.route = route
 		}
-		leaf.parameterName = segment.parameterName
-		leaf.route = route
-		node = leaf
 	}
 
 	if added == false {
@@ -241,5 +263,8 @@ func segment(path string) Segments {
 }
 
 func newRouteMap() *RouteMap {
-	return &RouteMap{routes: make(map[string]*RouteMap)}
+	return &RouteMap{
+		routes: make(map[string]*RouteMap),
+		prefixes: make([]*Prefix, 0, 1),
+	}
 }
