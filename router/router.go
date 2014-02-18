@@ -23,6 +23,7 @@ type RouteMap struct {
 	route         *core.Route
 	parameterName string
 	constraints   Contraints
+	fallback      *core.Route
 	routes        map[string]*RouteMap
 	prefixes      []*Prefix
 }
@@ -40,7 +41,6 @@ type Prefix struct {
 }
 
 type Router struct {
-	fallback    *core.Route
 	routes      map[string]*RouteMap
 	routeLookup map[string]*core.Route
 	middlewares []core.MiddlewareFactory
@@ -50,12 +50,12 @@ func New(middlewares []core.MiddlewareFactory) *Router {
 	return &Router{
 		routeLookup: make(map[string]*core.Route),
 		routes: map[string]*RouteMap{
-			"GET":    newRouteMap(),
-			"POST":   newRouteMap(),
-			"PUT":    newRouteMap(),
-			"DELETE": newRouteMap(),
-			"PURGE":  newRouteMap(),
-			"PATCH":  newRouteMap(),
+			"GET":     newRouteMap(),
+			"POST":    newRouteMap(),
+			"PUT":     newRouteMap(),
+			"DELETE":  newRouteMap(),
+			"PURGE":   newRouteMap(),
+			"PATCH":   newRouteMap(),
 			"OPTIONS": newRouteMap(),
 		},
 		middlewares: middlewares,
@@ -72,16 +72,12 @@ func (r *Router) Route(context core.Context) (*core.Route, core.Params, core.Res
 	rm, ok := r.routes[request.Method]
 	if ok == false {
 		context.Infof("unknown method %q", request.Method)
-		return r.fallback, nil, nil
+		return nil, nil, nil
 	}
 
 	path := request.URL.Path
 	if path == "/" {
-		route := rm.route
-		if route == nil {
-			route = r.fallback
-		}
-		return rm.route, nil, nil
+		return rm.fallback, nil, nil
 	}
 
 	params := make(core.Params)
@@ -89,7 +85,7 @@ func (r *Router) Route(context core.Context) (*core.Route, core.Params, core.Res
 		params["ext"] = path[extensionIndex+1:]
 		path = path[0:extensionIndex]
 	}
-	route := r.fallback
+	route := rm.fallback
 	parts := strings.Split(path[1:], "/")
 	for _, part := range parts {
 		if node, exists := rm.routes[part]; exists {
@@ -97,7 +93,7 @@ func (r *Router) Route(context core.Context) (*core.Route, core.Params, core.Res
 				route = node.route
 			}
 			rm = node
-		} else if node, exists := rm.routes["*"]; exists {
+		} else if node, exists := rm.routes["?"]; exists {
 			if node.constraints != nil {
 				if _, constrained := node.constraints[part]; constrained == false {
 					return nil, nil, nil
@@ -140,11 +136,6 @@ func (r *Router) Add(name, method, path string) core.RouteConfig {
 	r.routeLookup[name] = route
 
 	config := &RouteConfig{router: r, route: route}
-	if name == "fallback" {
-		r.fallback = route
-		return config
-	}
-
 	segments := segment(path)
 	methods := strings.Split(strings.Replace(strings.Replace(method, "GET", "GET,PURGE", -1), "*", "GET,PUT,POST,DELETE,PATCH,PURGE", -1), ",")
 	for _, method := range methods {
@@ -170,11 +161,15 @@ func (r *Router) Add(name, method, path string) core.RouteConfig {
 
 func (r *Router) add(root *RouteMap, route *core.Route, segments Segments) {
 	node := root
+	if len(segments) == 1 && segments[0].name == "*" {
+		root.fallback = route
+		return
+	}
 	var added bool
 	for index, segment := range segments {
 		name := segment.name
 		if name[len(name)-1] == '*' {
-			if index < len(segments) - 1 {
+			if index < len(segments)-1 {
 				panic(fmt.Sprintf("The prefixed route %q is invalid. Nothing should come after '*'", route.Name))
 			}
 			prefix := &Prefix{value: name[:len(name)-1], route: route}
@@ -189,6 +184,7 @@ func (r *Router) add(root *RouteMap, route *core.Route, segments Segments) {
 			}
 			leaf.parameterName = segment.parameterName
 			leaf.route = route
+			node = leaf
 		}
 	}
 
@@ -253,7 +249,7 @@ func segment(path string) Segments {
 		segment := new(Segment)
 		if part[0] == ':' {
 			segment.parameterName = part[1:]
-			segment.name = "*"
+			segment.name = "?"
 		} else {
 			segment.name = part
 		}
@@ -264,7 +260,7 @@ func segment(path string) Segments {
 
 func newRouteMap() *RouteMap {
 	return &RouteMap{
-		routes: make(map[string]*RouteMap),
+		routes:   make(map[string]*RouteMap),
 		prefixes: make([]*Prefix, 0, 1),
 	}
 }

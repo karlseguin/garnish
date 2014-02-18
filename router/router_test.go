@@ -17,16 +17,16 @@ func TestRouterReturnsNilIfRouteNotFound(t *testing.T) {
 func TestRouterMatchesRoot(t *testing.T) {
 	spec := gspec.New(t)
 	req := gspec.Request().Url("/").Req
-	route, _, res := buildRouter("/", "root").Route(core.ContextBuilder().SetRequest(req))
+	route, _, res := buildRouter("*", "root").Route(core.ContextBuilder().SetRequest(req))
 	spec.Expect(route.Name).ToEqual("root")
 	spec.Expect(res).ToBeNil()
 }
 
 func TestRoutesMatchesANestedRoute(t *testing.T) {
 	spec := gspec.New(t)
-	req := gspec.Request().Url("/houses/atreides/mentant.json").Req
-	route, params, res := buildRouter("/", "root", "/houses/", "houses", "/houses/:houseName/mentant/", "mentant").Route(core.ContextBuilder().SetRequest(req))
-	spec.Expect(route.Name).ToEqual("mentant")
+	req := gspec.Request().Url("/houses/atreides/mentants.json").Req
+	route, params, res := buildRouter("/", "root", "/houses/", "houses", "/houses/:houseName/mentants", "mentants").Route(core.ContextBuilder().SetRequest(req))
+	spec.Expect(route.Name).ToEqual("mentants")
 	spec.Expect(params["ext"]).ToEqual("json")
 	spec.Expect(params["houseName"]).ToEqual("atreides")
 	spec.Expect(res).ToBeNil()
@@ -68,11 +68,11 @@ func TestRoutesMatchesANestedRouteAPassedConstraint(t *testing.T) {
 	spec.Expect(res).ToBeNil()
 }
 
-func TestRoutesMatchesATheClosestMatch(t *testing.T) {
+func TestRoutesDontMatchPartials(t *testing.T) {
 	spec := gspec.New(t)
 	req := gspec.Request().Url("/houses/atreides/mentant").Req
 	route, _, res := buildRouter("/", "root", "/houses/", "houses").Route(core.ContextBuilder().SetRequest(req))
-	spec.Expect(route.Name).ToEqual("houses")
+	spec.Expect(route).ToBeNil()
 	spec.Expect(res).ToBeNil()
 }
 
@@ -86,8 +86,16 @@ func TestReturnsNilRouteWhenNoRouteMathes(t *testing.T) {
 
 func TestRouterMatchesASimpleRoute(t *testing.T) {
 	spec := gspec.New(t)
-	req := gspec.Request().Url("/houses/").Req
+	req := gspec.Request().Url("/houses").Req
 	route, _, res := buildRouter("/houses", "up1").Route(core.ContextBuilder().SetRequest(req))
+	spec.Expect(route.Name).ToEqual("up1")
+	spec.Expect(res).ToBeNil()
+}
+
+func TestRouterMatchsAPrefix(t *testing.T) {
+	spec := gspec.New(t)
+	req := gspec.Request().Url("/houses").Req
+	route, _, res := buildRouter("/house*", "up1").Route(core.ContextBuilder().SetRequest(req))
 	spec.Expect(route.Name).ToEqual("up1")
 	spec.Expect(res).ToBeNil()
 }
