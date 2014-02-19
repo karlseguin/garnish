@@ -17,6 +17,9 @@ func newHandler(config *Configuration) (*Handler, error) {
 	if config.router == nil {
 		return nil, errors.New("A router must be provided")
 	}
+	if !config.router.IsValid() {
+		return nil, nil
+	}
 	h := &Handler{
 		router: config.router,
 		logger: config.logger,

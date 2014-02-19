@@ -20,12 +20,12 @@ func New() *Garnish {
 }
 
 // Start garnish with the given configuraiton
-func (g *Garnish) Start(config *Configuration) {
+func (g *Garnish) Start(config *Configuration) bool {
 	runtime.GOMAXPROCS(config.maxProcs)
 
 	if len(config.middlewareFactories) == 0 {
 		config.logger.Error("must configure at least 1 middleware")
-		os.Exit(1)
+		return false
 	}
 
 	InternalError = Respond([]byte(config.internalErrorMessage)).Status(500)
@@ -44,15 +44,19 @@ func (g *Garnish) Start(config *Configuration) {
 
 	l, err := net.Listen(protocol, address)
 	if err != nil {
-		config.logger.Error(nil, err)
-		os.Exit(1)
+		config.logger.Error(err)
+		return false
 	}
 
 	handler, err := newHandler(config)
 	if err != nil {
-		config.logger.Error(nil, err)
-		os.Exit(1)
+		config.logger.Error(err)
+		return false
 	}
+	if handler == nil {
+		return false
+	}
+
 	g.handler = handler
 	g.logger = config.logger
 	s := &http.Server{
@@ -62,6 +66,7 @@ func (g *Garnish) Start(config *Configuration) {
 	}
 	config.logger.Infof("listening on %v", config.address)
 	config.logger.Error(s.Serve(l))
+	return false
 }
 
 func (g *Garnish) ServeHTTP(output http.ResponseWriter, req *http.Request) {

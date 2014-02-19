@@ -78,6 +78,10 @@ func (r *FakeRouter) Routes() map[string]*core.Route {
 	return nil
 }
 
+func (r *FakeRouter) IsValid() bool {
+	return true
+}
+
 type nilMiddleware struct{}
 
 func (m *nilMiddleware) Name() string {

@@ -12,6 +12,7 @@ type Router interface {
 	Route(context Context) (*Route, Params, Response)
 	Add(name, method, path string) RouteConfig
 	Routes() map[string]*Route
+	IsValid() bool
 }
 
 type RouteConfig interface {
@@ -49,4 +50,9 @@ func (f *FakeRouter) Add(name, method, path string) RouteConfig {
 func (f *FakeRouter) Routes() map[string]*Route {
 	f.Called()
 	return nil
+}
+
+func (f *FakeRouter) IsValid() bool {
+	f.Called()
+	return true
 }

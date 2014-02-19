@@ -24,6 +24,7 @@ type Configuration struct {
 	keyGenerator   KeyGenerator
 	routeConfigs   map[string]*RouteConfig
 	authorizePurge AuthorizePurge
+	error          error
 }
 
 func Configure() *Configuration {
@@ -40,6 +41,9 @@ func Configure() *Configuration {
 func (c *Configuration) Create(config core.Configuration) (core.Middleware, error) {
 	if c.cache == nil {
 		return nil, errors.New("Cannot using caching middleware without specifying a Cache")
+	}
+	if c.error != nil {
+		return nil, c.error
 	}
 	for name, _ := range config.Router().Routes() {
 		if _, ok := c.routeConfigs[name]; ok == false {
@@ -60,7 +64,7 @@ func (c *Configuration) Create(config core.Configuration) (core.Middleware, erro
 // [nil]
 func (c *Configuration) Cache(cache caches.Cache) *Configuration {
 	if c.overriding != nil {
-		panic("cache cannot be specified on a per-route basis")
+		c.error = errors.New("cache cannot be specified on a per-route basis")
 	}
 	c.cache = cache
 	return c

@@ -1,6 +1,7 @@
 package stats
 
 import (
+	"errors"
 	"github.com/karlseguin/garnish/core"
 	"strconv"
 	"time"
@@ -22,6 +23,7 @@ type Configuration struct {
 	routeStats  map[string]*Stat
 	persister   Persister
 	percentiles map[string]float64
+	error       error
 }
 
 func Configure() *Configuration {
@@ -38,6 +40,9 @@ func Configure() *Configuration {
 
 // Create the middleware from the configuration
 func (c *Configuration) Create(config core.Configuration) (core.Middleware, error) {
+	if c.error != nil {
+		return nil, c.error
+	}
 	for name, _ := range config.Router().Routes() {
 		if _, ok := c.routeStats[name]; ok == false {
 			c.routeStats[name] = newStat(c)
@@ -87,12 +92,12 @@ func (c *Configuration) SampleSize(size int) *Configuration {
 // Can be set globally
 
 // [1 minute]
-func (c *Configuration) Window(window time.Duration) *Configuration {
+func (c *Configuration) Window(window time.Duration) (*Configuration, error) {
 	if c.overriding != nil {
-		panic("stats window can only be configured globally")
+		return nil, errors.New("stats window can only be configured globally")
 	}
 	c.window = window
-	return c
+	return c, nil
 }
 
 // The persister responsible for saving the statistics
@@ -102,7 +107,7 @@ func (c *Configuration) Window(window time.Duration) *Configuration {
 // [FilePersister("./stats.json")]
 func (c *Configuration) Persister(persister Persister) *Configuration {
 	if c.overriding != nil {
-		panic("stats persister can only be configured globally")
+		c.error = errors.New("stats persister can only be configured globally")
 	}
 	c.persister = persister
 	return c
