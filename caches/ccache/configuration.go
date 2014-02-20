@@ -16,7 +16,7 @@ func Configure() *Configuration {
 		deleteBuffer:   1024,
 		getsPerPromote: 10,
 		promoteBuffer:  1024,
-		size:           500 * 1024 * 1024,
+		size:           100 * 1024 * 1024,
 	}
 }
 

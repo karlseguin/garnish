@@ -211,6 +211,10 @@ type RouteConfig struct {
 	segments Segments
 }
 
+func (r *RouteConfig) Route() *core.Route {
+	return r.route
+}
+
 func (r *RouteConfig) Constrain(parameterName string, values ...string) core.RouteConfig {
 	for _, method := range r.methods {
 		root := r.router.routes[method]
