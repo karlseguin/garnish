@@ -15,6 +15,7 @@ type Caching struct {
 	routeConfigs map[string]*RouteConfig
 	cache        caches.Cache
 	lock         sync.RWMutex
+	runtimeSkip  RuntimeSkip
 	downloading  map[string]time.Time
 }
 
@@ -34,6 +35,11 @@ func (c *Caching) Run(context core.Context, next core.Next) core.Response {
 	config := c.routeConfigs[context.Route().Name]
 	if config.ttl == 0 {
 		context.Info("not cacheable")
+		return next(context)
+	}
+
+	if c.runtimeSkip != nil && c.runtimeSkip(context) {
+		context.Info("runtime skip")
 		return next(context)
 	}
 

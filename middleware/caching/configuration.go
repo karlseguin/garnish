@@ -14,6 +14,9 @@ type AuthorizePurge func(context core.Context) bool
 // Generate a cache key and the vary parameters
 type KeyGenerator func(context core.Context) (string, string)
 
+// Callback to call at runtime which can decide to skip checking the cache
+type RuntimeSkip func(context core.Context) bool
+
 // Configuration for the Caching middleware
 type Configuration struct {
 	overriding     *RouteConfig
@@ -21,6 +24,7 @@ type Configuration struct {
 	grace          time.Duration
 	saint          time.Duration
 	ttl            time.Duration
+	runtimeSkip    RuntimeSkip
 	keyGenerator   KeyGenerator
 	routeConfigs   map[string]*RouteConfig
 	authorizePurge AuthorizePurge
@@ -53,6 +57,7 @@ func (c *Configuration) Create(config core.Configuration) (core.Middleware, erro
 	return &Caching{
 		cache:        c.cache,
 		routeConfigs: c.routeConfigs,
+		runtimeSkip:  c.runtimeSkip,
 		downloading:  make(map[string]time.Time),
 	}, nil
 }
@@ -153,6 +158,21 @@ func (c *Configuration) TTL(ttl time.Duration) *Configuration {
 
 func (c *Configuration) Never() *Configuration {
 	return c.TTL(0)
+}
+
+// A callback to call on each request which can be used to skip checking the
+// cache. A common use case for this might be to skip the cache for certain
+// user roles or if a nocache parameter is present in the query string.
+//
+// Can be set globally
+//
+// [nil]
+func (c *Configuration) RuntimeSkip(callback RuntimeSkip) *Configuration {
+	if c.overriding != nil {
+		c.error = errors.New("runtimeSkip cannot be specified on a per-route basis")
+	}
+	c.runtimeSkip = callback
+	return c
 }
 
 func (c *Configuration) OverrideFor(route *core.Route) {

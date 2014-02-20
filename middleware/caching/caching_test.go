@@ -37,6 +37,15 @@ func TestReturnsAFreshResult(t *testing.T) {
 	spec.Expect(res.GetStatus()).ToEqual(9001)
 }
 
+func TestSkipsCacheOnCallback(t *testing.T) {
+	spec := gspec.New(t)
+	context := core.ContextBuilder().SetRequest(gspec.Request().Method("GET").Req)
+	caching, _ := Configure().Cache(newFakeStorage()).RuntimeSkip(func(context core.Context) bool { return true }).Create(core.DummyConfig)
+	buildCaching(caching, "goku", "power")
+	res := caching.Run(context, core.FakeNext(core.Respond(nil).Status(123)))
+	spec.Expect(res.GetStatus()).ToEqual(123)
+}
+
 func TestReturnsASlightlyStaleResult(t *testing.T) {
 	graceCalled := false
 	stubGrace(&graceCalled)
