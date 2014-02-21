@@ -7,8 +7,6 @@ import (
 	"github.com/karlseguin/garnish/caches/ccache"
 	"github.com/karlseguin/garnish/core"
 	"github.com/karlseguin/garnish/middleware/caching"
-	"github.com/karlseguin/garnish/middleware/dispatch"
-	"github.com/karlseguin/garnish/middleware/hydrate"
 	"github.com/karlseguin/garnish/middleware/stats"
 	"github.com/karlseguin/garnish/middleware/upstream"
 	"github.com/karlseguin/garnish/router"
@@ -164,8 +162,6 @@ func ConfigureFromFile(path string) (*Configuration, error) {
 var configuatorFactories = map[string]func() core.MiddlewareFactory{
 	"stats":    func() core.MiddlewareFactory { return stats.Configure() },
 	"caching":  func() core.MiddlewareFactory { return caching.Configure() },
-	"hydrate":  func() core.MiddlewareFactory { return hydrate.Configure() },
-	"dispatch": func() core.MiddlewareFactory { return dispatch.Configure() },
 	"upstream": func() core.MiddlewareFactory { return upstream.Configure() },
 }
 
@@ -190,10 +186,6 @@ func mapMiddlewareConfig(config *Configuration, data map[string]interface{}, con
 			mapStatsConfig(configurator.(*stats.Configuration), configData)
 		case "caching":
 			mapCachingConfig(configurator.(*caching.Configuration), configData)
-		case "hydrate":
-			mapHydrateConfig(configurator.(*hydrate.Configuration), configData)
-		case "dispatch":
-			mapDispatchConfig(configurator.(*dispatch.Configuration), configData)
 		case "upstream":
 			mapUpstreamConfig(configurator.(*upstream.Configuration), configData)
 		}
@@ -207,34 +199,90 @@ func mapCoreConfig(config *Configuration, configData map[string]interface{}) {
 			config.LogInfo()
 		case "listen":
 			config.Listen(value.(string))
+		case "threads":
+			config.MaxiumOSThreads(toInt(value))
+		case "readtimeout":
+			config.ReadTimeout(toDuration(value))
+		case "maxheaderbytes":
+			config.MaxHeaderBytes(toInt(value))
 		}
 	}
 }
 
-func mapStatsConfig(configuration *stats.Configuration, configData map[string]interface{}) {
-
+func mapStatsConfig(config *stats.Configuration, configData map[string]interface{}) {
+	for key, value := range configData {
+		switch strings.ToLower(key) {
+		case "samplesize":
+			config.SampleSize(toInt(value))
+		case "window":
+			config.Window(toDuration(value))
+		case "output":
+			config.Persister(&stats.FilePersister{value.(string)})
+		case "treshhold":
+			config.Treshhold(toDuration(value))
+		case "percentiles":
+			floats := value.([]float64)
+			ints := make([]int, 0, len(floats))
+			for index, flt := range floats {
+				ints[index] = int(flt)
+			}
+			config.Percentiles(ints...)
+		}
+	}
 }
 
-func mapCachingConfig(configuration *caching.Configuration, configData map[string]interface{}) {
+func mapCachingConfig(config *caching.Configuration, configData map[string]interface{}) {
 	if f, ok := configData["size"].(float64); ok {
-		configuration.Cache(ccache.New(ccache.Configure().Size(uint64(f))))
+		config.Cache(ccache.New(ccache.Configure().Size(uint64(f))))
 	}
 	for key, value := range configData {
 		switch key {
 		case "ttl":
-			configuration.TTL(time.Duration(int(value.(float64))))
+			config.TTL(toDuration(value))
+		case "grace":
+			config.Grace(toDuration(value))
+		case "saint":
+			config.Saint(toDuration(value))
 		}
 	}
 }
 
-func mapHydrateConfig(configuration *hydrate.Configuration, configData map[string]interface{}) {
-
+func mapUpstreamConfig(config *upstream.Configuration, configData map[string]interface{}) {
+	for key, value := range configData {
+		switch strings.ToLower(key) {
+		case "forwardheaders":
+			config.ForwardHeaders(value.([]string)...)
+		case "dnsrefresh":
+			config.DnsRefresh(toDuration(value))
+		case "servers":
+			for _, raw := range value.([]interface{}) {
+				serverConfig := raw.(map[string]interface{})
+				server := config.Add(serverConfig["name"].(string), serverConfig["scheme"].(string), serverConfig["address"].(string))
+				mapServerConfig(server, serverConfig)
+			}
+		case "upstream":
+			config.Is(value.(string))
+		}
+	}
 }
 
-func mapDispatchConfig(configuration *dispatch.Configuration, configData map[string]interface{}) {
-
+func mapServerConfig(server *upstream.Server, configData map[string]interface{}) {
+	for key, value := range configData {
+		switch strings.ToLower(key) {
+		case "keepalive":
+			if value.(bool) == false {
+				server.DisableKeepAlives()
+			}
+		case "maxidle":
+			server.MaxIdleConnectionsPerHost(toInt(value))
+		}
+	}
 }
 
-func mapUpstreamConfig(configuration *upstream.Configuration, configData map[string]interface{}) {
+func toInt(value interface{}) int {
+	return int(value.(float64))
+}
 
+func toDuration(value interface{}) time.Duration {
+	return time.Duration(int(value.(float64)))
 }

@@ -7,11 +7,11 @@ import (
 )
 
 type FilePersister struct {
-	path string
+	Path string
 }
 
 func (p *FilePersister) Persist(data map[string]Snapshot) error {
-	file, err := os.OpenFile(p.path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
+	file, err := os.OpenFile(p.Path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
 	if err != nil {
 		return err
 	}
