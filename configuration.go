@@ -221,10 +221,10 @@ func mapStatsConfig(config *stats.Configuration, configData map[string]interface
 		case "treshhold":
 			config.Treshhold(toDuration(value))
 		case "percentiles":
-			floats := value.([]float64)
-			ints := make([]int, 0, len(floats))
+			floats := value.([]interface{})
+			ints := make([]int, len(floats))
 			for index, flt := range floats {
-				ints[index] = int(flt)
+				ints[index] = int(flt.(float64))
 			}
 			config.Percentiles(ints...)
 		}
