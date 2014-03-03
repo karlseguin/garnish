@@ -121,6 +121,19 @@ func (c *Configuration) Router() core.Router {
 	return c.router
 }
 
+// Apply an override to a specific route
+func (c *Configuration) Override(routeName string, override func()) {
+	route, ok := c.router.Routes()[routeName]
+	if ok == false {
+		c.logger.Errorf("Trying to override unknown route: %q", routeName)
+		return
+	}
+	for _, middleware := range c.middlewareFactories {
+		middleware.OverrideFor(route)
+	}
+	override()
+}
+
 func ConfigureFromJson(bytes []byte) (config *Configuration, err error) {
 	defer func() {
 		if e := recover(); e != nil {
