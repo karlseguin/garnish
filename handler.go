@@ -2,14 +2,14 @@ package garnish
 
 import (
 	"errors"
-	"github.com/karlseguin/garnish/core"
+	"github.com/karlseguin/garnish/gc"
 	"net/http"
 	"strconv"
 )
 
 type Handler struct {
-	router core.Router
-	logger core.Logger
+	router gc.Router
+	logger gc.Logger
 	head   *middlewareWrapper
 }
 
@@ -59,7 +59,7 @@ func (h *Handler) ServeHTTP(output http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func (h *Handler) reply(context core.Context, response core.Response, output http.ResponseWriter) {
+func (h *Handler) reply(context gc.Context, response gc.Response, output http.ResponseWriter) {
 	defer response.Close()
 	outHeader := output.Header()
 	for k, v := range response.GetHeader() {
@@ -70,7 +70,7 @@ func (h *Handler) reply(context core.Context, response core.Response, output htt
 	status := response.GetStatus()
 
 	if status >= 500 {
-		if fatal, ok := response.(*core.FatalResponse); ok {
+		if fatal, ok := response.(*gc.FatalResponse); ok {
 			context.Errorf("%q - %v", context.Request().URL, fatal.Err)
 		} else {
 			context.Errorf("%q %d %v", context.Request().URL, status, string(body))
@@ -84,13 +84,13 @@ func (h *Handler) reply(context core.Context, response core.Response, output htt
 
 type middlewareWrapper struct {
 	next       *middlewareWrapper
-	middleware core.Middleware
+	middleware gc.Middleware
 }
 
-func (wrapper *middlewareWrapper) Yield(context core.Context) core.Response {
+func (wrapper *middlewareWrapper) Yield(context gc.Context) gc.Response {
 	defer context.SetLocation(context.Location())
 	context.SetLocation(wrapper.middleware.Name())
-	var next core.Next
+	var next gc.Next
 	if wrapper.next != nil {
 		next = wrapper.next.Yield
 	}

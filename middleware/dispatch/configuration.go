@@ -1,10 +1,10 @@
 package dispatch
 
 import (
-	"github.com/karlseguin/garnish/core"
+	"github.com/karlseguin/garnish/gc"
 )
 
-type Dispatcher func(action interface{}, context core.Context) core.Response
+type Dispatcher func(action interface{}, context gc.Context) gc.Response
 
 // Configuration for upstreams middleware
 type Configuration struct {
@@ -20,7 +20,7 @@ func Configure() *Configuration {
 }
 
 // Create the middleware from the configuration
-func (c *Configuration) Create(config core.Configuration) (core.Middleware, error) {
+func (c *Configuration) Create(config gc.Configuration) (gc.Middleware, error) {
 	return &Dispatch{
 		actions:    c.actions,
 		dispatcher: c.dispatcher,
@@ -38,7 +38,7 @@ func (c *Configuration) Dispatch(dispatcher Dispatcher) *Configuration {
 	return c
 }
 
-func (c *Configuration) OverrideFor(route *core.Route) {
+func (c *Configuration) OverrideFor(route *gc.Route) {
 	c.overriding = route.Name
 }
 

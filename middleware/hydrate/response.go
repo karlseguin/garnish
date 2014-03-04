@@ -2,7 +2,7 @@ package hydrate
 
 import (
 	"github.com/karlseguin/bytepool"
-	"github.com/karlseguin/garnish/core"
+	"github.com/karlseguin/garnish/gc"
 	"net/http"
 )
 
@@ -38,6 +38,6 @@ func (r *Response) Close() error {
 	return nil
 }
 
-func (r *Response) Detach() core.Response {
+func (r *Response) Detach() gc.Response {
 	return r
 }

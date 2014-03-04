@@ -3,7 +3,7 @@ package hydrate
 import (
 	"bytes"
 	"github.com/karlseguin/bytepool"
-	"github.com/karlseguin/garnish/core"
+	"github.com/karlseguin/garnish/gc"
 )
 
 type Hydrate struct {
@@ -14,7 +14,7 @@ func (h *Hydrate) Name() string {
 	return "hydrate"
 }
 
-func (h *Hydrate) Run(context core.Context, next core.Next) core.Response {
+func (h *Hydrate) Run(context gc.Context, next gc.Next) gc.Response {
 	response := next(context)
 	if response == nil {
 		return response
@@ -27,7 +27,7 @@ func (h *Hydrate) Run(context core.Context, next core.Next) core.Response {
 	return h.parse(response)
 }
 
-func (h *Hydrate) parse(response core.Response) core.Response {
+func (h *Hydrate) parse(response gc.Response) gc.Response {
 	body := response.GetBody()
 	segments := make([]Segment, 0, 10)
 	position := 0

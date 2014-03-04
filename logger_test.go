@@ -3,7 +3,7 @@ package garnish
 import (
 	"bytes"
 	"fmt"
-	"github.com/karlseguin/garnish/core"
+	"github.com/karlseguin/garnish/gc"
 	"github.com/karlseguin/gspec"
 	"log"
 	"testing"
@@ -37,7 +37,7 @@ func TestLoggerIncludesTheRequestIdForErrorMessage(t *testing.T) {
 	spec.Expect(buffer.String()).ToEqual("error msg\n")
 }
 
-func testLogger(info bool) (core.Logger, *bytes.Buffer) {
+func testLogger(info bool) (gc.Logger, *bytes.Buffer) {
 	buffer := bytes.NewBuffer(make([]byte, 0, 1024))
 	return &logger{info, log.New(buffer, "", 0)}, buffer
 }

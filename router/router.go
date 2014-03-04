@@ -12,17 +12,17 @@
 package router
 
 import (
-	"github.com/karlseguin/garnish/core"
+	"github.com/karlseguin/garnish/gc"
 	"strings"
 )
 
 type Contraints map[string]struct{}
 
 type RouteMap struct {
-	route         *core.Route
+	route         *gc.Route
 	parameterName string
 	constraints   Contraints
-	fallback      *core.Route
+	fallback      *gc.Route
 	routes        map[string]*RouteMap
 	prefixes      []*Prefix
 }
@@ -36,20 +36,20 @@ type Segment struct {
 
 type Prefix struct {
 	value string
-	route *core.Route
+	route *gc.Route
 }
 
 type Router struct {
 	routes      map[string]*RouteMap
-	routeLookup map[string]*core.Route
-	middlewares []core.MiddlewareFactory
-	logger      core.Logger
+	routeLookup map[string]*gc.Route
+	middlewares []gc.MiddlewareFactory
+	logger      gc.Logger
 	valid       bool
 }
 
-func New(logger core.Logger, middlewares []core.MiddlewareFactory) *Router {
+func New(logger gc.Logger, middlewares []gc.MiddlewareFactory) *Router {
 	return &Router{
-		routeLookup: make(map[string]*core.Route),
+		routeLookup: make(map[string]*gc.Route),
 		routes: map[string]*RouteMap{
 			"GET":     newRouteMap(),
 			"POST":    newRouteMap(),
@@ -65,11 +65,11 @@ func New(logger core.Logger, middlewares []core.MiddlewareFactory) *Router {
 	}
 }
 
-func (r *Router) Routes() map[string]*core.Route {
+func (r *Router) Routes() map[string]*gc.Route {
 	return r.routeLookup
 }
 
-func (r *Router) Route(context core.Context) (*core.Route, core.Params, core.Response) {
+func (r *Router) Route(context gc.Context) (*gc.Route, gc.Params, gc.Response) {
 	request := context.Request()
 
 	rm, ok := r.routes[request.Method]
@@ -83,7 +83,7 @@ func (r *Router) Route(context core.Context) (*core.Route, core.Params, core.Res
 		return rm.fallback, nil, nil
 	}
 
-	params := make(core.Params)
+	params := make(gc.Params)
 	if extensionIndex := strings.LastIndex(path, "."); extensionIndex != -1 {
 		params["ext"] = path[extensionIndex+1:]
 		path = path[0:extensionIndex]
@@ -130,13 +130,13 @@ func (r *Router) Route(context core.Context) (*core.Route, core.Params, core.Res
 // The path can include named captures: /product/:id
 
 // This method is not thread safe. It is expected
-func (r *Router) Add(name, method, path string) core.RouteConfig {
+func (r *Router) Add(name, method, path string) gc.RouteConfig {
 	if _, exists := r.routeLookup[name]; exists {
 		r.logger.Errorf("Route names must be unique, %q used twice", name)
 		r.valid = false
 	}
 
-	route := core.NewRoute(name)
+	route := gc.NewRoute(name)
 	r.routeLookup[name] = route
 
 	config := &RouteConfig{router: r, route: route}
@@ -168,7 +168,7 @@ func (r *Router) IsValid() bool {
 	return r.valid
 }
 
-func (r *Router) add(root *RouteMap, route *core.Route, segments Segments) {
+func (r *Router) add(root *RouteMap, route *gc.Route, segments Segments) {
 	node := root
 	if len(segments) == 1 && segments[0].name == "*" {
 		root.fallback = route
@@ -206,16 +206,16 @@ func (r *Router) add(root *RouteMap, route *core.Route, segments Segments) {
 
 type RouteConfig struct {
 	router   *Router
-	route    *core.Route
+	route    *gc.Route
 	methods  []string
 	segments Segments
 }
 
-func (r *RouteConfig) Route() *core.Route {
+func (r *RouteConfig) Route() *gc.Route {
 	return r.route
 }
 
-func (r *RouteConfig) Constrain(parameterName string, values ...string) core.RouteConfig {
+func (r *RouteConfig) Constrain(parameterName string, values ...string) gc.RouteConfig {
 	for _, method := range r.methods {
 		root := r.router.routes[method]
 		r.applyConstraint(root, r.segments, parameterName, values...)
@@ -223,7 +223,7 @@ func (r *RouteConfig) Constrain(parameterName string, values ...string) core.Rou
 	return r
 }
 
-func (r *RouteConfig) Override(override func()) core.RouteConfig {
+func (r *RouteConfig) Override(override func()) gc.RouteConfig {
 	for _, middleware := range r.router.middlewares {
 		middleware.OverrideFor(r.route)
 	}

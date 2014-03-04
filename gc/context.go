@@ -1,4 +1,4 @@
-package core
+package gc
 
 import (
 	"net/http"
@@ -29,6 +29,12 @@ type Context interface {
 
 	// Set the current location for logging
 	SetLocation(string)
+
+	// Gets the user
+	User() User
+
+	// Sets the user
+	SetUser(user User)
 }
 
 // Context Builder is largely available for testing
@@ -41,6 +47,7 @@ type CB struct {
 	route     *Route
 	params    Params
 	location  string
+	user      User
 }
 
 func ContextBuilder() *CB {
@@ -94,4 +101,12 @@ func (c *CB) Location() string {
 
 func (c *CB) SetLocation(location string) {
 	c.location = location
+}
+
+func (c *CB) SetUser(user User) {
+	c.user = user
+}
+
+func (c *CB) User() User {
+	return c.user
 }

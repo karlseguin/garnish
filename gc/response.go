@@ -1,4 +1,4 @@
-package core
+package gc
 
 import (
 	"net/http"

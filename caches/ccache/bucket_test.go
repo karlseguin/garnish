@@ -2,7 +2,7 @@ package ccache
 
 import (
 	"github.com/karlseguin/garnish/caches"
-	"github.com/karlseguin/garnish/core"
+	"github.com/karlseguin/garnish/gc"
 	"github.com/karlseguin/gspec"
 	"testing"
 )
@@ -75,6 +75,6 @@ func assertValue(t *testing.T, item *Item, expected string) {
 
 func fakeResponse(body string) *caches.CachedResponse {
 	return &caches.CachedResponse{
-		Response: core.Respond([]byte(body)),
+		Response: gc.Respond([]byte(body)),
 	}
 }

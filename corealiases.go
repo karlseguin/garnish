@@ -1,7 +1,8 @@
 package garnish
 
 import (
-	"github.com/karlseguin/garnish/core"
+	"github.com/karlseguin/garnish/gc"
+	"github.com/karlseguin/garnish/middleware/access"
 	"github.com/karlseguin/garnish/middleware/caching"
 	"github.com/karlseguin/garnish/middleware/dispatch"
 	"github.com/karlseguin/garnish/middleware/hydrate"
@@ -15,13 +16,14 @@ var (
 	Caching  = caching.Configure()
 	Dispatch = dispatch.Configure()
 	Hydrate  = hydrate.Configure()
+	Access   = access.Configure()
 
-	Unauthorized  = core.Unauthorized
-	NotFound      = core.NotFound
-	InternalError = core.InternalError
-	Json          = core.Json
-	Respond       = core.Respond
-	RespondH      = core.RespondH
-	Fatal         = core.Fatal
-	Redirect      = core.Redirect
+	Unauthorized  = gc.Unauthorized
+	NotFound      = gc.NotFound
+	InternalError = gc.InternalError
+	Json          = gc.Json
+	Respond       = gc.Respond
+	RespondH      = gc.RespondH
+	Fatal         = gc.Fatal
+	Redirect      = gc.Redirect
 )

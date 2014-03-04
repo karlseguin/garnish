@@ -1,4 +1,4 @@
-package core
+package gc
 
 type Middleware interface {
 	Name() string

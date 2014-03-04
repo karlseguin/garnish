@@ -1,7 +1,7 @@
 package stats
 
 import (
-	"github.com/karlseguin/garnish/core"
+	"github.com/karlseguin/garnish/gc"
 	"time"
 )
 
@@ -13,7 +13,7 @@ func (s *Stats) Name() string {
 	return "stats"
 }
 
-func (s *Stats) Run(context core.Context, next core.Next) core.Response {
+func (s *Stats) Run(context gc.Context, next gc.Next) gc.Response {
 	start := time.Now()
 	response := next(context)
 	elapsed := time.Now().Sub(start)
@@ -21,7 +21,7 @@ func (s *Stats) Run(context core.Context, next core.Next) core.Response {
 	return response
 }
 
-func (s *Stats) hit(context core.Context, response core.Response, elapsed time.Duration) {
+func (s *Stats) hit(context gc.Context, response gc.Response, elapsed time.Duration) {
 	context.Infof("%d µs", elapsed/1000)
 	stat, ok := s.routeStats[context.Route().Name]
 	if ok == false {

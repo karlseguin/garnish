@@ -3,7 +3,7 @@ package caching
 
 import (
 	"github.com/karlseguin/garnish/caches"
-	"github.com/karlseguin/garnish/core"
+	"github.com/karlseguin/garnish/gc"
 	"net/http"
 	"strconv"
 	"strings"
@@ -24,14 +24,14 @@ func (c *Caching) Name() string {
 }
 
 var (
-	grace = func(c *Caching, key, vary string, context core.Context, config *RouteConfig, next core.Next) {
+	grace = func(c *Caching, key, vary string, context gc.Context, config *RouteConfig, next gc.Next) {
 		go c.grace(key, vary, context, config, next)
 	}
-	purgeHitResponse  = core.Respond([]byte("")).Status(200)
-	purgeMissResponse = core.Respond([]byte("")).Status(204)
+	purgeHitResponse  = gc.Respond([]byte("")).Status(200)
+	purgeMissResponse = gc.Respond([]byte("")).Status(204)
 )
 
-func (c *Caching) Run(context core.Context, next core.Next) core.Response {
+func (c *Caching) Run(context gc.Context, next gc.Next) gc.Response {
 	config := c.routeConfigs[context.Route().Name]
 	if config.ttl == 0 {
 		context.Info("not cacheable")
@@ -55,7 +55,7 @@ func (c *Caching) Run(context core.Context, next core.Next) core.Response {
 	}
 }
 
-func (c *Caching) get(context core.Context, config *RouteConfig, request *http.Request, next core.Next) core.Response {
+func (c *Caching) get(context gc.Context, config *RouteConfig, request *http.Request, next gc.Next) gc.Response {
 	key, vary := config.keyGenerator(context)
 	cached := c.cache.Get(key, vary)
 	if cached != nil {
@@ -86,7 +86,7 @@ func (c *Caching) get(context core.Context, config *RouteConfig, request *http.R
 	return response
 }
 
-func (c *Caching) set(key, vary string, context core.Context, config *RouteConfig, response core.Response) {
+func (c *Caching) set(key, vary string, context gc.Context, config *RouteConfig, response gc.Response) {
 	ttl, ok := ttl(config, response)
 	if ok == false {
 		context.Error("configured to cache but no expiry was given")
@@ -100,7 +100,7 @@ func (c *Caching) set(key, vary string, context core.Context, config *RouteConfi
 	c.cache.Set(key, vary, cr)
 }
 
-func ttl(config *RouteConfig, response core.Response) (time.Duration, bool) {
+func ttl(config *RouteConfig, response gc.Response) (time.Duration, bool) {
 	status := response.GetStatus()
 	if status >= 200 && status <= 400 && config.ttl.Nanoseconds() > 0 {
 		return config.ttl, true
@@ -118,7 +118,7 @@ func ttl(config *RouteConfig, response core.Response) (time.Duration, bool) {
 	return time.Second, false
 }
 
-func (c *Caching) grace(key, vary string, context core.Context, config *RouteConfig, next core.Next) {
+func (c *Caching) grace(key, vary string, context gc.Context, config *RouteConfig, next gc.Next) {
 	downloadKey := key + vary
 	if c.isDownloading(downloadKey) {
 		return
@@ -160,10 +160,10 @@ func (c *Caching) unlockDownload(key string) {
 	c.lock.Unlock()
 }
 
-func (c *Caching) purge(context core.Context, config *RouteConfig, request *http.Request) core.Response {
+func (c *Caching) purge(context gc.Context, config *RouteConfig, request *http.Request) gc.Response {
 	if config.authorizePurge == nil || config.authorizePurge(context) == false {
 		context.Info("unauthorized purge")
-		return core.Unauthorized
+		return gc.Unauthorized
 	}
 	key, _ := config.keyGenerator(context)
 	if c.cache.Delete(key) {

@@ -1,11 +1,11 @@
 package caches
 
 import (
-	"github.com/karlseguin/garnish/core"
+	"github.com/karlseguin/garnish/gc"
 	"time"
 )
 
 type CachedResponse struct {
 	Expires time.Time
-	core.Response
+	gc.Response
 }

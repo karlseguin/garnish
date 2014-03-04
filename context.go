@@ -1,22 +1,23 @@
 package garnish
 
 import (
-	"github.com/karlseguin/garnish/core"
+	"github.com/karlseguin/garnish/gc"
 	"github.com/karlseguin/nd"
 	"net/http"
 	"strings"
 )
 
 type context struct {
-	logger    core.Logger
+	logger    gc.Logger
 	requestId string
 	request   *http.Request
-	route     *core.Route
-	params    core.Params
+	route     *gc.Route
+	params    gc.Params
 	location  string
+	user gc.User
 }
 
-func newContext(req *http.Request, logger core.Logger) *context {
+func newContext(req *http.Request, logger gc.Logger) *context {
 	id := nd.Guidv4String()
 	return &context{
 		logger:    logger,
@@ -34,15 +35,15 @@ func (c *context) Request() *http.Request {
 	return c.request
 }
 
-func (c *context) Route() *core.Route {
+func (c *context) Route() *gc.Route {
 	return c.route
 }
 
-func (c *context) Params() core.Params {
+func (c *context) Params() gc.Params {
 	return c.params
 }
 
-func (c *context) Fatal(err error) core.Response {
+func (c *context) Fatal(err error) gc.Response {
 	c.logger.Error(c, err)
 	return InternalError
 }
@@ -53,6 +54,14 @@ func (c *context) Location() string {
 
 func (c *context) SetLocation(location string) {
 	c.location = location
+}
+
+func (c *context) User() gc.User {
+	return c.user
+}
+
+func (c *context) SetUser(user gc.User) {
+	c.user = user
 }
 
 func (c *context) Info(v ...interface{}) {

@@ -2,7 +2,7 @@ package upstream
 
 import (
 	"github.com/karlseguin/dnscache"
-	"github.com/karlseguin/garnish/core"
+	"github.com/karlseguin/garnish/gc"
 	"time"
 )
 
@@ -25,7 +25,7 @@ func Configure() *Configuration {
 }
 
 // Create the middleware from the configuration
-func (c *Configuration) Create(config core.Configuration) (core.Middleware, error) {
+func (c *Configuration) Create(config gc.Configuration) (gc.Middleware, error) {
 	dns := dnscache.New(c.dnsRefresh)
 	for _, server := range c.serverLookup {
 		if server.resolver == nil {
@@ -56,7 +56,7 @@ func (c *Configuration) Add(name, scheme, address string) *Server {
 	return server
 }
 
-func (c *Configuration) OverrideFor(route *core.Route) {
+func (c *Configuration) OverrideFor(route *gc.Route) {
 	c.overriding = route.Name
 }
 

@@ -1,7 +1,7 @@
 package stats
 
 import (
-	"github.com/karlseguin/garnish/core"
+	"github.com/karlseguin/garnish/gc"
 	"sync"
 	"time"
 )
@@ -12,7 +12,7 @@ type Worker struct {
 	sync.Mutex
 	running    bool
 	window     time.Duration
-	logger     core.Logger
+	logger     gc.Logger
 	routeStats map[string]*Stat
 	persister  Persister
 }

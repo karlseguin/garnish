@@ -1,7 +1,7 @@
 package garnish
 
 import (
-	"github.com/karlseguin/garnish/core"
+	"github.com/karlseguin/garnish/gc"
 	"net"
 	"net/http"
 	"os"
@@ -11,7 +11,7 @@ import (
 
 type Garnish struct {
 	sync.RWMutex
-	logger  core.Logger
+	logger  gc.Logger
 	handler http.Handler
 }
 

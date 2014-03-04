@@ -1,7 +1,7 @@
 package dispatch
 
 import (
-	"github.com/karlseguin/garnish/core"
+	"github.com/karlseguin/garnish/gc"
 )
 
 type Dispatch struct {
@@ -13,7 +13,7 @@ func (d *Dispatch) Name() string {
 	return "dispatch"
 }
 
-func (d *Dispatch) Run(context core.Context, next core.Next) core.Response {
+func (d *Dispatch) Run(context gc.Context, next gc.Next) gc.Response {
 	route := context.Route()
 	action, exists := d.actions[route.Name]
 	if exists == false {

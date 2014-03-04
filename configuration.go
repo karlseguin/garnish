@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/karlseguin/garnish/caches/ccache"
-	"github.com/karlseguin/garnish/core"
+	"github.com/karlseguin/garnish/gc"
 	"github.com/karlseguin/garnish/middleware/caching"
 	"github.com/karlseguin/garnish/middleware/stats"
 	"github.com/karlseguin/garnish/middleware/upstream"
@@ -23,12 +23,12 @@ type Configuration struct {
 	address              string
 	maxHeaderBytes       int
 	readTimeout          time.Duration
-	middlewareFactories  []core.MiddlewareFactory
+	middlewareFactories  []gc.MiddlewareFactory
 	internalErrorMessage string
 	notFoundMessage      string
 	unauthorizedMessage  string
-	router               core.Router
-	logger               core.Logger
+	router               gc.Router
+	logger               gc.Logger
 }
 
 func Configure() *Configuration {
@@ -40,7 +40,7 @@ func Configure() *Configuration {
 		maxProcs:             runtime.NumCPU(),
 		readTimeout:          time.Second * 10,
 		address:              "tcp://127.0.0.1:6772",
-		middlewareFactories:  make([]core.MiddlewareFactory, 0, 1),
+		middlewareFactories:  make([]gc.MiddlewareFactory, 0, 1),
 		logger:               &logger{logger: log.New(os.Stdout, "[garnish] ", log.Ldate|log.Lmicroseconds)},
 	}
 }
@@ -78,7 +78,7 @@ func (c *Configuration) LogInfo() *Configuration {
 
 // Registers the middlewares to use. Middleware will be executed in the order
 // which they are supplied.
-func (c *Configuration) Middleware(factories ...core.MiddlewareFactory) *Configuration {
+func (c *Configuration) Middleware(factories ...gc.MiddlewareFactory) *Configuration {
 	for _, factory := range factories {
 		c.middlewareFactories = append(c.middlewareFactories, factory)
 	}
@@ -106,18 +106,18 @@ func (c *Configuration) InternalError(message string) *Configuration {
 // Creates and returns a new router
 // As this breaks the chainable configuration, it'll normally be the last
 // step in configuration.
-func (c *Configuration) NewRouter() core.Router {
+func (c *Configuration) NewRouter() gc.Router {
 	c.router = router.New(c.logger, c.middlewareFactories)
 	return c.router
 }
 
 // Gets the logger
-func (c *Configuration) Logger() core.Logger {
+func (c *Configuration) Logger() gc.Logger {
 	return c.logger
 }
 
 // Gets the router
-func (c *Configuration) Router() core.Router {
+func (c *Configuration) Router() gc.Router {
 	return c.router
 }
 
@@ -146,7 +146,7 @@ func ConfigureFromJson(bytes []byte) (config *Configuration, err error) {
 	}
 	config = Configure()
 	mapCoreConfig(config, raw)
-	configurators := make(map[string]core.MiddlewareFactory)
+	configurators := make(map[string]gc.MiddlewareFactory)
 	if configData := raw["defaults"].(map[string]interface{}); configData != nil {
 		mapMiddlewareConfig(config, configData, configurators)
 	}
@@ -172,13 +172,13 @@ func ConfigureFromFile(path string) (*Configuration, error) {
 	return ConfigureFromJson(bytes)
 }
 
-var configuatorFactories = map[string]func() core.MiddlewareFactory{
-	"stats":    func() core.MiddlewareFactory { return stats.Configure() },
-	"caching":  func() core.MiddlewareFactory { return caching.Configure() },
-	"upstream": func() core.MiddlewareFactory { return upstream.Configure() },
+var configuatorFactories = map[string]func() gc.MiddlewareFactory{
+	"stats":    func() gc.MiddlewareFactory { return stats.Configure() },
+	"caching":  func() gc.MiddlewareFactory { return caching.Configure() },
+	"upstream": func() gc.MiddlewareFactory { return upstream.Configure() },
 }
 
-func mapMiddlewareConfig(config *Configuration, data map[string]interface{}, configurators map[string]core.MiddlewareFactory) {
+func mapMiddlewareConfig(config *Configuration, data map[string]interface{}, configurators map[string]gc.MiddlewareFactory) {
 	for name, raw := range data {
 		name = strings.ToLower(name)
 		factory, ok := configuatorFactories[name]

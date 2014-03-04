@@ -3,19 +3,19 @@ package caching
 import (
 	"errors"
 	"github.com/karlseguin/garnish/caches"
-	"github.com/karlseguin/garnish/core"
+	"github.com/karlseguin/garnish/gc"
 	"strings"
 	"time"
 )
 
 // Authorize a purge request
-type AuthorizePurge func(context core.Context) bool
+type AuthorizePurge func(context gc.Context) bool
 
 // Generate a cache key and the vary parameters
-type KeyGenerator func(context core.Context) (string, string)
+type KeyGenerator func(context gc.Context) (string, string)
 
 // Callback to call at runtime which can decide to skip checking the cache
-type RuntimeSkip func(context core.Context) bool
+type RuntimeSkip func(context gc.Context) bool
 
 // Configuration for the Caching middleware
 type Configuration struct {
@@ -42,7 +42,7 @@ func Configure() *Configuration {
 }
 
 // Create the middleware from the configuration
-func (c *Configuration) Create(config core.Configuration) (core.Middleware, error) {
+func (c *Configuration) Create(config gc.Configuration) (gc.Middleware, error) {
 	if c.cache == nil {
 		return nil, errors.New("Cannot using caching middleware without specifying a Cache")
 	}
@@ -175,7 +175,7 @@ func (c *Configuration) RuntimeSkip(callback RuntimeSkip) *Configuration {
 	return c
 }
 
-func (c *Configuration) OverrideFor(route *core.Route) {
+func (c *Configuration) OverrideFor(route *gc.Route) {
 	routeConfig := newRouteConfig(c)
 	c.routeConfigs[route.Name] = routeConfig
 	c.overriding = routeConfig
@@ -199,7 +199,7 @@ func newRouteConfig(c *Configuration) *RouteConfig {
 	}
 }
 
-func UrlKeyGenerator(context core.Context) (string, string) {
+func UrlKeyGenerator(context gc.Context) (string, string) {
 	url := context.Request().URL
 	path := url.Path
 	secondary := url.RawQuery

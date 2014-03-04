@@ -2,7 +2,7 @@ package stats
 
 import (
 	"github.com/karlseguin/garnish/caches"
-	"github.com/karlseguin/garnish/core"
+	"github.com/karlseguin/garnish/gc"
 	"math"
 	"math/rand"
 	"sort"
@@ -44,7 +44,7 @@ func newStat(c *Configuration) *Stat {
 	}
 }
 
-func (s *Stat) hit(response core.Response, t time.Duration) {
+func (s *Stat) hit(response gc.Response, t time.Duration) {
 	s.snapLock.RLock()
 	defer s.snapLock.RUnlock()
 	hits := atomic.AddInt64(&s.hits, 1)
@@ -124,7 +124,7 @@ func percentile(values []int, p float64, size int) int64 {
 	return int64(math.Ceil(valueK + (f * (float64(values[k+1]) - valueK))))
 }
 
-func isCacheHit(response core.Response) bool {
+func isCacheHit(response gc.Response) bool {
 	_, ok := response.(*caches.CachedResponse)
 	return ok
 }

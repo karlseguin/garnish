@@ -2,7 +2,7 @@ package stats
 
 import (
 	"errors"
-	"github.com/karlseguin/garnish/core"
+	"github.com/karlseguin/garnish/gc"
 	"strconv"
 	"time"
 )
@@ -39,7 +39,7 @@ func Configure() *Configuration {
 }
 
 // Create the middleware from the configuration
-func (c *Configuration) Create(config core.Configuration) (core.Middleware, error) {
+func (c *Configuration) Create(config gc.Configuration) (gc.Middleware, error) {
 	if c.error != nil {
 		return nil, c.error
 	}
@@ -64,7 +64,6 @@ func (c *Configuration) Create(config core.Configuration) (core.Middleware, erro
 	return &Stats{
 		routeStats: c.routeStats,
 	}, nil
-
 }
 
 // Reservoir sampling is used to report percentiles without having unbound
@@ -92,12 +91,13 @@ func (c *Configuration) SampleSize(size int) *Configuration {
 // Can be set globally
 
 // [1 minute]
-func (c *Configuration) Window(window time.Duration) (*Configuration, error) {
+func (c *Configuration) Window(window time.Duration) *Configuration {
 	if c.overriding != nil {
-		return nil, errors.New("stats window can only be configured globally")
+		c.error = errors.New("stats window can only be configured globally")
+	} else {
+		c.window = window
 	}
-	c.window = window
-	return c, nil
+	return c
 }
 
 // The persister responsible for saving the statistics
@@ -108,8 +108,9 @@ func (c *Configuration) Window(window time.Duration) (*Configuration, error) {
 func (c *Configuration) Persister(persister Persister) *Configuration {
 	if c.overriding != nil {
 		c.error = errors.New("stats persister can only be configured globally")
+	} else {
+		c.persister = persister
 	}
-	c.persister = persister
 	return c
 }
 
@@ -145,7 +146,7 @@ func (c *Configuration) Treshhold(t time.Duration) *Configuration {
 	return c
 }
 
-func (c *Configuration) OverrideFor(route *core.Route) {
+func (c *Configuration) OverrideFor(route *gc.Route) {
 	stat := newStat(c)
 	c.routeStats[route.Name] = stat
 	c.overriding = stat

@@ -2,7 +2,7 @@ package hydrate
 
 import (
 	"github.com/karlseguin/bytepool"
-	"github.com/karlseguin/garnish/core"
+	"github.com/karlseguin/garnish/gc"
 )
 
 // Configuration for the Hydrate Parser middleware
@@ -17,7 +17,7 @@ func Configure() *Configuration {
 }
 
 // Create the middleware from the configuration
-func (c *Configuration) Create(config core.Configuration) (core.Middleware, error) {
+func (c *Configuration) Create(config gc.Configuration) (gc.Middleware, error) {
 	return &Hydrate{
 		pool: c.pool,
 	}, nil
@@ -29,6 +29,6 @@ func (c *Configuration) ResponsePool(count, size int) *Configuration {
 	return c
 }
 
-func (c *Configuration) OverrideFor(route *core.Route) {
+func (c *Configuration) OverrideFor(route *gc.Route) {
 
 }
