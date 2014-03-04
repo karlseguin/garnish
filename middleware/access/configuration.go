@@ -21,7 +21,13 @@ type Configuration struct {
 }
 
 func Configure() *Configuration {
-	return &Configuration{}
+	return &Configuration{
+		routeConfigs: make(map[string]*RouteConfig),
+	}
+}
+
+func (c *Configuration) Name() string {
+	return "access"
 }
 
 // Create the middleware from the configuration
@@ -29,6 +35,7 @@ func (c *Configuration) Create(config gc.Configuration) (gc.Middleware, error) {
 	if c.error != nil {
 		return nil, c.error
 	}
+	println(c.authenticator)
 	for name, _ := range config.Router().Routes() {
 		if _, ok := c.routeConfigs[name]; ok == false {
 			c.routeConfigs[name] = newRouteConfig(c)

@@ -14,7 +14,7 @@ type context struct {
 	route     *gc.Route
 	params    gc.Params
 	location  string
-	user gc.User
+	user      gc.User
 }
 
 func newContext(req *http.Request, logger gc.Logger) *context {

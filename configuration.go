@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"github.com/karlseguin/garnish/caches/ccache"
 	"github.com/karlseguin/garnish/gc"
+	"github.com/karlseguin/garnish/middleware/access"
 	"github.com/karlseguin/garnish/middleware/caching"
+	"github.com/karlseguin/garnish/middleware/dispatch"
 	"github.com/karlseguin/garnish/middleware/stats"
 	"github.com/karlseguin/garnish/middleware/upstream"
 	"github.com/karlseguin/garnish/router"
@@ -29,6 +31,11 @@ type Configuration struct {
 	unauthorizedMessage  string
 	router               gc.Router
 	logger               gc.Logger
+	Access               *access.Configuration
+	Dispatch             *dispatch.Configuration
+	Stats                *stats.Configuration
+	Caching              *caching.Configuration
+	Upstream             *upstream.Configuration
 }
 
 func Configure() *Configuration {
@@ -42,6 +49,11 @@ func Configure() *Configuration {
 		address:              "tcp://127.0.0.1:6772",
 		middlewareFactories:  make([]gc.MiddlewareFactory, 0, 1),
 		logger:               &logger{logger: log.New(os.Stdout, "[garnish] ", log.Ldate|log.Lmicroseconds)},
+		Access:               access.Configure(),
+		Dispatch:             dispatch.Configure(),
+		Stats:                stats.Configure(),
+		Caching:              caching.Configure(),
+		Upstream:             upstream.Configure(),
 	}
 }
 
@@ -73,15 +85,6 @@ func (c *Configuration) MaxiumOSThreads(count int) *Configuration {
 // Enable logging info messages
 func (c *Configuration) LogInfo() *Configuration {
 	c.logger.(*logger).info = true
-	return c
-}
-
-// Registers the middlewares to use. Middleware will be executed in the order
-// which they are supplied.
-func (c *Configuration) Middleware(factories ...gc.MiddlewareFactory) *Configuration {
-	for _, factory := range factories {
-		c.middlewareFactories = append(c.middlewareFactories, factory)
-	}
 	return c
 }
 
@@ -134,7 +137,18 @@ func (c *Configuration) Override(routeName string, override func()) {
 	override()
 }
 
-func ConfigureFromJson(bytes []byte) (config *Configuration, err error) {
+func (c *Configuration) Lookup(name string) gc.MiddlewareFactory {
+	switch name{
+		case "access": return c.Access
+		case "dispatch": return c.Dispatch
+		case "stats": return c.Stats
+		case "caching": return c.Caching
+		case "upstream": return c.Upstream
+	}
+	return nil
+}
+
+func (c *Configuration) Load(bytes []byte) (err error) {
 	defer func() {
 		if e := recover(); e != nil {
 			err = errors.New(fmt.Sprintf("%v", e))
@@ -142,65 +156,56 @@ func ConfigureFromJson(bytes []byte) (config *Configuration, err error) {
 	}()
 	var raw map[string]interface{}
 	if err := json.Unmarshal(bytes, &raw); err != nil {
-		return nil, err
+		return err
 	}
-	config = Configure()
-	mapCoreConfig(config, raw)
-	configurators := make(map[string]gc.MiddlewareFactory)
-	if configData := raw["defaults"].(map[string]interface{}); configData != nil {
-		mapMiddlewareConfig(config, configData, configurators)
+
+	mapCoreConfig(c, raw)
+	for _, middlewareData := range raw["middlewares"].([]interface{}) {
+		for name, configData := range middlewareData.(map[string]interface{}) {
+			c.middlewareFactories = append(c.middlewareFactories, c.Lookup(name))
+			if configData != nil {
+				mapMiddlewareConfig(c, middlewareData.(map[string]interface{}))
+			}
+		}
 	}
-	router := config.NewRouter()
+
+	router := c.NewRouter()
 	if configData := raw["routes"].([]interface{}); configData != nil {
 		for _, routeConfigData := range configData {
 			rcd := routeConfigData.(map[string]interface{})
 			r := router.Add(rcd["name"].(string), rcd["method"].(string), rcd["path"].(string))
-			for _, middleware := range config.middlewareFactories {
+			for _, middleware := range c.middlewareFactories {
 				middleware.OverrideFor(r.Route())
 			}
-			mapMiddlewareConfig(config, rcd, configurators)
+			mapMiddlewareConfig(c, rcd)
 		}
 	}
-	return config, nil
+	return nil
 }
 
-func ConfigureFromFile(path string) (*Configuration, error) {
+func (c * Configuration) LoadFile(path string) error {
 	bytes, err := ioutil.ReadFile(path)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return ConfigureFromJson(bytes)
+	return c.Load(bytes)
 }
 
-var configuatorFactories = map[string]func() gc.MiddlewareFactory{
-	"stats":    func() gc.MiddlewareFactory { return stats.Configure() },
-	"caching":  func() gc.MiddlewareFactory { return caching.Configure() },
-	"upstream": func() gc.MiddlewareFactory { return upstream.Configure() },
-}
-
-func mapMiddlewareConfig(config *Configuration, data map[string]interface{}, configurators map[string]gc.MiddlewareFactory) {
+func mapMiddlewareConfig(config *Configuration, data map[string]interface{}) {
 	for name, raw := range data {
 		name = strings.ToLower(name)
-		factory, ok := configuatorFactories[name]
-		if ok == false {
+		middleware := config.Lookup(name)
+		if middleware == nil {
 			continue
 		}
-
-		configurator := configurators[name]
-		if configurator == nil {
-			configurator = factory()
-			config.Middleware(configurator)
-			configurators[name] = configurator
-		}
-
 		configData := raw.(map[string]interface{})
 		switch name {
 		case "stats":
-			mapStatsConfig(configurator.(*stats.Configuration), configData)
+			mapStatsConfig(middleware.(*stats.Configuration), configData)
 		case "caching":
-			mapCachingConfig(configurator.(*caching.Configuration), configData)
+			mapCachingConfig(middleware.(*caching.Configuration), configData)
 		case "upstream":
-			mapUpstreamConfig(configurator.(*upstream.Configuration), configData)
+			mapUpstreamConfig(middleware.(*upstream.Configuration), configData)
 		}
 	}
 }

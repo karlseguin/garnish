@@ -147,7 +147,7 @@ func (c *Configuration) Treshhold(t time.Duration) *Configuration {
 }
 
 func (c *Configuration) OverrideFor(route *gc.Route) {
-	stat := newStat(c)
-	c.routeStats[route.Name] = stat
-	c.overriding = stat
+	stats := newStat(c)
+	c.routeStats[route.Name] = stats
+	c.overriding = stats
 }
