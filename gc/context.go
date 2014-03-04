@@ -35,6 +35,9 @@ type Context interface {
 
 	// Sets the user
 	SetUser(user User)
+
+	// Gets the querystring parameters
+	Query() map[string]string
 }
 
 // Context Builder is largely available for testing
@@ -109,4 +112,8 @@ func (c *CB) SetUser(user User) {
 
 func (c *CB) User() User {
 	return c.user
+}
+
+func (c *CB) Query() map[string]string {
+	return nil
 }

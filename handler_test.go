@@ -12,7 +12,7 @@ func TestHandlerRepliesWithTheRoutersResponse(t *testing.T) {
 	spec := gspec.New(t)
 	h := buildHandler(new(gc.Route), nil, Respond(nil).Status(401), new(nilMiddleware))
 	rec := httptest.NewRecorder()
-	h.ServeHTTP(rec, new(http.Request))
+	h.ServeHTTP(rec, emptyRequest)
 	spec.Expect(rec.Code).ToEqual(401)
 }
 
@@ -20,7 +20,7 @@ func TestHandlerRepliesWithNotFoundIfRouteIsNotSet(t *testing.T) {
 	spec := gspec.New(t)
 	h := buildHandler(nil, nil, nil, new(nilMiddleware))
 	rec := httptest.NewRecorder()
-	h.ServeHTTP(rec, new(http.Request))
+	h.ServeHTTP(rec, emptyRequest)
 	spec.Expect(rec.Code).ToEqual(404)
 }
 
@@ -28,7 +28,7 @@ func TestHandlerCallsTheMiddlewareChain(t *testing.T) {
 	spec := gspec.New(t)
 	h := buildHandler(new(gc.Route), nil, nil, new(nextMiddleware), newResponseMiddleware(201, "ok", nil))
 	rec := httptest.NewRecorder()
-	h.ServeHTTP(rec, new(http.Request))
+	h.ServeHTTP(rec, emptyRequest)
 	spec.Expect(rec.Code).ToEqual(201)
 	spec.Expect(rec.Body.String()).ToEqual("ok")
 }
@@ -37,7 +37,7 @@ func TestHandlerWritesTheContentLength(t *testing.T) {
 	spec := gspec.New(t)
 	h := buildHandler(new(gc.Route), nil, nil, newResponseMiddleware(201, "it's over 9000", http.Header{"Content-Length": []string{"32"}}))
 	rec := httptest.NewRecorder()
-	h.ServeHTTP(rec, new(http.Request))
+	h.ServeHTTP(rec, emptyRequest)
 	spec.Expect(rec.HeaderMap.Get("Content-Length")).ToEqual("14")
 }
 
@@ -45,7 +45,7 @@ func TestHandlerWritesHeaders(t *testing.T) {
 	spec := gspec.New(t)
 	h := buildHandler(new(gc.Route), nil, nil, newResponseMiddleware(201, "it's over 9000", http.Header{"X-Test": []string{"leto"}}))
 	rec := httptest.NewRecorder()
-	h.ServeHTTP(rec, new(http.Request))
+	h.ServeHTTP(rec, emptyRequest)
 	spec.Expect(rec.HeaderMap.Get("X-Test")).ToEqual("leto")
 }
 
@@ -53,7 +53,7 @@ func buildHandler(route *gc.Route, params gc.Params, response gc.Response, middl
 	config := Configure()
 	config.router = &FakeRouter{route, params, response}
 	for _, middleware := range middlewares {
-		config.Middleware(middleware)
+		config.middlewareFactories = append(config.middlewareFactories, middleware)
 	}
 	config.logger = new(FakeLogger)
 	handler, _ := newHandler(config)

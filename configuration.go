@@ -138,12 +138,17 @@ func (c *Configuration) Override(routeName string, override func()) {
 }
 
 func (c *Configuration) Lookup(name string) gc.MiddlewareFactory {
-	switch name{
-		case "access": return c.Access
-		case "dispatch": return c.Dispatch
-		case "stats": return c.Stats
-		case "caching": return c.Caching
-		case "upstream": return c.Upstream
+	switch name {
+	case "access":
+		return c.Access
+	case "dispatch":
+		return c.Dispatch
+	case "stats":
+		return c.Stats
+	case "caching":
+		return c.Caching
+	case "upstream":
+		return c.Upstream
 	}
 	return nil
 }
@@ -183,7 +188,7 @@ func (c *Configuration) Load(bytes []byte) (err error) {
 	return nil
 }
 
-func (c * Configuration) LoadFile(path string) error {
+func (c *Configuration) LoadFile(path string) error {
 	bytes, err := ioutil.ReadFile(path)
 	if err != nil {
 		return err
