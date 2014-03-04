@@ -35,7 +35,6 @@ func (c *Configuration) Create(config gc.Configuration) (gc.Middleware, error) {
 	if c.error != nil {
 		return nil, c.error
 	}
-	println(c.authenticator)
 	for name, _ := range config.Router().Routes() {
 		if _, ok := c.routeConfigs[name]; ok == false {
 			c.routeConfigs[name] = newRouteConfig(c)
