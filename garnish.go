@@ -28,9 +28,14 @@ func (g *Garnish) Start(config *Configuration) bool {
 		return false
 	}
 
-	InternalError = Respond([]byte(config.internalErrorMessage)).Status(500)
-	NotFound = Respond([]byte(config.notFoundMessage)).Status(404)
-	Unauthorized = Respond([]byte(config.unauthorizedMessage)).Status(401)
+	gc.InternalError = Respond([]byte(config.internalErrorMessage)).Status(500).Header("Content-Type", config.defaultContentType)
+	InternalError = gc.InternalError
+
+	gc.NotFound = Respond([]byte(config.notFoundMessage)).Status(404).Header("Content-Type", config.defaultContentType)
+	NotFound = gc.NotFound
+
+	gc.Unauthorized = Respond([]byte(config.unauthorizedMessage)).Status(401).Header("Content-Type", config.defaultContentType)
+	Unauthorized = gc.Unauthorized
 
 	var protocol = "tcp"
 	address := config.address

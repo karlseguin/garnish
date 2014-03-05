@@ -26,6 +26,7 @@ type Configuration struct {
 	maxHeaderBytes       int
 	readTimeout          time.Duration
 	middlewareFactories  []gc.MiddlewareFactory
+	defaultContentType   string
 	internalErrorMessage string
 	notFoundMessage      string
 	unauthorizedMessage  string
@@ -41,6 +42,7 @@ type Configuration struct {
 func Configure() *Configuration {
 	return &Configuration{
 		maxHeaderBytes:       8192,
+		defaultContentType: "text/plain; charset=utf-8",
 		internalErrorMessage: "internal error",
 		notFoundMessage:      "not found",
 		unauthorizedMessage:  "unauthorized",
@@ -85,6 +87,12 @@ func (c *Configuration) MaxiumOSThreads(count int) *Configuration {
 // Enable logging info messages
 func (c *Configuration) LogInfo() *Configuration {
 	c.logger.(*logger).info = true
+	return c
+}
+
+// The content type to use for built-in replies
+func (c *Configuration) DefaultContentType(contentType string) *Configuration {
+	c.defaultContentType = contentType
 	return c
 }
 
