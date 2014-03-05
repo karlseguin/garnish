@@ -20,6 +20,8 @@ import (
 	"time"
 )
 
+type ContextFactory func(gc.Context) (gc.Context, gc.Response)
+
 type Configuration struct {
 	maxProcs             int
 	address              string
@@ -32,6 +34,7 @@ type Configuration struct {
 	unauthorizedMessage  string
 	router               gc.Router
 	logger               gc.Logger
+	contextFactory       ContextFactory
 	Access               *access.Configuration
 	Dispatch             *dispatch.Configuration
 	Stats                *stats.Configuration
@@ -42,7 +45,7 @@ type Configuration struct {
 func Configure() *Configuration {
 	return &Configuration{
 		maxHeaderBytes:       8192,
-		defaultContentType: "text/plain; charset=utf-8",
+		defaultContentType:   "text/plain; charset=utf-8",
 		internalErrorMessage: "internal error",
 		notFoundMessage:      "not found",
 		unauthorizedMessage:  "unauthorized",
@@ -57,6 +60,12 @@ func Configure() *Configuration {
 		Caching:              caching.Configure(),
 		Upstream:             upstream.Configure(),
 	}
+}
+
+// The context factory to load a domain-specific context
+func (c *Configuration) ContextFactory(factory ContextFactory) *Configuration {
+	c.contextFactory = factory
+	return c
 }
 
 // The address to listen on should be in the format [tcp://127.0.0.1:6772]

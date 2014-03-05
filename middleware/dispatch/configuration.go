@@ -45,3 +45,7 @@ func (c *Configuration) OverrideFor(route *gc.Route) {
 func (c *Configuration) To(action interface{}) {
 	c.actions[c.overriding] = action
 }
+
+func (c *Configuration) Map(routeName string, action interface{}) {
+	c.actions[routeName] = action
+}

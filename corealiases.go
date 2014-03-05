@@ -4,6 +4,9 @@ import (
 	"github.com/karlseguin/garnish/gc"
 )
 
+type Response gc.Response
+type Context gc.Context
+
 var (
 	Unauthorized  = gc.Unauthorized
 	NotFound      = gc.NotFound

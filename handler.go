@@ -8,9 +8,10 @@ import (
 )
 
 type Handler struct {
-	router gc.Router
-	logger gc.Logger
-	head   *middlewareWrapper
+	router         gc.Router
+	logger         gc.Logger
+	contextFactory ContextFactory
+	head           *middlewareWrapper
 }
 
 func newHandler(config *Configuration) (*Handler, error) {
@@ -21,8 +22,9 @@ func newHandler(config *Configuration) (*Handler, error) {
 		return nil, nil
 	}
 	h := &Handler{
-		router: config.router,
-		logger: config.logger,
+		router:         config.router,
+		logger:         config.logger,
+		contextFactory: config.contextFactory,
 	}
 	prev, err := newMiddlewareWrapper(config, 0)
 	if err != nil {
@@ -55,7 +57,14 @@ func (h *Handler) ServeHTTP(output http.ResponseWriter, req *http.Request) {
 	} else {
 		context.route = route
 		context.params = params
-		h.reply(context, h.head.Yield(context), output)
+		var domainContext gc.Context = context
+		if h.contextFactory != nil {
+			if domainContext, response = h.contextFactory(context); response != nil {
+				h.reply(context, response,output)
+				return
+			}
+		}
+		h.reply(domainContext, h.head.Yield(domainContext), output)
 	}
 }
 

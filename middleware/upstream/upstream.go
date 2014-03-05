@@ -4,7 +4,6 @@ package upstream
 
 import (
 	"bytes"
-	"errors"
 	"github.com/karlseguin/garnish/gc"
 	"io"
 	"net/http"
@@ -22,7 +21,7 @@ func (u *Upstream) Run(context gc.Context, next gc.Next) gc.Response {
 	route := context.Route()
 	server, ok := u.routeLookup[route.Name]
 	if ok == false {
-		return context.Fatal(errors.New("Upstream not configured for route: " + route.Name))
+		return next(context)
 	}
 
 	request := u.prepareRequest(context, server)
