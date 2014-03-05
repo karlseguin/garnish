@@ -110,7 +110,7 @@ func ttl(config *RouteConfig, response gc.Response) (time.Duration, bool) {
 		if index := strings.Index(value, "max-age="); index > -1 {
 			seconds, err := strconv.Atoi(value[index+8:])
 			if err != nil {
-				return time.Second, false
+				return time.Minute, false
 			}
 			return time.Second * time.Duration(seconds), true
 		}

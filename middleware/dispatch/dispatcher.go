@@ -17,7 +17,6 @@ func (d *Dispatch) Run(context gc.Context, next gc.Next) gc.Response {
 	route := context.Route()
 	action, exists := d.actions[route.Name]
 	if exists == false {
-		context.Info("404")
 		return next(context)
 	}
 	res := d.dispatcher(action, context)

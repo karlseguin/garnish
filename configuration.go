@@ -219,6 +219,8 @@ func mapMiddlewareConfig(config *Configuration, data map[string]interface{}) {
 			mapCachingConfig(middleware.(*caching.Configuration), configData)
 		case "upstream":
 			mapUpstreamConfig(middleware.(*upstream.Configuration), configData)
+		case "access":
+			mapAccessConfig(middleware.(*access.Configuration), configData)
 		}
 	}
 }
@@ -291,7 +293,7 @@ func mapUpstreamConfig(config *upstream.Configuration, configData map[string]int
 				server := config.Add(serverConfig["name"].(string), serverConfig["scheme"].(string), serverConfig["address"].(string))
 				mapServerConfig(server, serverConfig)
 			}
-		case "upstream":
+		case "server":
 			config.Is(value.(string))
 		}
 	}
@@ -310,10 +312,19 @@ func mapServerConfig(server *upstream.Server, configData map[string]interface{})
 	}
 }
 
+func mapAccessConfig(config *access.Configuration, configData map[string]interface{}) {
+	for key, value := range configData {
+		switch strings.ToLower(key) {
+		case "permission":
+			config.Permission(value.(string))
+		}
+	}
+}
+
 func toInt(value interface{}) int {
 	return int(value.(float64))
 }
 
 func toDuration(value interface{}) time.Duration {
-	return time.Duration(int(value.(float64)))
+	return time.Second * time.Duration(int(value.(float64)))
 }
