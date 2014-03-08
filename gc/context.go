@@ -2,6 +2,7 @@ package gc
 
 import (
 	"net/http"
+	"net/url"
 )
 
 // Represents information about the request
@@ -51,21 +52,50 @@ type CB struct {
 	params    Params
 	location  string
 	user      User
+	query     map[string]string
 }
 
 func ContextBuilder() *CB {
 	return &CB{
 		Logger:    newFakeLogger(),
 		requestId: "9001!",
-		request:   new(http.Request),
-		route:     &Route{Name: "home"},
-		params:    make(Params),
-		location:  "cb",
+		request: &http.Request{
+			URL:    new(url.URL),
+			Header: make(http.Header),
+		},
+		route:    &Route{Name: "home"},
+		params:   make(Params),
+		location: "cb",
+		query:    make(map[string]string),
 	}
 }
 
 func (c *CB) SetId(id string) *CB {
 	c.requestId = id
+	return c
+}
+
+func (c *CB) SetParam(key, value string) *CB {
+	c.params[key] = value
+	return c
+}
+
+func (c *CB) SetQuery(key, value string) *CB {
+	c.query[key] = value
+	return c
+}
+
+func (c *CB) SetHeader(key, value string) *CB {
+	c.request.Header.Set(key, value)
+	return c
+}
+
+func (c *CB) SetUrl(u string) *CB {
+	c.request.URL, _ = url.Parse(u)
+	query := c.request.URL.Query()
+	for key, _ := range query {
+		c.query[key] = query.Get(key)
+	}
 	return c
 }
 
@@ -115,5 +145,5 @@ func (c *CB) User() User {
 }
 
 func (c *CB) Query() map[string]string {
-	return nil
+	return c.query
 }

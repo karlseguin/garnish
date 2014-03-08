@@ -60,7 +60,7 @@ func (h *Handler) ServeHTTP(output http.ResponseWriter, req *http.Request) {
 		var domainContext gc.Context = context
 		if h.contextFactory != nil {
 			if domainContext, response = h.contextFactory(context); response != nil {
-				h.reply(context, response,output)
+				h.reply(context, response, output)
 				return
 			}
 		}
