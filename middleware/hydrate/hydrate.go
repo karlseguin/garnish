@@ -7,7 +7,8 @@ import (
 )
 
 type Hydrate struct {
-	pool *bytepool.Pool
+	pool         *bytepool.Pool
+	routeConfigs map[string]*RouteConfig
 }
 
 func (h *Hydrate) Name() string {

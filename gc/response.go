@@ -165,7 +165,6 @@ func (r *ClosableResponse) Close() error {
 // Detaches the response from the underlying bytepool,
 // turning this into an InMemoryResponse
 func (r *ClosableResponse) Detach() Response {
-	defer r.B.Close()
 	clone := &InMemoryResponse{
 		S: r.S,
 		H: r.H,

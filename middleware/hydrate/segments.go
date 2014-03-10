@@ -1,14 +1,14 @@
 package hydrate
 
 type Segment interface {
-	Render() []byte
+	Render(hydrator Hydrator) []byte
 }
 
 type LiteralSegment struct {
 	data []byte
 }
 
-func (s *LiteralSegment) Render() []byte {
+func (s *LiteralSegment) Render(hydrator Hydrator) []byte {
 	return s.data
 }
 
@@ -16,6 +16,6 @@ type PlaceholderSegment struct {
 	id []byte
 }
 
-func (s *PlaceholderSegment) Render() []byte {
-	return s.id
+func (s *PlaceholderSegment) Render(hydrator Hydrator) []byte {
+	return hydrator(s.id)
 }

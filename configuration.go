@@ -9,6 +9,7 @@ import (
 	"github.com/karlseguin/garnish/middleware/access"
 	"github.com/karlseguin/garnish/middleware/caching"
 	"github.com/karlseguin/garnish/middleware/dispatch"
+	"github.com/karlseguin/garnish/middleware/hydrate"
 	"github.com/karlseguin/garnish/middleware/stats"
 	"github.com/karlseguin/garnish/middleware/upstream"
 	"github.com/karlseguin/garnish/router"
@@ -36,6 +37,7 @@ type Configuration struct {
 	logger               gc.Logger
 	contextFactory       ContextFactory
 	Access               *access.Configuration
+	Hydrate              *hydrate.Configuration
 	Dispatch             *dispatch.Configuration
 	Stats                *stats.Configuration
 	Caching              *caching.Configuration
@@ -55,6 +57,7 @@ func Configure() *Configuration {
 		middlewareFactories:  make([]gc.MiddlewareFactory, 0, 1),
 		logger:               &logger{logger: log.New(os.Stdout, "[garnish] ", log.Ldate|log.Lmicroseconds)},
 		Access:               access.Configure(),
+		Hydrate:              hydrate.Configure(),
 		Dispatch:             dispatch.Configure(),
 		Stats:                stats.Configure(),
 		Caching:              caching.Configure(),
@@ -158,6 +161,8 @@ func (c *Configuration) Lookup(name string) gc.MiddlewareFactory {
 	switch name {
 	case "access":
 		return c.Access
+	case "hydrate":
+		return c.Hydrate
 	case "dispatch":
 		return c.Dispatch
 	case "stats":
@@ -224,6 +229,8 @@ func mapMiddlewareConfig(config *Configuration, data map[string]interface{}) {
 		switch name {
 		case "stats":
 			mapStatsConfig(middleware.(*stats.Configuration), configData)
+		case "hydrate":
+			mapHydrateConfig(middleware.(*hydrate.Configuration), configData)
 		case "caching":
 			mapCachingConfig(middleware.(*caching.Configuration), configData)
 		case "upstream":
@@ -328,6 +335,10 @@ func mapAccessConfig(config *access.Configuration, configData map[string]interfa
 			config.Permission(value.(string))
 		}
 	}
+}
+
+func mapHydrateConfig(config *hydrate.Configuration, configData map[string]interface{}) {
+
 }
 
 func toInt(value interface{}) int {

@@ -7,10 +7,12 @@ import (
 )
 
 type Response struct {
-	pool     *bytepool.Pool
 	status   int
 	segments []Segment
 	header   http.Header
+	hydrator Hydrator
+	pool     *bytepool.Pool
+	buffer   *bytepool.Item
 }
 
 func (r *Response) GetHeader() http.Header {
@@ -18,12 +20,11 @@ func (r *Response) GetHeader() http.Header {
 }
 
 func (r *Response) GetBody() []byte {
-	buffer := r.pool.Checkout()
-	defer buffer.Close()
+	r.buffer = r.pool.Checkout()
 	for _, segment := range r.segments {
-		buffer.Write(segment.Render())
+		r.buffer.Write(segment.Render(r.hydrator))
 	}
-	return buffer.Bytes()
+	return r.buffer.Bytes()
 }
 
 func (r *Response) GetStatus() int {
@@ -35,7 +36,7 @@ func (r *Response) SetStatus(status int) {
 }
 
 func (r *Response) Close() error {
-	return nil
+	return r.buffer.Close()
 }
 
 func (r *Response) Detach() gc.Response {
