@@ -12,7 +12,7 @@ import (
 type Garnish struct {
 	sync.RWMutex
 	logger  gc.Logger
-	handler http.Handler
+	handler *Handler
 }
 
 func New() *Garnish {
@@ -92,4 +92,8 @@ func (g *Garnish) Reload(config *Configuration) {
 		g.Unlock()
 		g.logger.Info(nil, "reloaded")
 	}
+}
+
+func (g *Garnish) Shutdown() {
+	g.handler.shutdown = true
 }

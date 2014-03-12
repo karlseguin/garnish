@@ -12,6 +12,7 @@ type Handler struct {
 	logger         gc.Logger
 	contextFactory ContextFactory
 	head           *middlewareWrapper
+	shutdown bool
 }
 
 func newHandler(config *Configuration) (*Handler, error) {
@@ -45,6 +46,9 @@ func newHandler(config *Configuration) (*Handler, error) {
 }
 
 func (h *Handler) ServeHTTP(output http.ResponseWriter, req *http.Request) {
+	if h.shutdown {
+		output.Header()["Connection"] = []string{"close"}
+	}
 	context := newContext(req, h.logger)
 	context.Info(req.URL)
 	route, params, response := h.router.Route(context)
