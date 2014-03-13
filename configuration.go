@@ -266,9 +266,11 @@ func mapStatsConfig(config *stats.Configuration, configData map[string]interface
 		case "window":
 			config.Window(toDuration(value))
 		case "output":
-			config.Persister(&stats.FilePersister{value.(string)})
+			config.Persister(&stats.FilePersister{value.(string), false})
 		case "treshhold":
 			config.Treshhold(toDuration(value))
+		case "append":
+			config.Append()
 		case "percentiles":
 			floats := value.([]interface{})
 			ints := make([]int, len(floats))

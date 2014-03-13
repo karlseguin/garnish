@@ -11,6 +11,7 @@ var worker *Worker
 
 type Persister interface {
 	Persist(map[string]Snapshot) error
+	LogEmpty() bool
 }
 
 // Configuration for the Stats middleware
@@ -34,7 +35,7 @@ func Configure() *Configuration {
 		treshhold:   time.Millisecond * 500,
 		routeStats:  make(map[string]*Stat),
 		percentiles: map[string]float64{"50p": 0.5, "75p": 0.75, "95p": 0.95},
-		persister:   &FilePersister{"./stats.json"},
+		persister:   &FilePersister{"./stats.json", false},
 	}
 }
 
@@ -110,6 +111,18 @@ func (c *Configuration) Persister(persister Persister) *Configuration {
 		c.error = errors.New("stats persister can only be configured globally")
 	} else {
 		c.persister = persister
+	}
+	return c
+}
+
+// Whether the built-in persister should append to the file rather than overwrite
+
+// Can be set globally
+
+// [false]
+func (c *Configuration) Append() *Configuration {
+	if p, ok := c.persister.(*FilePersister); ok {
+		p.Append = true
 	}
 	return c
 }

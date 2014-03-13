@@ -44,7 +44,7 @@ func (w *Worker) snapshot() bool {
 			snapshots[key] = ss
 		}
 	}
-	if len(snapshots) > 0 {
+	if len(snapshots) > 0 || w.persister.LogEmpty() {
 		if err := w.persister.Persist(snapshots); err != nil {
 			w.logger.Errorf("Failed to save stats: %v", err)
 		}

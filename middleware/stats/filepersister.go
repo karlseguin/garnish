@@ -7,11 +7,22 @@ import (
 )
 
 type FilePersister struct {
-	Path string
+	Path   string
+	Append bool
+}
+
+func (p *FilePersister) LogEmpty() bool {
+	return p.Append == false
 }
 
 func (p *FilePersister) Persist(data map[string]Snapshot) error {
-	file, err := os.OpenFile(p.Path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
+	flags := os.O_CREATE | os.O_WRONLY
+	if p.Append {
+		flags |= os.O_APPEND
+	} else {
+		flags |= os.O_TRUNC
+	}
+	file, err := os.OpenFile(p.Path, flags, 0600)
 	if err != nil {
 		return err
 	}

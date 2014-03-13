@@ -12,7 +12,7 @@ type Handler struct {
 	logger         gc.Logger
 	contextFactory ContextFactory
 	head           *middlewareWrapper
-	shutdown bool
+	shutdown       bool
 }
 
 func newHandler(config *Configuration) (*Handler, error) {
