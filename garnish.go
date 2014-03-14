@@ -80,18 +80,19 @@ func (g *Garnish) ServeHTTP(output http.ResponseWriter, req *http.Request) {
 	g.handler.ServeHTTP(output, req)
 }
 
-func (g *Garnish) Reload(config *Configuration) {
-	g.logger.Info(nil, "reloading")
+func (g *Garnish) Reload(config *Configuration) error {
+	g.logger.Info("reloading")
 	handler, err := newHandler(config)
 	if err != nil {
 		config.logger.Error(nil, err)
-	} else {
-		g.Lock()
-		g.logger = config.logger
-		g.handler = handler
-		g.Unlock()
-		g.logger.Info(nil, "reloaded")
+		return err
 	}
+	g.Lock()
+	g.logger = config.logger
+	g.handler = handler
+	g.Unlock()
+	g.logger.Info("reloaded")
+	return nil
 }
 
 func (g *Garnish) Shutdown() {
