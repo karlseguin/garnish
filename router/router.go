@@ -175,6 +175,7 @@ func (r *Router) add(root *RouteMap, route *gc.Route, segments Segments) {
 		return
 	}
 	var added bool
+	length := len(segments) - 1
 	for index, segment := range segments {
 		name := segment.name
 		if name[len(name)-1] == '*' {
@@ -193,11 +194,12 @@ func (r *Router) add(root *RouteMap, route *gc.Route, segments Segments) {
 				node.routes[name] = leaf
 			}
 			leaf.parameterName = segment.parameterName
-			leaf.route = route
+			if index == length {
+				leaf.route = route
+			}
 			node = leaf
 		}
 	}
-
 	if added == false {
 		r.logger.Errorf("%q's path appears to duplicate another route", route.Name)
 		r.valid = false
