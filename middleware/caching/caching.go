@@ -115,6 +115,10 @@ func ttl(config *RouteConfig, response gc.Response) (time.Duration, bool) {
 			return time.Second * time.Duration(seconds), true
 		}
 	}
+
+	if status == 404 {
+		return time.Second * 10, true
+	}
 	return time.Second, false
 }
 
