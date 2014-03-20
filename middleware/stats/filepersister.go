@@ -15,7 +15,7 @@ func (p *FilePersister) LogEmpty() bool {
 	return p.Append == false
 }
 
-func (p *FilePersister) Persist(data map[string]Snapshot) error {
+func (p *FilePersister) Persist(routes map[string]Snapshot, other map[string]Snapshot) error {
 	flags := os.O_CREATE | os.O_WRONLY
 	if p.Append {
 		flags |= os.O_APPEND
@@ -30,7 +30,8 @@ func (p *FilePersister) Persist(data map[string]Snapshot) error {
 
 	m := map[string]interface{}{
 		"time":   time.Now(),
-		"routes": data,
+		"routes": routes,
+		"other":  other,
 	}
 	bytes, err := json.Marshal(m)
 	if err != nil {

@@ -18,7 +18,7 @@ func RegisterReporter(name string, reporter Reporter) {
 var worker *Worker
 
 type Persister interface {
-	Persist(map[string]Snapshot) error
+	Persist(routes, other map[string]Snapshot) error
 	LogEmpty() bool
 }
 

@@ -38,20 +38,21 @@ func (w *Worker) snapshot() bool {
 		return false
 	}
 
-	snapshots := make(map[string]Snapshot)
+	routes := make(map[string]Snapshot)
 	for key, stat := range w.routeStats {
 		ss := stat.Snapshot()
 		if ss["hits"] > 0 {
-			snapshots[key] = ss
+			routes[key] = ss
 		}
 	}
 
+	other := make(map[string]Snapshot)
 	for name, reporter := range w.reporters {
-		snapshots[name] = Snapshot(reporter())
+		other[name] = Snapshot(reporter())
 	}
 
-	if len(snapshots) > 0 || w.persister.LogEmpty() {
-		if err := w.persister.Persist(snapshots); err != nil {
+	if len(routes) > 0 || len(other) > 0 || w.persister.LogEmpty() {
+		if err := w.persister.Persist(routes, other); err != nil {
 			w.logger.Errorf("Failed to save stats: %v", err)
 		}
 	}
