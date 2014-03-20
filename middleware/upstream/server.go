@@ -2,6 +2,7 @@ package upstream
 
 import (
 	"github.com/karlseguin/bytepool"
+	"github.com/karlseguin/garnish/middleware/stats"
 	"net"
 	"net/http"
 	"strings"
@@ -61,6 +62,7 @@ func (u *Server) Resolver(resolver DnsResolver) *Server {
 }
 
 func (u *Server) Finalize() {
+	stats.RegisterReporter("upstreamPool", u.Pool.Stats)
 	u.Transport = &http.Transport{
 		MaxIdleConnsPerHost: u.maxIdleConnectionsPerHost,
 		DisableKeepAlives:   u.disableKeepAlives,

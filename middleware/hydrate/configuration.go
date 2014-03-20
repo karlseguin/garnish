@@ -3,6 +3,7 @@ package hydrate
 import (
 	"github.com/karlseguin/bytepool"
 	"github.com/karlseguin/garnish/gc"
+	"github.com/karlseguin/garnish/middleware/stats"
 )
 
 type Hydrator func(id []byte) []byte
@@ -24,6 +25,7 @@ func Configure() *Configuration {
 
 // Create the middleware from the configuration
 func (c *Configuration) Create(config gc.Configuration) (gc.Middleware, error) {
+	stats.RegisterReporter("hydratePool", c.pool.Stats)
 	for name, _ := range config.Router().Routes() {
 		if _, ok := c.routeConfigs[name]; ok == false {
 			c.routeConfigs[name] = newRouteConfig(c)

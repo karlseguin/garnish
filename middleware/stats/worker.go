@@ -15,6 +15,7 @@ type Worker struct {
 	logger     gc.Logger
 	routeStats map[string]*Stat
 	persister  Persister
+	reporters  map[string]Reporter
 }
 
 func (w *Worker) start() {
@@ -44,6 +45,11 @@ func (w *Worker) snapshot() bool {
 			snapshots[key] = ss
 		}
 	}
+
+	for name, reporter := range w.reporters {
+		snapshots[name] = Snapshot(reporter())
+	}
+
 	if len(snapshots) > 0 || w.persister.LogEmpty() {
 		if err := w.persister.Persist(snapshots); err != nil {
 			w.logger.Errorf("Failed to save stats: %v", err)

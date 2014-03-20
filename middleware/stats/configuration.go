@@ -7,6 +7,14 @@ import (
 	"time"
 )
 
+type Reporter func() map[string]int64
+
+var reporters = make(map[string]Reporter)
+
+func RegisterReporter(name string, reporter Reporter) {
+	reporters[name] = reporter
+}
+
 var worker *Worker
 
 type Persister interface {
@@ -60,6 +68,7 @@ func (c *Configuration) Create(config gc.Configuration) (gc.Middleware, error) {
 		window:     c.window,
 		persister:  c.persister,
 		routeStats: c.routeStats,
+		reporters:  reporters,
 	}
 	go worker.start()
 	return &Stats{
