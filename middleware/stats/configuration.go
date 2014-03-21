@@ -96,6 +96,21 @@ func (c *Configuration) SampleSize(size int) *Configuration {
 	return c
 }
 
+//Logs runtime statistics, specifically the # of goroutines and info about
+//the GC.
+
+// Can be set globally
+
+// [disabled]
+func (c *Configuration) RuntimeStats() *Configuration {
+	if c.overriding != nil {
+		c.error = errors.New("runtime stats can only be configured globally")
+	} else {
+		RegisterReporter("runtime", Runtime)
+	}
+	return c
+}
+
 // The period of time to group statistics in.
 
 // Can be set globally
