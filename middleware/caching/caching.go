@@ -83,6 +83,7 @@ func (c *Caching) get(context gc.Context, config *RouteConfig, request *http.Req
 		return cached
 	}
 	c.set(key, vary, context, config, response)
+	response.GetHeader().Set("X-Cache", "miss")
 	return response
 }
 

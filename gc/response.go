@@ -126,7 +126,16 @@ func (r *InMemoryResponse) Close() error {
 
 // deatches the response from any underlying resources (noop)
 func (r *InMemoryResponse) Detach() Response {
-	return r
+	clone := &InMemoryResponse{
+		S: r.S,
+		H: make(http.Header, len(r.H)),
+	}
+	for k, v := range r.H {
+		clone.H[k] = v
+	}
+	clone.B = make([]byte, len(r.B))
+	copy(clone.B, r.B)
+	return clone
 }
 
 // A in-memory response with a chainable API which uses a bytepool
@@ -167,7 +176,10 @@ func (r *ClosableResponse) Close() error {
 func (r *ClosableResponse) Detach() Response {
 	clone := &InMemoryResponse{
 		S: r.S,
-		H: r.H,
+		H: make(http.Header, len(r.H)),
+	}
+	for k, v := range r.H {
+		clone.H[k] = v
 	}
 	clone.B = make([]byte, r.B.Len())
 	copy(clone.B, r.B.Bytes())
