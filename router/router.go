@@ -14,7 +14,6 @@ package router
 import (
 	"github.com/karlseguin/garnish/gc"
 	"strings"
-	"fmt"
 )
 
 type Contraints map[string]struct{}
@@ -68,7 +67,6 @@ func (r *Router) Routes() map[string]*gc.Route {
 }
 
 func (r *Router) Route(context gc.Context) (*gc.Route, gc.Params, gc.Response) {
-	fmt.Println("fmt")
 	request := context.Request()
 
 	rm, ok := r.routes[request.Method]
