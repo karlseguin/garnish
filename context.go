@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 )
 
 type context struct {
@@ -17,11 +18,14 @@ type context struct {
 	location  string
 	user      gc.User
 	query     map[string]string
+	startTime time.Time
 }
 
 func newContext(req *http.Request, logger gc.Logger) *context {
+	now := time.Now()
 	id := nd.Guidv4String()
 	return &context{
+		startTime: now,
 		logger:    logger,
 		request:   req,
 		requestId: id,
@@ -69,6 +73,10 @@ func (c *context) SetUser(user gc.User) {
 
 func (c *context) Query() map[string]string {
 	return c.query
+}
+
+func (c *context) StartTime() time.Time {
+	return c.startTime
 }
 
 func (c *context) Info(v ...interface{}) {

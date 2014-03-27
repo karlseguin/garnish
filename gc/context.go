@@ -3,6 +3,7 @@ package gc
 import (
 	"net/http"
 	"net/url"
+	"time"
 )
 
 // Represents information about the request
@@ -39,6 +40,9 @@ type Context interface {
 
 	// Gets the querystring parameters
 	Query() map[string]string
+
+	// The time the request started at
+	StartTime() time.Time
 }
 
 // Context Builder is largely available for testing
@@ -53,10 +57,12 @@ type CB struct {
 	location  string
 	user      User
 	query     map[string]string
+	startTime time.Time
 }
 
 func ContextBuilder() *CB {
 	return &CB{
+		startTime: time.Now(),
 		Logger:    newFakeLogger(),
 		requestId: "9001!",
 		request: &http.Request{
@@ -122,6 +128,10 @@ func (c *CB) Route() *Route {
 
 func (c *CB) Params() Params {
 	return c.params
+}
+
+func (c *CB) StartTime() time.Time {
+	return c.startTime
 }
 
 func (c *CB) Fatal(err error) Response {

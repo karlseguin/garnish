@@ -14,9 +14,8 @@ func (s *Stats) Name() string {
 }
 
 func (s *Stats) Run(context gc.Context, next gc.Next) gc.Response {
-	start := time.Now()
 	response := next(context)
-	elapsed := time.Now().Sub(start)
+	elapsed := time.Now().Sub(context.StartTime())
 	s.hit(context, response, elapsed)
 	return response
 }
