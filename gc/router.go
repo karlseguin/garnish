@@ -16,7 +16,6 @@ type Router interface {
 }
 
 type RouteConfig interface {
-	Constrain(string, ...string) RouteConfig
 	Override(func()) RouteConfig
 	Route() *Route
 }

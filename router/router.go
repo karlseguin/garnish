@@ -14,24 +14,22 @@ package router
 import (
 	"github.com/karlseguin/garnish/gc"
 	"strings"
+	"fmt"
 )
 
 type Contraints map[string]struct{}
 
 type RouteMap struct {
 	route         *gc.Route
-	parameterName string
-	constraints   Contraints
+	parameters    []string
 	fallback      *gc.Route
 	routes        map[string]*RouteMap
 	prefixes      []*Prefix
 }
 
-type Segments []*Segment
-
-type Segment struct {
-	name          string
-	parameterName string
+type Segments struct {
+	parts []string
+	parameters []string
 }
 
 type Prefix struct {
@@ -70,6 +68,7 @@ func (r *Router) Routes() map[string]*gc.Route {
 }
 
 func (r *Router) Route(context gc.Context) (*gc.Route, gc.Params, gc.Response) {
+	fmt.Println("fmt")
 	request := context.Request()
 
 	rm, ok := r.routes[request.Method]
@@ -97,15 +96,9 @@ func (r *Router) Route(context gc.Context) (*gc.Route, gc.Params, gc.Response) {
 			}
 			rm = node
 		} else if node, exists := rm.routes["?"]; exists {
-			if node.constraints != nil {
-				if _, constrained := node.constraints[part]; constrained == false {
-					return nil, nil, nil
-				}
-			}
 			if node.route != nil {
 				route = node.route
 			}
-			params[node.parameterName] = part
 			rm = node
 		} else {
 			for _, prefix := range rm.prefixes {
@@ -114,6 +107,11 @@ func (r *Router) Route(context gc.Context) (*gc.Route, gc.Params, gc.Response) {
 				}
 			}
 			return nil, nil, nil
+		}
+	}
+	for i, l := 0, len(parts); i < l; i++ {
+		if parameter := rm.parameters[i]; len(parameter) > 0 {
+			params[parameter] = parts[i]
 		}
 	}
 	return route, params, nil
@@ -168,18 +166,17 @@ func (r *Router) IsValid() bool {
 	return r.valid
 }
 
-func (r *Router) add(root *RouteMap, route *gc.Route, segments Segments) {
+func (r *Router) add(root *RouteMap, route *gc.Route, segments *Segments) {
 	node := root
-	if len(segments) == 1 && segments[0].name == "*" {
+	length := len(segments.parts) - 1
+	if len(segments.parts) == 0 && segments.parts[0] == "*" {
 		root.fallback = route
 		return
 	}
 	var added bool
-	length := len(segments) - 1
-	for index, segment := range segments {
-		name := segment.name
+	for index, name := range segments.parts {
 		if name[len(name)-1] == '*' {
-			if index < len(segments)-1 {
+			if index < length {
 				r.logger.Errorf("The prefixed route %q is invalid. Nothing should come after '*'", route.Name)
 				r.valid = false
 			}
@@ -193,9 +190,9 @@ func (r *Router) add(root *RouteMap, route *gc.Route, segments Segments) {
 				leaf = newRouteMap()
 				node.routes[name] = leaf
 			}
-			leaf.parameterName = segment.parameterName
 			if index == length {
 				leaf.route = route
+				leaf.parameters = segments.parameters
 			}
 			node = leaf
 		}
@@ -210,19 +207,11 @@ type RouteConfig struct {
 	router   *Router
 	route    *gc.Route
 	methods  []string
-	segments Segments
+	segments *Segments
 }
 
 func (r *RouteConfig) Route() *gc.Route {
 	return r.route
-}
-
-func (r *RouteConfig) Constrain(parameterName string, values ...string) gc.RouteConfig {
-	for _, method := range r.methods {
-		root := r.router.routes[method]
-		r.applyConstraint(root, r.segments, parameterName, values...)
-	}
-	return r
 }
 
 func (r *RouteConfig) Override(override func()) gc.RouteConfig {
@@ -233,23 +222,7 @@ func (r *RouteConfig) Override(override func()) gc.RouteConfig {
 	return r
 }
 
-func (r *RouteConfig) applyConstraint(root *RouteMap, segments Segments, parameterName string, values ...string) {
-	node := root
-	for _, segment := range segments {
-		node = node.routes[segment.name]
-		if node.parameterName == parameterName {
-			node.constraints = make(Contraints)
-			for _, value := range values {
-				node.constraints[value] = struct{}{}
-			}
-			return
-		}
-	}
-	r.router.logger.Errorf("Constraint to parameter %q on route %q does not appear to match a valid parameter", parameterName, r.route.Name)
-	r.router.valid = false
-}
-
-func segment(path string) Segments {
+func segment(path string) *Segments {
 	if len(path) == 0 || path == "/" {
 		return nil //todo
 	}
@@ -261,17 +234,19 @@ func segment(path string) Segments {
 	}
 
 	parts := strings.Split(path, "/")
-	segments := make(Segments, len(parts))
+	segments := &Segments{
+		parts: make([]string, len(parts)),
+		parameters: make([]string, len(parts)),
+	}
 
 	for index, part := range parts {
-		segment := new(Segment)
 		if part[0] == ':' {
-			segment.parameterName = part[1:]
-			segment.name = "?"
+			segments.parts[index] = "?"
+			segments.parameters[index] = part[1:]
 		} else {
-			segment.name = part
+			segments.parts[index] = part
+			segments.parameters[index] = ""
 		}
-		segments[index] = segment
 	}
 	return segments
 }
