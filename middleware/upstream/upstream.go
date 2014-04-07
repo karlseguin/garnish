@@ -21,11 +21,8 @@ func (u *Upstream) Run(context gc.Context, next gc.Next) gc.Response {
 	route := context.Route()
 	server, ok := u.routeLookup[route.Name]
 	if ok == false {
-		println("x")
 		return next(context)
 	}
-	println("a")
-
 	request := u.prepareRequest(context, server)
 	context.Infof("request to %v", request.URL.String())
 	r, err := server.Transport.RoundTrip(request)

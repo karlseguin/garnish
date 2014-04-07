@@ -19,15 +19,15 @@ import (
 type Contraints map[string]struct{}
 
 type RouteMap struct {
-	route         *gc.Route
-	parameters    []string
-	fallback      *gc.Route
-	routes        map[string]*RouteMap
-	prefixes      []*Prefix
+	route      *gc.Route
+	parameters []string
+	fallback   *gc.Route
+	routes     map[string]*RouteMap
+	prefixes   []*Prefix
 }
 
 type Segments struct {
-	parts []string
+	parts      []string
 	parameters []string
 }
 
@@ -236,7 +236,7 @@ func segment(path string) *Segments {
 
 	parts := strings.Split(path, "/")
 	segments := &Segments{
-		parts: make([]string, len(parts)),
+		parts:      make([]string, len(parts)),
 		parameters: make([]string, len(parts)),
 	}
 
