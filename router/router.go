@@ -107,9 +107,12 @@ func (r *Router) Route(context gc.Context) (*gc.Route, gc.Params, gc.Response) {
 			return nil, nil, nil
 		}
 	}
-	for i, l := 0, len(parts); i < l; i++ {
-		if parameter := rm.parameters[i]; len(parameter) > 0 {
-			params[parameter] = parts[i]
+
+	if len(parts) == len(rm.parameters) {
+		for i, l := 0, len(parts); i < l; i++ {
+			if parameter := rm.parameters[i]; len(parameter) > 0 {
+				params[parameter] = parts[i]
+			}
 		}
 	}
 	return route, params, nil
