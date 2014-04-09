@@ -4,7 +4,6 @@ import (
 	"container/list"
 	"github.com/karlseguin/garnish/caches"
 	"hash/fnv"
-	"runtime"
 	"time"
 )
 
@@ -109,16 +108,10 @@ func (c *Cache) promote(item *Item) {
 }
 
 func (c *Cache) worker() {
-	ms := new(runtime.MemStats)
 	for {
 		select {
 		case item := <-c.promotables:
-			wasNew := c.doPromote(item)
-			if wasNew == false {
-				continue
-			}
-			runtime.ReadMemStats(ms)
-			if ms.HeapAlloc > c.size {
+			if c.doPromote(item) && c.list.Len() > c.maxItems {
 				c.gc()
 			}
 		case item := <-c.deletables:

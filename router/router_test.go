@@ -42,31 +42,31 @@ func TestRoutesMatchesANestedRouteEndingWithAParameter(t *testing.T) {
 	spec.Expect(res).ToBeNil()
 }
 
-func TestRoutesMatchesANestedRouteAFailedConstraint(t *testing.T) {
-	spec := gspec.New(t)
-	req := gspec.Request().Url("/root/harkonnen.json").Req
+// func TestRoutesMatchesANestedRouteAFailedConstraint(t *testing.T) {
+// 	spec := gspec.New(t)
+// 	req := gspec.Request().Url("/root/harkonnen.json").Req
 
-	router := New(nil, nil)
-	router.Add("root", "GET", "/root")
-	router.Add("something", "GET", "/root/:something").Constrain("something", "one", "two")
+// 	router := New(nil, nil)
+// 	router.Add("root", "GET", "/root")
+// 	router.Add("something", "GET", "/root/:something").Constrain("something", "one", "two")
 
-	route, _, res := router.Route(gc.ContextBuilder().SetRequest(req))
-	spec.Expect(route).ToBeNil()
-	spec.Expect(res).ToBeNil()
-}
+// 	route, _, res := router.Route(gc.ContextBuilder().SetRequest(req))
+// 	spec.Expect(route).ToBeNil()
+// 	spec.Expect(res).ToBeNil()
+// }
 
-func TestRoutesMatchesANestedRouteAPassedConstraint(t *testing.T) {
-	spec := gspec.New(t)
-	req := gspec.Request().Url("/root/one.json").Req
+// func TestRoutesMatchesANestedRouteAPassedConstraint(t *testing.T) {
+// 	spec := gspec.New(t)
+// 	req := gspec.Request().Url("/root/one.json").Req
 
-	router := New(nil, nil)
-	router.Add("root", "GET", "/root")
-	router.Add("something", "GET", "/root/:something").Constrain("something", "one", "two")
+// 	router := New(nil, nil)
+// 	router.Add("root", "GET", "/root")
+// 	router.Add("something", "GET", "/root/:something").Constrain("something", "one", "two")
 
-	route, _, res := router.Route(gc.ContextBuilder().SetRequest(req))
-	spec.Expect(route.Name).ToEqual("something")
-	spec.Expect(res).ToBeNil()
-}
+// 	route, _, res := router.Route(gc.ContextBuilder().SetRequest(req))
+// 	spec.Expect(route.Name).ToEqual("something")
+// 	spec.Expect(res).ToBeNil()
+// }
 
 func TestRoutesDontMatchPartials(t *testing.T) {
 	spec := gspec.New(t)

@@ -16,8 +16,6 @@ import (
 	"strings"
 )
 
-type Contraints map[string]struct{}
-
 type RouteMap struct {
 	route      *gc.Route
 	parameters []string
@@ -87,6 +85,7 @@ func (r *Router) Route(context gc.Context) (*gc.Route, gc.Params, gc.Response) {
 	}
 	route := rm.fallback
 	parts := strings.Split(path[1:], "/")
+
 	for _, part := range parts {
 		if node, exists := rm.routes[part]; exists {
 			if node.route != nil {
@@ -170,7 +169,7 @@ func (r *Router) IsValid() bool {
 func (r *Router) add(root *RouteMap, route *gc.Route, segments *Segments) {
 	node := root
 	length := len(segments.parts) - 1
-	if len(segments.parts) == 0 && segments.parts[0] == "*" {
+	if len(segments.parts) == 1 && segments.parts[0] == "*" {
 		root.fallback = route
 		return
 	}
