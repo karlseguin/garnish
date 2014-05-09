@@ -1,13 +1,17 @@
 package garnish
 
 import (
+	"github.com/karlseguin/bytepool"
 	"github.com/karlseguin/garnish/gc"
+	"github.com/karlseguin/garnish/middleware/stats"
 	"net"
 	"net/http"
 	"os"
 	"runtime"
 	"sync"
 )
+
+var InputPool = bytepool.New(32, 65536)
 
 type Garnish struct {
 	sync.RWMutex
@@ -53,6 +57,7 @@ func (g *Garnish) Start(config *Configuration) bool {
 		return false
 	}
 
+	stats.RegisterReporter("inputPool", InputPool.Stats)
 	handler, err := newHandler(config)
 	if err != nil {
 		config.logger.Error(err)

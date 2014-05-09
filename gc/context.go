@@ -1,10 +1,17 @@
 package gc
 
 import (
+	"io"
 	"net/http"
 	"net/url"
 	"time"
 )
+
+type Body interface {
+	io.ReadCloser
+	Len() int
+	Bytes() []byte
+}
 
 // Represents information about the request
 type Context interface {
@@ -43,6 +50,8 @@ type Context interface {
 
 	// The time the request started at
 	StartTime() time.Time
+
+	Body() Body
 }
 
 // Context Builder is largely available for testing
@@ -156,4 +165,8 @@ func (c *CB) User() User {
 
 func (c *CB) Query() map[string]string {
 	return c.query
+}
+
+func (c *CB) Body() Body {
+	return nil
 }

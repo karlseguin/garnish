@@ -18,7 +18,7 @@ type Configuration struct {
 
 func Configure() *Configuration {
 	return &Configuration{
-		pool:         bytepool.New(128, 65536),
+		pool:         bytepool.New(32, 65536),
 		routeConfigs: make(map[string]*RouteConfig),
 	}
 }

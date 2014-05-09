@@ -1,8 +1,10 @@
 package garnish
 
 import (
+	"github.com/karlseguin/bytepool"
 	"github.com/karlseguin/garnish/gc"
 	"github.com/karlseguin/nd"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -19,6 +21,7 @@ type context struct {
 	user      gc.User
 	query     map[string]string
 	startTime time.Time
+	body      gc.Body
 }
 
 func newContext(req *http.Request, logger gc.Logger) *context {
@@ -107,6 +110,19 @@ func (c *context) LogInfo() bool {
 	return c.logger.LogInfo()
 }
 
+func (c *context) Body() gc.Body {
+	if c.body != nil {
+		return c.body
+	}
+
+	method := c.request.Method
+	if method == "POST" || method == "PUT" || method == "DELETE" {
+		defer c.request.Body.Close()
+		c.body = newBody(c.request.Body)
+	}
+	return c.body
+}
+
 // Whatever, the built-in one returns a map[string][]string
 // which is as right as it is annoying
 func loadQuery(raw string) map[string]string {
@@ -144,4 +160,14 @@ func loadQuery(raw string) map[string]string {
 		raw = raw[index+1:]
 	}
 	return query
+}
+
+type body struct {
+	*bytepool.Item
+}
+
+func newBody(b io.Reader) *body {
+	buffer := InputPool.Checkout()
+	buffer.ReadFrom(b)
+	return &body{buffer}
 }

@@ -30,7 +30,7 @@ func newServer(scheme, host string) *Server {
 		Host:                      host,
 		Scheme:                    scheme,
 		PoolItemSize:              65536,
-		Pool:                      bytepool.New(125, 65536),
+		Pool:                      bytepool.New(32, 65536),
 		disableKeepAlives:         false,
 		maxIdleConnectionsPerHost: 32,
 	}

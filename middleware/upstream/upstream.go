@@ -78,6 +78,11 @@ func (u *Upstream) prepareRequest(context gc.Context, server *Server) *http.Requ
 			outHeader.Set(headerName, value)
 		}
 	}
+
+	if body := context.Body(); body != nil {
+		out.ContentLength = int64(body.Len())
+		out.Body = body
+	}
 	return out
 }
 
