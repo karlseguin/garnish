@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/url"
 	"time"
+	"github.com/karlseguin/bytepool"
 )
 
 type Body interface {
@@ -57,6 +58,7 @@ type Context interface {
 // Context Builder is largely available for testing
 // with a context from outside of the main package easy
 // The builder itself satifies the Context interface
+
 type CB struct {
 	Logger
 	requestId string
@@ -67,6 +69,7 @@ type CB struct {
 	user      User
 	query     map[string]string
 	startTime time.Time
+	body Body
 }
 
 func ContextBuilder() *CB {
@@ -168,5 +171,17 @@ func (c *CB) Query() map[string]string {
 }
 
 func (c *CB) Body() Body {
-	return nil
+	return c.body
+}
+
+func (c *CB) SetBody(body string) *CB {
+	bp := bytepool.NewItem(1024, nil)
+	bp.WriteString(body)
+	c.body = bp
+	return c
+}
+
+func (c *CB) SetMethod(method string) *CB {
+	c.request.Method = method
+	return c
 }
