@@ -306,7 +306,9 @@ func mapUpstreamConfig(config *upstream.Configuration, configData map[string]int
 	for key, value := range configData {
 		switch strings.ToLower(key) {
 		case "forwardheaders":
-			config.ForwardHeaders(value.([]string)...)
+			for _, header := range value.([]interface{}) {
+				config.ForwardHeaders(header.(string))
+			}
 		case "dnsrefresh":
 			config.DnsRefresh(toDuration(value))
 		case "servers":
