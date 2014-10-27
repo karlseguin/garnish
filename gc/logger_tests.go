@@ -1,4 +1,4 @@
-package tests
+package gc
 
 import (
 	. "github.com/karlseguin/expect"
