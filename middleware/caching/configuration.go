@@ -2,8 +2,8 @@ package caching
 
 import (
 	"errors"
-	"github.com/karlseguin/garnish/caches"
 	"github.com/karlseguin/garnish/gc"
+	"github.com/karlseguin/ccache"
 	"strings"
 	"time"
 )
@@ -20,7 +20,7 @@ type RuntimeSkip func(context gc.Context) bool
 // Configuration for the Caching middleware
 type Configuration struct {
 	overriding     *RouteConfig
-	cache          caches.Cache
+	cache          *ccache.LayeredCache
 	grace          time.Duration
 	saint          time.Duration
 	ttl            time.Duration
@@ -60,19 +60,6 @@ func (c *Configuration) Create(config gc.Configuration) (gc.Middleware, error) {
 		runtimeSkip:  c.runtimeSkip,
 		downloading:  make(map[string]time.Time),
 	}, nil
-}
-
-// The cache engine to use. This is required and defaults to nil
-//
-// Can be set globally
-//
-// [nil]
-func (c *Configuration) Cache(cache caches.Cache) *Configuration {
-	if c.overriding != nil {
-		c.error = errors.New("cache cannot be specified on a per-route basis")
-	}
-	c.cache = cache
-	return c
 }
 
 // Serve a request even if it has expired within the specified

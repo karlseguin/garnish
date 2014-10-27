@@ -1,11 +1,11 @@
 package gc
 
 import (
+	"github.com/karlseguin/bytepool"
 	"io"
 	"net/http"
 	"net/url"
 	"time"
-	"github.com/karlseguin/bytepool"
 )
 
 type Body interface {
@@ -69,7 +69,7 @@ type CB struct {
 	user      User
 	query     map[string]string
 	startTime time.Time
-	body Body
+	body      Body
 }
 
 func ContextBuilder() *CB {

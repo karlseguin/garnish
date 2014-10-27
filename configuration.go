@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/karlseguin/garnish/caches/ccache"
 	"github.com/karlseguin/garnish/gc"
 	"github.com/karlseguin/garnish/middleware/access"
 	"github.com/karlseguin/garnish/middleware/caching"
@@ -287,9 +286,6 @@ func mapStatsConfig(config *stats.Configuration, configData map[string]interface
 }
 
 func mapCachingConfig(config *caching.Configuration, configData map[string]interface{}) {
-	if f, ok := configData["maxItems"].(float64); ok {
-		config.Cache(ccache.New(ccache.Configure().MaxItems(int(f))))
-	}
 	for key, value := range configData {
 		switch key {
 		case "ttl":

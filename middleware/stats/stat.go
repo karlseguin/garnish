@@ -1,7 +1,6 @@
 package stats
 
 import (
-	"github.com/karlseguin/garnish/caches"
 	"github.com/karlseguin/garnish/gc"
 	"math"
 	"math/rand"
@@ -125,6 +124,8 @@ func percentile(values []int, p float64, size int) int64 {
 }
 
 func isCacheHit(response gc.Response) bool {
-	_, ok := response.(*caches.CachedResponse)
-	return ok
+	// _, ok := response.(*gc.CachedResponse)
+	// return ok
+	// TODO: fix
+	return false
 }

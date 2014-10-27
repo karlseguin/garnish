@@ -2,8 +2,8 @@
 package caching
 
 import (
-	"github.com/karlseguin/garnish/caches"
 	"github.com/karlseguin/garnish/gc"
+	"github.com/karlseguin/ccache"
 	"net/http"
 	"strconv"
 	"strings"
@@ -13,7 +13,7 @@ import (
 
 type Caching struct {
 	routeConfigs map[string]*RouteConfig
-	cache        caches.Cache
+	cache        *ccache.LayeredCache
 	lock         sync.RWMutex
 	runtimeSkip  RuntimeSkip
 	downloading  map[string]time.Time
@@ -59,15 +59,15 @@ func (c *Caching) get(context gc.Context, config *RouteConfig, request *http.Req
 	key, vary := config.keyGenerator(context)
 	cached := c.cache.Get(key, vary)
 	if cached != nil {
-		now := time.Now()
-		if cached.Expires.After(now) {
+		now, expires := time.Now(), cached.Expires()
+		if expires.After(now) {
 			context.Info("hit")
-			return cached
+			return cached.Value().(gc.Response)
 		}
-		if cached.Expires.Add(config.grace).After(now) {
+		if expires.Add(config.grace).After(now) {
 			context.Info("grace")
 			grace(c, key, vary, context, config, next)
-			return cached
+			return cached.Value().(gc.Response)
 		}
 	}
 
@@ -79,8 +79,8 @@ func (c *Caching) get(context gc.Context, config *RouteConfig, request *http.Req
 		}
 		context.Errorf("%q %d %v", context.Request().URL, response.GetStatus(), string(response.GetBody()))
 		context.Info("saint")
-		cached.Expires = time.Now().Add(config.saint)
-		return cached
+		cached.Extend(config.saint)
+		return cached.Value().(gc.Response)
 	}
 	c.set(key, vary, context, config, response)
 	response.GetHeader().Set("X-Cache", "miss")
@@ -93,12 +93,9 @@ func (c *Caching) set(key, vary string, context gc.Context, config *RouteConfig,
 		context.Error("configured to cache but no expiry was given")
 		return
 	}
-	cr := &caches.CachedResponse{
-		Expires:  time.Now().Add(ttl),
-		Response: response.Detach(),
-	}
-	cr.Response.GetHeader().Set("X-Cache", "hit")
-	c.cache.Set(key, vary, cr)
+	detached := response.Detach()
+	detached.GetHeader().Set("X-Cache", "hit")
+	c.cache.Set(key, vary, detached, ttl)
 }
 
 func ttl(config *RouteConfig, response gc.Response) (time.Duration, bool) {
@@ -171,7 +168,7 @@ func (c *Caching) purge(context gc.Context, config *RouteConfig, request *http.R
 		return gc.Unauthorized
 	}
 	key, _ := config.keyGenerator(context)
-	if c.cache.Delete(key) {
+	if c.cache.DeleteAll(key) {
 		context.Info("purge hit")
 		return purgeHitResponse
 	}
