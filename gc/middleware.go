@@ -1,19 +1,11 @@
 package gc
 
-type Middleware interface {
-	Name() string
-	Run(context Context, next Next) Response
-}
+type Middleware func(req *Request, next Middleware) Response
 
-type MiddlewareFactory interface {
-	Create(Configuration) (Middleware, error)
-	OverrideFor(*Route)
-}
+type MiddlewareExecutor func(req *Request) Response
 
-type Next func(context Context) Response
-
-func FakeNext(r Response) Next {
-	return func(context Context) Response {
-		return r
+func WrapMiddleware(m Middleware, next Middleware) MiddlewareExecutor {
+	return func(req *Request) Response {
+		return m(req, next)
 	}
 }

@@ -1,120 +1,61 @@
 package garnish
 
 import (
-	"errors"
 	"github.com/karlseguin/garnish/gc"
 	"net/http"
 	"strconv"
 )
 
+var NotFoundResponse = gc.Empty(404)
+
 type Handler struct {
-	router         gc.Router
-	logger         gc.Logger
-	contextFactory ContextFactory
-	head           *middlewareWrapper
-	shutdown       bool
+	*gc.Runtime
 }
 
-func newHandler(config *Configuration) (*Handler, error) {
-	if config.router == nil {
-		return nil, errors.New("A router must be provided")
+func (h *Handler) ServeHTTP(out http.ResponseWriter, r *http.Request) {
+	req := h.route(r)
+	if req == nil {
+		reply(out, NotFoundResponse, req)
+		return
 	}
-	if !config.router.IsValid() {
-		return nil, nil
-	}
-	h := &Handler{
-		router:         config.router,
-		logger:         config.logger,
-		contextFactory: config.contextFactory,
-	}
-	prev, err := newMiddlewareWrapper(config, 0)
-	if err != nil {
-		return nil, err
-	}
-	h.head = prev
-	for i := 1; i < len(config.middlewareFactories); i++ {
-		link, err := newMiddlewareWrapper(config, i)
-		if err != nil {
-			return nil, err
-		}
-		prev.next = link
-		prev = link
-	}
-	prev.next = &middlewareWrapper{middleware: new(NotFoundMiddleware)}
-
-	return h, nil
+	defer req.Close()
+	reply(out, h.Executor(req), req)
 }
 
-func (h *Handler) ServeHTTP(output http.ResponseWriter, req *http.Request) {
-	if h.shutdown {
-		output.Header()["Connection"] = []string{"close"}
+func reply(out http.ResponseWriter, res gc.Response, req *gc.Request) {
+	if res == nil {
+		res = gc.Fatal("nil response object")
 	}
-	context := newContext(req, h.logger)
-	context.Info(req.URL)
-	route, params, response := h.router.Route(context)
+	defer res.Close()
 
-	if response != nil {
-		h.reply(context, response, output)
-	} else if route == nil {
-		context.Info("404")
-		h.reply(context, NotFound, output)
-	} else {
-		context.route = route
-		context.params = params
-		var domainContext gc.Context = context
-		if h.contextFactory != nil {
-			if domainContext, response = h.contextFactory(context); response != nil {
-				h.reply(context, response, output)
-				return
-			}
-		}
-		h.reply(domainContext, h.head.Yield(domainContext), output)
-	}
-}
+	oh := out.Header()
+	body := res.Body()
+	status := res.Status()
 
-func (h *Handler) reply(context gc.Context, response gc.Response, output http.ResponseWriter) {
-	defer response.Close()
-	outHeader := output.Header()
-	for k, v := range response.GetHeader() {
-		outHeader[k] = v
-	}
-
-	body := response.GetBody()
-	status := response.GetStatus()
+	res.Header().Each(func(k, v string) {
+		oh[k] = []string{v}
+	})
+	oh["Content-Length"] = []string{strconv.Itoa(len(body))}
 
 	if status >= 500 {
-		if fatal, ok := response.(*gc.FatalResponse); ok {
-			context.Errorf("%q - %v", context.Request().URL, fatal.Err)
+		if fatal, ok := res.(*gc.FatalResponse); ok {
+			gc.Logger.Error("[500] %q %q", fatal.Err, req.URL)
 		} else {
-			context.Errorf("%q %d %v", context.Request().URL, status, string(body))
+			gc.Logger.Error("[%d] %q %q", status, string(body), req.URL)
 		}
 	}
-
-	outHeader["Content-Length"] = []string{strconv.Itoa(len(body))}
-	output.WriteHeader(status)
-	output.Write(body)
+	out.WriteHeader(status)
+	out.Write(body)
 }
 
-type middlewareWrapper struct {
-	next       *middlewareWrapper
-	middleware gc.Middleware
-}
-
-func (wrapper *middlewareWrapper) Yield(context gc.Context) gc.Response {
-	defer context.SetLocation(context.Location())
-	context.SetLocation(wrapper.middleware.Name())
-	var next gc.Next
-	if wrapper.next != nil {
-		next = wrapper.next.Yield
+func (h *Handler) route(req *http.Request) *gc.Request {
+	params, action := h.Router.Lookup(req)
+	if action == nil {
+		return nil
 	}
-	return wrapper.middleware.Run(context, next)
-}
-
-func newMiddlewareWrapper(config *Configuration, index int) (*middlewareWrapper, error) {
-	factory := config.middlewareFactories[index]
-	middleware, err := factory.Create(config)
-	if err != nil {
-		return nil, err
+	route, exists := h.Routes[action.Name]
+	if exists == false {
+		return nil
 	}
-	return &middlewareWrapper{middleware: middleware}, nil
+	return gc.NewRequest(req, route, params)
 }

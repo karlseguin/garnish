@@ -1,52 +1,15 @@
 package gc
 
 import (
-	"github.com/karlseguin/gofake"
+	"os"
+	"github.com/op/go-logging"
 )
 
-type Logger interface {
-	// Log an informational message using the specified format
-	Infof(format string, v ...interface{})
+var Logger = logging.MustGetLogger("garnish")
 
-	// Log an informational message.
-	Info(v ...interface{})
-
-	// Log an error message using the specified format
-	Errorf(format string, v ...interface{})
-
-	// Log an error message
-	Error(v ...interface{})
-
-	// Whether info messages should be logged
-	// Exposing this can allow implementers to take shortcuts and skip processing
-	LogInfo() bool
-}
-
-type FakeLogger struct {
-	gofake.Fake
-}
-
-func newFakeLogger() *FakeLogger {
-	return &FakeLogger{gofake.New()}
-}
-
-func (f *FakeLogger) Infof(format string, v ...interface{}) {
-	f.Called(format, v)
-}
-
-func (f *FakeLogger) Info(v ...interface{}) {
-	f.Called(v)
-}
-
-func (f *FakeLogger) Errorf(format string, v ...interface{}) {
-	f.Called(format, v)
-}
-
-func (f *FakeLogger) Error(v ...interface{}) {
-	f.Called(v)
-}
-
-func (f *FakeLogger) LogInfo() bool {
-	returns := f.Called()
-	return returns.Bool(0, true)
+func init() {
+	var format = "[%{level:.4s}] [%{time:Jan _2 15:04:05.000}] %{message}"
+	logging.SetLevel(logging.WARNING, "garnish")
+	logging.SetBackend(logging.NewLogBackend(os.Stderr, "", 0))
+	logging.SetFormatter(logging.MustStringFormatter(format))
 }
