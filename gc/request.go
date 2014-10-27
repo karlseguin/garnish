@@ -1,21 +1,21 @@
 package gc
 
 import (
-	"net/http"
 	"github.com/karlseguin/params"
+	"net/http"
 )
 
 type Request struct {
 	*http.Request
-	Route *Route
+	Route  *Route
 	params params.Params
 }
 
 func NewRequest(req *http.Request, route *Route, params params.Params) *Request {
 	return &Request{
 		Request: req,
-	  Route: route,
-		params: params,
+		Route:   route,
+		params:  params,
 	}
 }
 

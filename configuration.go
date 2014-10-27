@@ -56,7 +56,7 @@ func (c *Configuration) Build() *gc.Runtime {
 	}
 
 	runtime := &gc.Runtime{
-		Router: router.New(router.Configure()),
+		Router:   router.New(router.Configure()),
 		Executor: gc.WrapMiddleware(upstream.Handler, nil),
 	}
 

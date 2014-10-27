@@ -47,7 +47,7 @@ type FatalResponse struct {
 
 func Fatal(message string) Response {
 	return &FatalResponse{
-		Err:            message,
+		Err:      message,
 		Response: Empty(500),
 	}
 }

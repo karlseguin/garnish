@@ -18,7 +18,6 @@ func (ct *ConfigurationTests) FailedBuildWithoutUpstream() {
 	tests.ExpectError("Atleast one upstream must be configured")
 }
 
-
 func (ct *ConfigurationTests) FailedBuildWithMissingUpstreamAddress() {
 	c := Configure()
 	c.Upstream("test")

@@ -2,11 +2,18 @@ package garnish
 
 import (
 	"github.com/karlseguin/garnish/gc"
+	"github.com/op/go-logging"
 	"net/http"
+	"os"
 	"time"
 )
 
+var LogFormat = "%{level:.4s} | %{time:Jan _2 15:04:05.000} | %{message}"
+
 func Start(configuration *Configuration) {
+	logging.SetBackend(logging.NewLogBackend(os.Stderr, "", 0))
+	logging.SetFormatter(logging.MustStringFormatter(LogFormat))
+
 	runtime := configuration.Build()
 	if runtime == nil {
 		return

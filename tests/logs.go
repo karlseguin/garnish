@@ -13,5 +13,10 @@ func ExpectError(expected string) {
 			return
 		}
 	}
-	Fail("expected %q to have been logged, last: %q", expected, Logs.Head().Record.Message())
+
+	last := ""
+	if Logs.Head() != nil {
+		last = Logs.Head().Record.Message()
+	}
+	Fail("expected %q to have been logged, last: %q", expected, last)
 }
