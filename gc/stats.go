@@ -5,13 +5,26 @@ import (
 	"os"
 	"sync/atomic"
 	"time"
+	"sync"
+	"math/rand"
+	"sort"
+	"math"
 )
+
+var STATS_SAMPLE_SIZE int64 = 1000
+var STATS_SAMPLE_SIZE_F = float64(STATS_SAMPLE_SIZE)
+var STATS_PERCENTILES = map[string]float64{"75p": 0.75, "95p": 0.95}
 
 type Snapshot map[string]int64
 
 type Stats struct {
 	Treshold time.Duration
 	snapshot Snapshot
+
+	sampleLock sync.Mutex
+	sampleCount int64
+	samplesA  []int
+	samplesB  []int
 
 	hits     int64
 	oks      int64
@@ -23,12 +36,14 @@ type Stats struct {
 func NewStats(treshold time.Duration) *Stats {
 	return &Stats{
 		Treshold: treshold,
-		snapshot: make(Snapshot, 5),
+		snapshot: make(Snapshot, 5 + len(STATS_PERCENTILES)),
+		samplesA: make([]int, STATS_SAMPLE_SIZE),
+		samplesB: make([]int, STATS_SAMPLE_SIZE),
 	}
 }
 
 func (s *Stats) Hit(response Response, t time.Duration) {
-	atomic.AddInt64(&s.hits, 1)
+	hits := atomic.AddInt64(&s.hits, 1)
 	status := response.Status()
 	if status > 499 {
 		atomic.AddInt64(&s.failures, 1)
@@ -40,23 +55,24 @@ func (s *Stats) Hit(response Response, t time.Duration) {
 	if t > s.Treshold {
 		atomic.AddInt64(&s.slow, 1)
 	}
+	s.sample(hits, t)
 }
 
-// func (s *Stat) sample(hits int64, t time.Duration) {
-// 	index := -1
-// 	sampleCount := atomic.LoadInt64(&s.sampleCount)
-// 	if sampleCount < s.sampleSize {
-// 		index = int(sampleCount)
-// 		atomic.AddInt64(&s.sampleCount, 1)
-// 	} else if s.sampleSizeF/float64(hits) > rand.Float64() {
-// 		index = int(rand.Int31n(int32(s.sampleSize)))
-// 	}
-// 	if index != -1 {
-// 		s.sampleLock.Lock()
-// 		s.samples[index] = int(t / 1000)
-// 		s.sampleLock.Unlock()
-// 	}
-// }
+func (s *Stats) sample(hits int64, t time.Duration) {
+	index := -1
+	sampleCount := atomic.LoadInt64(&s.sampleCount)
+	if sampleCount < STATS_SAMPLE_SIZE {
+		index = int(sampleCount)
+		atomic.AddInt64(&s.sampleCount, 1)
+	} else if STATS_SAMPLE_SIZE_F/float64(hits) > rand.Float64() {
+		index = int(rand.Int63n(STATS_SAMPLE_SIZE))
+	}
+	if index != -1 {
+		s.sampleLock.Lock()
+		s.samplesA[index] = int(t / 1000)
+		s.sampleLock.Unlock()
+	}
+}
 
 func (s *Stats) Snapshot() Snapshot {
 	hits := atomic.SwapInt64(&s.hits, 0)
@@ -65,32 +81,43 @@ func (s *Stats) Snapshot() Snapshot {
 	s.snapshot["5xx"] = atomic.SwapInt64(&s.failures, 0)
 	s.snapshot["slow"] = atomic.SwapInt64(&s.slow, 0)
 	s.snapshot["hits"] = hits
+
+
+	s.sampleLock.Lock()
+	sampleCount := int(s.sampleCount)
+	s.sampleCount = 0
+	s.samplesA, s.samplesB = s.samplesB, s.samplesA
+	s.sampleLock.Unlock()
+
+	if sampleCount > 0 {
+		samples := s.samplesB[:sampleCount]
+		sort.Ints(samples)
+		for key, value := range STATS_PERCENTILES {
+			s.snapshot[key] = percentile(samples, value, sampleCount)
+		}
+	} else {
+		for key, _ := range STATS_PERCENTILES {
+			s.snapshot[key] = 0
+		}
+	}
 	return s.snapshot
 }
 
-// func percentile(values []int, p float64, size int) int64 {
-// 	if size == 0 {
-// 		return -1
-// 	}
-// 	findex := p * float64(size+1)
-// 	index := int(findex)
-// 	if index < 1 {
-// 		return int64(values[0])
-// 	}
-// 	if index >= size {
-// 		return int64(values[size-1])
-// 	}
-// 	s1 := float64(size) - 1
-// 	k := int(math.Floor(p*s1+1) - 1)
-// 	valueK := float64(values[k])
-// 	_, f := math.Modf(p*s1 + 1)
-// 	return int64(math.Ceil(valueK + (f * (float64(values[k+1]) - valueK))))
-// }
-
-// func isCacheHit(response gc.Response) bool {
-// 	_, ok := response.(*caches.CachedResponse)
-// 	return ok
-// }
+func percentile(values []int, p float64, size int) int64 {
+	findex := p * float64(size+1)
+	index := int(findex)
+	if index < 1 {
+		return int64(values[0])
+	}
+	if index >= size {
+		return int64(values[size-1])
+	}
+	s1 := float64(size) - 1
+	k := int(math.Floor(p*s1+1) - 1)
+	valueK := float64(values[k])
+	_, f := math.Modf(p*s1 + 1)
+	return int64(math.Ceil(valueK + (f * (float64(values[k+1]) - valueK))))
+}
 
 func StatsWorker(r *Runtime) {
 	for {

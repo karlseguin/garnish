@@ -16,7 +16,7 @@ func Test_Handler(t *testing.T) {
 	Expectify(new(HandlerTests), t)
 }
 
-func (h *HandlerTests) NotFoundForUnknownRoute() {
+func (_ *HandlerTests) NotFoundForUnknownRoute() {
 	handler := testHandler()
 	out := httptest.NewRecorder()
 	handler.ServeHTTP(out, build.Request().Path("/fail").Request)
@@ -24,7 +24,7 @@ func (h *HandlerTests) NotFoundForUnknownRoute() {
 	Expect(out.HeaderMap.Get("Content-Length")).To.Equal("0")
 }
 
-func (h *HandlerTests) NilResponse() {
+func (_ *HandlerTests) NilResponse() {
 	out := httptest.NewRecorder()
 	logger := NewFakeLogger()
 	handler, req := runtime().Catch(func(req *gc.Request, next gc.Middleware) gc.Response {
@@ -36,58 +36,51 @@ func (h *HandlerTests) NilResponse() {
 	Expect(logger.errors).To.Contain(`[500] "nil response object" "http://local.test/c"`)
 }
 
-func (h *HandlerTests) OkStats() {
+func (_ *HandlerTests) OkStats() {
 	handler, req := runtime().Catch(func(req *gc.Request, next gc.Middleware) gc.Response {
 		return gc.Respond(200, "ok")
 	}).Build()
 	handler.ServeHTTP(httptest.NewRecorder(), req)
 	handler.ServeHTTP(httptest.NewRecorder(), req)
-	assertStats(handler, 0, "hits", 2, "2xx", 2)
+	assertStats(handler, "hits", 2, "2xx", 2)
 }
 
-func (h *HandlerTests) ErrorStats() {
+func (_ *HandlerTests) ErrorStats() {
 	handler, req := runtime().Catch(func(req *gc.Request, next gc.Middleware) gc.Response {
 		return gc.Respond(401, "err")
 	}).Build()
 	handler.ServeHTTP(httptest.NewRecorder(), req)
 	handler.ServeHTTP(httptest.NewRecorder(), req)
-	assertStats(handler, 0, "hits", 2, "4xx", 2)
+	assertStats(handler, "hits", 2, "4xx", 2)
 }
 
-func (h *HandlerTests) FailStats() {
+func (_ *HandlerTests) FailStats() {
 	handler, req := runtime().Catch(func(req *gc.Request, next gc.Middleware) gc.Response {
 		return gc.Respond(500, "fail")
 	}).Build()
 	handler.ServeHTTP(httptest.NewRecorder(), req)
 	handler.ServeHTTP(httptest.NewRecorder(), req)
-	assertStats(handler, 0, "hits", 2, "5xx", 2)
+	assertStats(handler, "hits", 2, "5xx", 2)
 }
 
-func (h *HandlerTests) SlowStats() {
+func (_ *HandlerTests) SlowStats() {
 	handler, req := runtime().Catch(func(req *gc.Request, next gc.Middleware) gc.Response {
 		req.Start = time.Now().Add(time.Millisecond * -251)
 		return gc.Respond(500, "fail")
 	}).Build()
 	handler.ServeHTTP(httptest.NewRecorder(), req)
 	handler.ServeHTTP(httptest.NewRecorder(), req)
-	assertStats(handler, 0, "hits", 2, "5xx", 2, "slow", 2)
+	assertStats(handler, "hits", 2, "5xx", 2, "slow", 2)
 }
 
-func assertStats(handler *Handler, dflt int64, values ...interface{}) {
-	snapshop := handler.Runtime.Routes["control"].Stats.Snapshot()
+func assertStats(handler *Handler, values ...interface{}) {
+	snapshot := handler.Runtime.Routes["control"].Stats.Snapshot()
 
-	expected := make(map[string]int64, len(values)/2)
 	for i := 0; i < len(values); i += 2 {
-		expected[values[i].(string)] = int64(values[i+1].(int))
+		name, value := values[i].(string), int64(values[i+1].(int))
+		Expect(snapshot[name]).To.Equal(value)
 	}
 
-	for k, v := range snapshop {
-		if e, ok := expected[k]; ok {
-			Expect(v).To.Equal(e).Message("stats " + k)
-		} else {
-			Expect(v).To.Equal(dflt).Message("stats " + k)
-		}
-	}
 }
 
 type RB struct {
