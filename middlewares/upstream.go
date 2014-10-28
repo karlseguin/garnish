@@ -8,6 +8,8 @@ import (
 	"net/url"
 )
 
+var DefaultUserAgent = []string{""}
+
 func Upstream(req *gc.Request, next gc.Middleware) gc.Response {
 	upstream := req.Route.Upstream
 	if upstream == nil {
@@ -43,7 +45,7 @@ func Upstream(req *gc.Request, next gc.Middleware) gc.Response {
 func createRequest(in *gc.Request, upstream *gc.Upstream) *http.Request {
 	u, err := url.Parse(upstream.Address + in.URL.RequestURI())
 	if err != nil {
-		in.Error("upstream url %s %v", upstream.Address + in.URL.RequestURI(), err)
+		in.Error("upstream url %s %v", upstream.Address+in.URL.RequestURI(), err)
 		u = in.URL
 	}
 	out := &http.Request{
@@ -54,7 +56,15 @@ func createRequest(in *gc.Request, upstream *gc.Upstream) *http.Request {
 		Host:       in.Host,
 		Method:     in.Method,
 		URL:        u,
-		Header:     http.Header{"X-Request-Id": []string{in.Id}},
+		Header:     http.Header{"X-Request-Id": []string{in.Id}, "User-Agent": DefaultUserAgent},
 	}
+
+	for _, k := range upstream.Headers {
+		value := in.Header[k]
+		if len(value) > 0 {
+			out.Header[k] = value
+		}
+	}
+
 	return out
 }

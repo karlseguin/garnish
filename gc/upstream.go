@@ -10,4 +10,5 @@ type Upstream struct {
 	Address   string
 	Transport *http.Transport
 	Resolver  *dnscache.Resolver
+	Headers   []string
 }

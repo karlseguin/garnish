@@ -9,6 +9,8 @@ import (
 	"time"
 )
 
+var DefaultHeaders = []string{"Content-Length"}
+
 type Upstreams struct {
 	upstreams map[string]*Upstream
 }
@@ -27,6 +29,7 @@ func (u *Upstreams) Add(name string) *Upstream {
 		name:        name,
 		keepalive:   16,
 		dnsDuration: time.Minute,
+		headers:     DefaultHeaders,
 	}
 	u.upstreams[name] = one
 	return one
@@ -51,6 +54,7 @@ type Upstream struct {
 	address     string
 	keepalive   int
 	dnsDuration time.Duration
+	headers     []string
 }
 
 // the address to connect to. Should begin with unix:/  http://  or https://
@@ -75,6 +79,13 @@ func (u *Upstream) DnsCache(duration time.Duration) *Upstream {
 	return u
 }
 
+// The headers to copy from the incoming request to the outgoing request
+// [Content-Type, Content-Length]
+func (u *Upstream) Headers(headers ...string) *Upstream {
+	u.headers = headers
+	return u
+}
+
 func (u *Upstream) Build() *gc.Upstream {
 	if len(u.address) < 8 {
 		gc.Log.Error("Upstream %s has an invalid address: %q", u.name, u.address)
@@ -87,6 +98,7 @@ func (u *Upstream) Build() *gc.Upstream {
 	upstream := &gc.Upstream{
 		Name:    u.name,
 		Address: u.address,
+		Headers: u.headers,
 	}
 	if u.dnsDuration > 0 {
 		upstream.Resolver = dnscache.New(u.dnsDuration)

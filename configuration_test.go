@@ -68,7 +68,6 @@ func (f *FakeLogger) Error(format string, v ...interface{}) {
 
 func (f *FakeLogger) Verbose() {}
 
-
 func (f *FakeLogger) IsVerbose() bool {
 	return false
 }

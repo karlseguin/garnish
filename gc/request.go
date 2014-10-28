@@ -36,10 +36,10 @@ func (r *Request) Close() {
 
 func (r *Request) Info(format string, args ...interface{}) {
 	if Log.IsVerbose() {
-		Log.Info(r.Id + " | " + r.scope + " | " + format, args...)
+		Log.Info(r.Id+" | "+r.scope+" | "+format, args...)
 	}
 }
 
 func (r *Request) Error(format string, args ...interface{}) {
-	Log.Error(r.Id + " | " + r.scope + " | " + format, args...)
+	Log.Error(r.Id+" | "+r.scope+" | "+format, args...)
 }
