@@ -49,14 +49,16 @@ func createRequest(in *gc.Request, upstream *gc.Upstream) *http.Request {
 		u = in.URL
 	}
 	out := &http.Request{
-		Close:      false,
-		Proto:      "HTTP/1.1",
-		ProtoMajor: 1,
-		ProtoMinor: 1,
-		Host:       in.Host,
-		Method:     in.Method,
-		URL:        u,
-		Header:     http.Header{"X-Request-Id": []string{in.Id}, "User-Agent": DefaultUserAgent},
+		URL:           u,
+		Close:         false,
+		Proto:         "HTTP/1.1",
+		ProtoMajor:    1,
+		ProtoMinor:    1,
+		Host:          in.Host,
+		Body:          in.Body,
+		Method:        in.Method,
+		ContentLength: in.ContentLength,
+		Header:        http.Header{"X-Request-Id": []string{in.Id}, "User-Agent": DefaultUserAgent},
 	}
 
 	for _, k := range upstream.Headers {

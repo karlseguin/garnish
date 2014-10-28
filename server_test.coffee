@@ -2,7 +2,14 @@ http = require('http')
 
 handlers =
   plain: (req, res) -> res.end('hello world')
+
   headers: (req, res) -> res.end(JSON.stringify(req.headers))
+
+  body: (req, res) ->
+    body = ''
+    req.on 'data', (d) -> body += d
+    req.on 'end', -> res.end(body)
+
   notFound: (req, res) ->
     res.statusCode = 404
     res.end()

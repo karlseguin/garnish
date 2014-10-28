@@ -5,15 +5,15 @@ import (
 	"encoding/json"
 	. "github.com/karlseguin/expect"
 	"github.com/karlseguin/expect/build"
+	"github.com/karlseguin/garnish/gc"
 	"github.com/karlseguin/nd"
 	"github.com/karlseguin/typed"
-	"github.com/karlseguin/garnish/gc"
+	"net/http"
 	"net/http/httptest"
 	"os"
 	"os/exec"
 	"testing"
 	"time"
-	"net/http"
 )
 
 type UpstreamTests struct{}
@@ -69,6 +69,14 @@ func (h *UpstreamTests) Tweaker() {
 	Expect(headers.String("x-tweaked")).To.Equal("true")
 }
 
+func (h *UpstreamTests) Body() {
+	handler := testHandler()
+	out := httptest.NewRecorder()
+	handler.ServeHTTP(out, build.Request().Method("POST").Path("/body").Body("it's over 9000!!").Request)
+	Expect(out.Code).To.Equal(200)
+	Expect(out.Body.String()).To.Equal("it's over 9000!!")
+}
+
 func toTyped(buffer *bytes.Buffer) typed.Typed {
 	m := make(map[string]interface{})
 	json.Unmarshal(buffer.Bytes(), &m)
@@ -86,13 +94,14 @@ func startServer() *os.Process {
 func testHandler() *Handler {
 	config := Configure()
 	config.Upstream("test").Address("http://127.0.0.1:4005").KeepAlive(2).Headers("X-Spice")
-	config.Upstream("tweaked").Address("http://127.0.0.1:4005").KeepAlive(2).Tweaker(func(in *gc.Request, out *http.Request){
+	config.Upstream("tweaked").Address("http://127.0.0.1:4005").KeepAlive(2).Tweaker(func(in *gc.Request, out *http.Request) {
 		out.Header.Set("X-Tweaked", "true")
 		out.URL.Path = "/headers"
 	})
 	config.Route("plain").Get("/plain").Upstream("test")
 	config.Route("headers").Get("/headers").Upstream("test")
 	config.Route("tweaked").Get("/tweaked").Upstream("tweaked")
+	config.Route("body").Post("/body").Upstream("test")
 	runtime := config.Build()
 	return &Handler{runtime}
 }

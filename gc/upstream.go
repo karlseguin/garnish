@@ -4,6 +4,7 @@ import (
 	"github.com/karlseguin/dnscache"
 	"net/http"
 )
+
 type RequestTweaker func(in *Request, out *http.Request)
 
 type Upstream struct {
