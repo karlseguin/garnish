@@ -55,6 +55,7 @@ type Upstream struct {
 	keepalive   int
 	dnsDuration time.Duration
 	headers     []string
+	tweaker     gc.RequestTweaker
 }
 
 // the address to connect to. Should begin with unix:/  http://  or https://
@@ -80,9 +81,15 @@ func (u *Upstream) DnsCache(duration time.Duration) *Upstream {
 }
 
 // The headers to copy from the incoming request to the outgoing request
-// [Content-Type, Content-Length]
+// [Content-Length]
 func (u *Upstream) Headers(headers ...string) *Upstream {
 	u.headers = headers
+	return u
+}
+
+// Custom callback to modify the request (out) that will get sent to the upstream
+func (u *Upstream) Tweaker(tweaker gc.RequestTweaker) *Upstream {
+	u.tweaker = tweaker
 	return u
 }
 
@@ -99,6 +106,7 @@ func (u *Upstream) Build() *gc.Upstream {
 		Name:    u.name,
 		Address: u.address,
 		Headers: u.headers,
+		Tweaker: u.tweaker,
 	}
 	if u.dnsDuration > 0 {
 		upstream.Resolver = dnscache.New(u.dnsDuration)

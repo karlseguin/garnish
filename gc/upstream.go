@@ -4,6 +4,7 @@ import (
 	"github.com/karlseguin/dnscache"
 	"net/http"
 )
+type RequestTweaker func(in *Request, out *http.Request)
 
 type Upstream struct {
 	Name      string
@@ -11,4 +12,5 @@ type Upstream struct {
 	Transport *http.Transport
 	Resolver  *dnscache.Resolver
 	Headers   []string
+	Tweaker   RequestTweaker
 }

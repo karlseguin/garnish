@@ -66,5 +66,8 @@ func createRequest(in *gc.Request, upstream *gc.Upstream) *http.Request {
 		}
 	}
 
+	if upstream.Tweaker != nil {
+		upstream.Tweaker(in, out)
+	}
 	return out
 }
