@@ -7,6 +7,7 @@ import (
 
 type Upstream struct {
 	Name      string
+	Address   string
 	Transport *http.Transport
 	Resolver  *dnscache.Resolver
 }

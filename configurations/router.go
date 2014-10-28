@@ -16,7 +16,7 @@ func NewRouter() *Router {
 
 func (r *Router) Add(name string) *Route {
 	if _, exists := r.routes[name]; exists {
-		gc.Logger.Warning("Route %q already defined. Overwriting.", name)
+		gc.Log.Warn("Route %q already defined. Overwriting.", name)
 	}
 	route := &Route{name: name}
 	r.routes[name] = route
@@ -100,12 +100,12 @@ func (r *Route) Build(runtime *gc.Runtime) *gc.Route {
 
 	route := &gc.Route{Name: r.name}
 	if len(r.method) == 0 {
-		gc.Logger.Error("Route %q doesn't have a method+path", r.name)
+		gc.Log.Error("Route %q doesn't have a method+path", r.name)
 		ok = false
 	}
 
 	if upstream, exists := runtime.Upstreams[r.upstream]; exists == false {
-		gc.Logger.Error("Route %q has an unknown upstream %q", r.name, r.upstream)
+		gc.Log.Error("Route %q has an unknown upstream %q", r.name, r.upstream)
 		ok = false
 	} else {
 		route.Upstream = upstream

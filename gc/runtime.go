@@ -5,7 +5,7 @@ import (
 )
 
 type Runtime struct {
-	Executor  MiddlewareExecutor
+	Executor  Middleware
 	Upstreams map[string]*Upstream
 	Routes    map[string]*Route
 	Router    *router.Router

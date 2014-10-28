@@ -21,7 +21,7 @@ func NewUpstreams() *Upstreams {
 
 func (u *Upstreams) Add(name string) *Upstream {
 	if _, exists := u.upstreams[name]; exists {
-		gc.Logger.Warning("Upstram %q already defined. Overwriting.", name)
+		gc.Log.Warn("Upstram %q already defined. Overwriting.", name)
 	}
 	one := &Upstream{
 		name:        name,
@@ -77,14 +77,17 @@ func (u *Upstream) DnsCache(duration time.Duration) *Upstream {
 
 func (u *Upstream) Build() *gc.Upstream {
 	if len(u.address) < 8 {
-		gc.Logger.Error("Upstream %s has an invalid address: %q", u.name, u.address)
+		gc.Log.Error("Upstream %s has an invalid address: %q", u.name, u.address)
 		return nil
 	}
 	if u.address[:6] != "unix:/" && u.address[:7] != "http://" && u.address[:8] != "https://" {
-		gc.Logger.Error("Upstream %s's address should begin with unix:/, http:// or https://", u.name)
+		gc.Log.Error("Upstream %s's address should begin with unix:/, http:// or https://", u.name)
 		return nil
 	}
-	upstream := &gc.Upstream{Name: u.name}
+	upstream := &gc.Upstream{
+		Name:    u.name,
+		Address: u.address,
+	}
 	if u.dnsDuration > 0 {
 		upstream.Resolver = dnscache.New(u.dnsDuration)
 	}
@@ -93,6 +96,7 @@ func (u *Upstream) Build() *gc.Upstream {
 		MaxIdleConnsPerHost: u.keepalive,
 		DisableKeepAlives:   u.keepalive == 0,
 	}
+	upstream.Transport = transport
 	if u.address[:6] == "unix:/" {
 		transport.Dial = func(network, address string) (net.Conn, error) {
 			//strip out the :80 which Go adds

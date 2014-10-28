@@ -6,8 +6,6 @@ import (
 	"strconv"
 )
 
-var NotFoundResponse = gc.Empty(404)
-
 type Handler struct {
 	*gc.Runtime
 }
@@ -15,7 +13,7 @@ type Handler struct {
 func (h *Handler) ServeHTTP(out http.ResponseWriter, r *http.Request) {
 	req := h.route(r)
 	if req == nil {
-		reply(out, NotFoundResponse, req)
+		reply(out, gc.NotFoundResponse, req)
 		return
 	}
 	defer req.Close()
@@ -32,16 +30,16 @@ func reply(out http.ResponseWriter, res gc.Response, req *gc.Request) {
 	body := res.Body()
 	status := res.Status()
 
-	res.Header().Each(func(k, v string) {
-		oh[k] = []string{v}
-	})
+	for k, v := range res.Header() {
+		oh[k] = v
+	}
 	oh["Content-Length"] = []string{strconv.Itoa(len(body))}
 
 	if status >= 500 {
 		if fatal, ok := res.(*gc.FatalResponse); ok {
-			gc.Logger.Error("[500] %q %q", fatal.Err, req.URL)
+			gc.Log.Error("[500] %q %q", fatal.Err, req.URL)
 		} else {
-			gc.Logger.Error("[%d] %q %q", status, string(body), req.URL)
+			gc.Log.Error("[%d] %q %q", status, string(body), req.URL)
 		}
 	}
 	out.WriteHeader(status)
