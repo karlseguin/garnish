@@ -23,7 +23,7 @@ func NewUpstreams() *Upstreams {
 
 func (u *Upstreams) Add(name string) *Upstream {
 	if _, exists := u.upstreams[name]; exists {
-		gc.Log.Warn("Upstram %q already defined. Overwriting.", name)
+		gc.Log.Warn("Upstream %q already defined. Overwriting.", name)
 	}
 	one := &Upstream{
 		name:        name,

@@ -22,8 +22,11 @@ func Upstream(req *gc.Request, next gc.Middleware) gc.Response {
 	}
 	defer r.Body.Close()
 	length := int(r.ContentLength)
-	if length > 0 && length < gc.BytePoolItemSize {
-		buffer := gc.BytePool.Checkout()
+
+	runtime := req.Runtime
+	capacity := runtime.BytePool.Capacity()
+	if length > 0 && length < capacity {
+		buffer := runtime.BytePool.Checkout()
 		buffer.ReadFrom(r.Body)
 		return gc.RespondH(r.StatusCode, r.Header, buffer)
 	}
@@ -33,7 +36,7 @@ func Upstream(req *gc.Request, next gc.Middleware) gc.Response {
 		body = make([]byte, r.ContentLength)
 		io.ReadFull(r.Body, body)
 	} else if length == -1 {
-		buffer := bytes.NewBuffer(make([]byte, 0, gc.BytePoolItemSize))
+		buffer := bytes.NewBuffer(make([]byte, 0, capacity))
 		io.Copy(buffer, r.Body)
 		body = buffer.Bytes()
 		length = len(body)

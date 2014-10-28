@@ -2,6 +2,7 @@ package configurations
 
 import (
 	"github.com/karlseguin/garnish/gc"
+	"time"
 )
 
 type Router struct {
@@ -18,7 +19,7 @@ func (r *Router) Add(name string) *Route {
 	if _, exists := r.routes[name]; exists {
 		gc.Log.Warn("Route %q already defined. Overwriting.", name)
 	}
-	route := &Route{name: name}
+	route := &Route{name: name, slow: -1}
 	r.routes[name] = route
 	return route
 }
@@ -43,6 +44,7 @@ type Route struct {
 	path     string
 	method   string
 	upstream string
+	slow     time.Duration
 }
 
 func (r *Route) Upstream(upstream string) *Route {
@@ -95,10 +97,19 @@ func (r *Route) All(path string) *Route {
 	return r
 }
 
+func (r *Route) Slow(max time.Duration) *Route {
+	r.slow = max
+	return r
+}
+
 func (r *Route) Build(runtime *gc.Runtime) *gc.Route {
 	ok := true
 
-	route := &gc.Route{Name: r.name}
+	route := &gc.Route{
+		Name:  r.name,
+		Stats: gc.NewStats(r.slow),
+	}
+
 	if len(r.method) == 0 {
 		gc.Log.Error("Route %q doesn't have a method+path", r.name)
 		ok = false

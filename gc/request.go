@@ -12,8 +12,9 @@ type Request struct {
 	Id    string
 	Start time.Time
 	*http.Request
-	Route  *Route
-	params params.Params
+	Route   *Route
+	params  params.Params
+	Runtime *Runtime
 }
 
 func NewRequest(req *http.Request, route *Route, params params.Params) *Request {

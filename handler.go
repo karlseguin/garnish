@@ -55,5 +55,7 @@ func (h *Handler) route(req *http.Request) *gc.Request {
 	if exists == false {
 		return nil
 	}
-	return gc.NewRequest(req, route, params)
+	request := gc.NewRequest(req, route, params)
+	request.Runtime = h.Runtime
+	return request
 }

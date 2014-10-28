@@ -10,9 +10,11 @@ import (
 
 type Configuration struct {
 	address   string
-	upstreams *configurations.Upstreams
+	stats     *configurations.Stats
 	router    *configurations.Router
+	upstreams *configurations.Upstreams
 	bytePool  PoolConfiguration
+	catch     gc.MiddlewareHandler
 }
 
 type PoolConfiguration struct {
@@ -24,6 +26,7 @@ func Configure() *Configuration {
 	return &Configuration{
 		address:  ":8080",
 		bytePool: PoolConfiguration{65536, 64},
+		catch:    middlewares.Catch,
 	}
 }
 
@@ -69,6 +72,13 @@ func (c *Configuration) Route(name string) *configurations.Route {
 	return c.router.Add(name)
 }
 
+func (c *Configuration) Stats() *configurations.Stats {
+	if c.router == nil {
+		c.stats = configurations.NewStats()
+	}
+	return c.stats
+}
+
 func (c *Configuration) Build() *gc.Runtime {
 	ok := true
 	logger := gc.Log
@@ -77,7 +87,7 @@ func (c *Configuration) Build() *gc.Runtime {
 		return nil
 	}
 
-	catch := gc.WrapMiddleware("catch", middlewares.Catch, nil)
+	catch := gc.WrapMiddleware("catch", c.catch, nil)
 	runtime := &gc.Runtime{
 		Router:   router.New(router.Configure()),
 		Executor: gc.WrapMiddleware("upstream", middlewares.Upstream, catch),
@@ -96,12 +106,18 @@ func (c *Configuration) Build() *gc.Runtime {
 		ok = false
 	}
 
-	gc.BytePool = bytepool.New(c.bytePool.capacity, c.bytePool.size)
-	gc.BytePoolItemSize = c.bytePool.size
+	if c.stats != nil {
+		if c.stats.Build(runtime) == false {
+			ok = false
+		} else {
+			runtime.Executor = gc.WrapMiddleware("stats", middlewares.Stats, runtime.Executor)
+		}
+	}
 
 	if ok == false {
 		return nil
 	}
 
+	runtime.BytePool = bytepool.New(c.bytePool.capacity, c.bytePool.size)
 	return runtime
 }
