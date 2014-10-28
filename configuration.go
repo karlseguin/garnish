@@ -77,9 +77,10 @@ func (c *Configuration) Build() *gc.Runtime {
 		return nil
 	}
 
+	catch := gc.WrapMiddleware("catch", middlewares.Catch, nil)
 	runtime := &gc.Runtime{
 		Router:   router.New(router.Configure()),
-		Executor: gc.WrapMiddleware(middlewares.Upstream, gc.WrapMiddleware(middlewares.Catch, nil)),
+		Executor: gc.WrapMiddleware("upstream", middlewares.Upstream, catch),
 	}
 
 	if c.upstreams.Build(runtime) == false {

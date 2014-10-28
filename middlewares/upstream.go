@@ -36,14 +36,14 @@ func Upstream(req *gc.Request, next gc.Middleware) gc.Response {
 		body = buffer.Bytes()
 		length = len(body)
 	}
-	// request.Info("%s | %d | %d", request.URL.String(), r.StatusCode, length)
+	req.Info("%s | %d | %d", request.URL.String(), r.StatusCode, length)
 	return gc.RespondH(r.StatusCode, r.Header, body)
 }
 
 func createRequest(in *gc.Request, upstream *gc.Upstream) *http.Request {
 	u, err := url.Parse(upstream.Address + in.URL.RequestURI())
 	if err != nil {
-		// in.Error("upstream url %s %v", upstream.Address + in.URL.RequestURI(), err)
+		in.Error("upstream url %s %v", upstream.Address + in.URL.RequestURI(), err)
 		u = in.URL
 	}
 	out := &http.Request{

@@ -8,6 +8,7 @@ import (
 )
 
 type Request struct {
+	scope string
 	Id    string
 	Start time.Time
 	*http.Request
@@ -31,4 +32,14 @@ func (r *Request) Params(key string) string {
 
 func (r *Request) Close() {
 	r.params.Release()
+}
+
+func (r *Request) Info(format string, args ...interface{}) {
+	if Log.IsVerbose() {
+		Log.Info(r.Id + " | " + r.scope + " | " + format, args...)
+	}
+}
+
+func (r *Request) Error(format string, args ...interface{}) {
+	Log.Error(r.Id + " | " + r.scope + " | " + format, args...)
 }

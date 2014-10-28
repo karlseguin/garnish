@@ -17,6 +17,8 @@ type Logs interface {
 
 	//enable logging info messages
 	Verbose()
+
+	IsVerbose() bool
 }
 
 var Log Logs = new(Logger)
@@ -47,4 +49,8 @@ func (l *Logger) log(level, format string, v ...interface{}) {
 
 func (l *Logger) Verbose() {
 	l.info = true
+}
+
+func (l *Logger) IsVerbose() bool {
+	return l.info
 }
