@@ -81,7 +81,9 @@ func (c *Cache) Grace(primary string, secondary string, req *Request, next Middl
 		c.graceLock.Unlock()
 	}()
 
-	if res := next(req); res.Status() >= 500 {
+	if res := next(req); res == nil {
+		Log.Error("grace nil response for %q", req.URL.String())
+	} else if res.Status() >= 500 {
 		Log.Error("grace error for %q: %s", req.URL.String(), string(res.Body()))
 	} else {
 		c.Set(primary, secondary, req.Route.Cache, res)
