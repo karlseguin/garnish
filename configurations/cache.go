@@ -17,6 +17,7 @@ func NewCache() *Cache {
 		count:  5000,
 		grace:  time.Minute,
 		lookup: gc.DefaultCacheKeyLookup,
+		saint: true,
 	}
 }
 

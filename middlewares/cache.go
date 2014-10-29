@@ -12,7 +12,7 @@ func Cache(req *gc.Request, next gc.Middleware) gc.Response {
 		return next(req)
 	}
 	config := req.Route.Cache
-	if config.TTL == -1 {
+	if config.TTL < 0 {
 		req.Info("route no-cache")
 		return next(req)
 	}
@@ -36,7 +36,7 @@ func Cache(req *gc.Request, next gc.Middleware) gc.Response {
 
 	req.Info("miss")
 	res := next(req)
-	if res.Status() >= 500 {
+	if res == nil || res.Status() >= 500 {
 		if item == nil || cache.Saint == false {
 			return res
 		}
