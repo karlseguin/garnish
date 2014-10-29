@@ -9,7 +9,7 @@ import (
 func Upstream(req *gc.Request, next gc.Middleware) gc.Response {
 	upstream := req.Route.Upstream
 	if upstream == nil {
-		return next(req)
+		return Catch(req)
 	}
 	r, err := upstream.RoundTrip(req)
 	if err != nil {

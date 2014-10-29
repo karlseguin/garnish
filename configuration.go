@@ -15,7 +15,6 @@ type Configuration struct {
 	upstreams *configurations.Upstreams
 	cache     *configurations.Cache
 	bytePool  PoolConfiguration
-	catch     gc.MiddlewareHandler
 }
 
 type PoolConfiguration struct {
@@ -27,7 +26,6 @@ func Configure() *Configuration {
 	return &Configuration{
 		address:  ":8080",
 		bytePool: PoolConfiguration{65536, 64},
-		catch:    middlewares.Catch,
 	}
 }
 
@@ -95,10 +93,9 @@ func (c *Configuration) Build() *gc.Runtime {
 		return nil
 	}
 
-	catch := gc.WrapMiddleware("catch", c.catch, nil)
 	runtime := &gc.Runtime{
 		Router:   router.New(router.Configure()),
-		Executor: gc.WrapMiddleware("upstream", middlewares.Upstream, catch),
+		Executor: gc.WrapMiddleware("upstream", middlewares.Upstream, nil),
 	}
 
 	if c.upstreams.Build(runtime) == false {

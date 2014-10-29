@@ -4,6 +4,6 @@ import (
 	"github.com/karlseguin/garnish/gc"
 )
 
-func Catch(req *gc.Request, next gc.Middleware) gc.Response {
+var Catch = func(req *gc.Request) gc.Response {
 	return gc.NotFoundResponse
 }

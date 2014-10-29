@@ -4,16 +4,19 @@ import (
 	. "github.com/karlseguin/expect"
 	"github.com/karlseguin/expect/build"
 	"github.com/karlseguin/garnish/gc"
+	"github.com/karlseguin/garnish/middlewares"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 )
 
-type HandlerTests struct{}
+type HandlerTests struct {
+	h *HandlerHelper
+}
 
 func Test_Handler(t *testing.T) {
-	Expectify(new(HandlerTests), t)
+	Expectify(&HandlerTests{newHelper()}, t)
 }
 
 func (_ *HandlerTests) NotFoundForUnknownRoute() {
@@ -24,82 +27,82 @@ func (_ *HandlerTests) NotFoundForUnknownRoute() {
 	Expect(out.HeaderMap.Get("Content-Length")).To.Equal("0")
 }
 
-func (_ *HandlerTests) NilResponse() {
+func (ht *HandlerTests) NilResponse() {
 	out := httptest.NewRecorder()
-	logger := NewFakeLogger()
-	handler, req := runtime().Catch(func(req *gc.Request, next gc.Middleware) gc.Response {
+	handler, req := ht.h.Catch(func(req *gc.Request) gc.Response {
 		return nil
-	}).Logger(logger).Build("/control")
+	}).Get("/control")
 	handler.ServeHTTP(out, req)
 	Expect(out.Code).To.Equal(500)
 	Expect(out.HeaderMap.Get("Content-Length")).To.Equal("0")
-	Expect(logger.errors).To.Contain(`[500] "nil response object" "http://local.test/control"`)
+	Expect(ht.h.logger.(*FakeLogger).errors).To.Contain(`[500] "nil response object" "http://local.test/control"`)
 }
 
-func (_ *HandlerTests) OkStats() {
-	handler, req := runtime().Catch(func(req *gc.Request, next gc.Middleware) gc.Response {
+func (ht *HandlerTests) OkStats() {
+
+	handler, req := ht.h.Catch(func(req *gc.Request) gc.Response {
 		return gc.Respond(200, "ok")
-	}).Build("/control")
+	}).Get("/control")
 	handler.ServeHTTP(httptest.NewRecorder(), req)
 	handler.ServeHTTP(httptest.NewRecorder(), req)
 	assertStats(handler, "hits", 2, "2xx", 2)
 }
 
-func (_ *HandlerTests) ErrorStats() {
-	handler, req := runtime().Catch(func(req *gc.Request, next gc.Middleware) gc.Response {
+func (ht *HandlerTests) ErrorStats() {
+	handler, req := ht.h.Catch(func(req *gc.Request) gc.Response {
 		return gc.Respond(401, "err")
-	}).Build("/control")
+	}).Get("/control")
 	handler.ServeHTTP(httptest.NewRecorder(), req)
 	handler.ServeHTTP(httptest.NewRecorder(), req)
 	assertStats(handler, "hits", 2, "4xx", 2)
 }
 
-func (_ *HandlerTests) FailStats() {
-	handler, req := runtime().Catch(func(req *gc.Request, next gc.Middleware) gc.Response {
+func (ht *HandlerTests) FailStats() {
+	handler, req := ht.h.Catch(func(req *gc.Request) gc.Response {
 		return gc.Respond(500, "fail")
-	}).Build("/control")
+	}).Get("/control")
 	handler.ServeHTTP(httptest.NewRecorder(), req)
 	handler.ServeHTTP(httptest.NewRecorder(), req)
 	assertStats(handler, "hits", 2, "5xx", 2)
 }
 
-func (_ *HandlerTests) SlowStats() {
-	handler, req := runtime().Catch(func(req *gc.Request, next gc.Middleware) gc.Response {
+func (ht *HandlerTests) SlowStats() {
+	handler, req := ht.h.Catch(func(req *gc.Request) gc.Response {
 		req.Start = time.Now().Add(time.Millisecond * -251)
 		return gc.Respond(500, "fail")
-	}).Build("/control")
+	}).Get("/control")
 	handler.ServeHTTP(httptest.NewRecorder(), req)
 	handler.ServeHTTP(httptest.NewRecorder(), req)
 	assertStats(handler, "hits", 2, "5xx", 2, "slow", 2)
 }
 
-func (_ *HandlerTests) NoCacheForPost() {
-	handler, req := runtime().Catch(func(req *gc.Request, next gc.Middleware) gc.Response {
+func (ht *HandlerTests) NoCacheForPost() {
+	handler, req := ht.h.Catch(func(req *gc.Request) gc.Response {
 		return gc.Respond(200, "ok")
-	}).Build("/control")
+	}).Get("/control")
 	out := httptest.NewRecorder()
 	handler.ServeHTTP(out, req)
 	Expect(out.Body.String()).To.Equal("ok")
 }
 
-func (_ *HandlerTests) NoCacheForDisabledCache() {
-	handler, req := runtime().Catch(func(req *gc.Request, next gc.Middleware) gc.Response {
+func (ht *HandlerTests) NoCacheForDisabledCache() {
+	handler, req := ht.h.Catch(func(req *gc.Request) gc.Response {
 		return gc.Respond(200, "ok3")
-	}).Build("/nocache")
+	}).Get("/nocache")
 	out := httptest.NewRecorder()
 	handler.ServeHTTP(out, req)
 	Expect(out.Body.String()).To.Equal("ok3")
 }
 
-func (_ *HandlerTests) CachesValues() {
+func (ht *HandlerTests) CachesValues() {
 	called := false
-	handler, req := runtime().Catch(func(req *gc.Request, next gc.Middleware) gc.Response {
+	handler, req := ht.h.Catch(func(req *gc.Request) gc.Response {
 		if called {
 			return gc.Respond(200, "fail")
 		}
 		called = true
 		return gc.Respond(200, "res")
-	}).Build("/cache")
+	}).Get("/cache")
 
 	handler.ServeHTTP(httptest.NewRecorder(), req)
 	out := httptest.NewRecorder()
@@ -107,15 +110,15 @@ func (_ *HandlerTests) CachesValues() {
 	Expect(out.Body.String()).To.Equal("res")
 }
 
-func (_ *HandlerTests) SaintMode() {
+func (ht *HandlerTests) SaintMode() {
 	called := false
-	handler, req := runtime().Catch(func(req *gc.Request, next gc.Middleware) gc.Response {
+	handler, req := ht.h.Catch(func(req *gc.Request) gc.Response {
 		if called {
 			return gc.Respond(500, "fail")
 		}
 		called = true
 		return gc.Respond(200, "res")
-	}).Build("/cache")
+	}).Get("/cache")
 
 	handler.ServeHTTP(httptest.NewRecorder(), req)
 	out := httptest.NewRecorder()
@@ -135,44 +138,44 @@ func assertStats(handler *Handler, values ...interface{}) {
 	}
 }
 
-type RB struct {
-	config *Configuration
-	catch  gc.MiddlewareHandler
+type HandlerHelper struct {
+	runtime *gc.Runtime
+	logger  gc.Logs
 }
 
-func runtime() *RB {
-	config := Configure()
+func newHelper() *HandlerHelper {
+	logger := NewFakeLogger()
+	config := Configure().Logger(logger)
 	config.Cache()
 	config.Stats()
 	config.Upstream("test").Address("http://localhost:9001")
 	config.Route("control").Get("/control").Upstream("test")
 	config.Route("cache").Get("/cache").Upstream("test").CacheTTL(time.Minute)
 	config.Route("nocache").Get("/nocache").Upstream("test").CacheTTL(-1)
-	return &RB{config, nil}
-}
 
-func (rb *RB) Build(path string) (*Handler, *http.Request) {
-	if rb.catch != nil {
-		rb.config.catch = rb.catch
+	rb := &HandlerHelper{
+		logger:  logger,
+		runtime: config.Build(),
 	}
-	runtime := rb.config.Build()
-	if runtime == nil {
+	if rb.runtime == nil {
 		panic("configuration build fail")
 	}
-	// this forces the upstream route to pass our
-	// request up the chain (something normally not possible)
-	for _, route := range runtime.Routes {
+	for _, route := range rb.runtime.Routes {
 		route.Upstream = nil
 	}
-	return &Handler{runtime}, build.Request().Path(path).Request
-}
-
-func (rb *RB) Catch(catch gc.MiddlewareHandler) *RB {
-	rb.catch = catch
 	return rb
 }
 
-func (rb *RB) Logger(logger gc.Logs) *RB {
-	rb.config.Logger(logger)
-	return rb
+func (h *HandlerHelper) Catch(catch gc.Middleware) *HandlerHelper {
+	middlewares.Catch = catch
+	return h
+}
+
+func (h *HandlerHelper) Get(path string) (*Handler, *http.Request) {
+	//snapshotting resets the stats
+	//this gives each test empty stats to start with
+	for _, route := range h.runtime.Routes {
+		route.Stats.Snapshot()
+	}
+	return &Handler{h.runtime}, build.Request().Path(path).Request
 }
