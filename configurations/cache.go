@@ -6,16 +6,16 @@ import (
 )
 
 type Cache struct {
-	count int
-	grace time.Duration
-	saint bool
+	count  int
+	grace  time.Duration
+	saint  bool
 	lookup gc.CacheKeyLookup
 }
 
 func NewCache() *Cache {
 	return &Cache{
-		count: 5000,
-		grace: time.Minute,
+		count:  5000,
+		grace:  time.Minute,
 		lookup: gc.DefaultCacheKeyLookup,
 	}
 }

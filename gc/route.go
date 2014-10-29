@@ -13,12 +13,12 @@ type Route struct {
 
 type RouteCache struct {
 	KeyLookup CacheKeyLookup
-	TTL time.Duration
+	TTL       time.Duration
 }
 
 func NewRouteCache(ttl time.Duration, keyLookup CacheKeyLookup) *RouteCache {
 	return &RouteCache{
-		TTL: ttl,
+		TTL:       ttl,
 		KeyLookup: keyLookup,
 	}
 }

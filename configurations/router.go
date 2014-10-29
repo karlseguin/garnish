@@ -40,12 +40,12 @@ func (r *Router) Build(runtime *gc.Runtime) bool {
 }
 
 type Route struct {
-	name     string
-	path     string
-	method   string
-	upstream string
-	slow     time.Duration
-	cacheTTL time.Duration
+	name           string
+	path           string
+	method         string
+	upstream       string
+	slow           time.Duration
+	cacheTTL       time.Duration
 	cacheKeyLookup gc.CacheKeyLookup
 }
 

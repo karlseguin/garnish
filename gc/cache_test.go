@@ -1,11 +1,11 @@
 package gc
 
 import (
-	"testing"
 	. "github.com/karlseguin/expect"
 	"github.com/karlseguin/expect/build"
-	"time"
 	"net/http"
+	"testing"
+	"time"
 )
 
 type CacheTests struct {
@@ -60,7 +60,7 @@ func (ct *CacheTests) GraceForcesOnStaleDownloads() {
 	c := NewCache(10)
 	c.downloads["pk"] = time.Now().Add(time.Minute * -1)
 	called := false
-	c.Grace("p", "k", ct.request, func(req *Request) Response 	{
+	c.Grace("p", "k", ct.request, func(req *Request) Response {
 		called = true
 		return Respond(200, "ok")
 	})

@@ -2,10 +2,10 @@ package gc
 
 import (
 	"github.com/karlseguin/ccache"
-	"time"
+	"strconv"
 	"strings"
 	"sync"
-	"strconv"
+	"time"
 )
 
 type CacheKeyLookup func(req *Request) (string, string)
@@ -17,18 +17,17 @@ func DefaultCacheKeyLookup(req *Request) (string, string) {
 type Cache struct {
 	graceLock sync.Mutex
 	*ccache.LayeredCache
-	Saint bool
-	GraceTTL time.Duration
+	Saint     bool
+	GraceTTL  time.Duration
 	downloads map[string]time.Time
 }
 
 func NewCache(count int) *Cache {
 	return &Cache{
 		LayeredCache: ccache.Layered(ccache.Configure().MaxItems(uint64(count))),
-		downloads: make(map[string]time.Time),
+		downloads:    make(map[string]time.Time),
 	}
 }
-
 
 func (c *Cache) Set(primary string, secondary string, config *RouteCache, res Response) {
 	ttl := c.ttl(config, res)
@@ -54,7 +53,7 @@ func (c *Cache) ttl(config *RouteCache, res Response) time.Duration {
 	}
 
 	for _, value := range cc {
-		if strings.Contains(value, "private"){
+		if strings.Contains(value, "private") {
 			break
 		}
 		if index := strings.Index(value, "max-age="); index > -1 {

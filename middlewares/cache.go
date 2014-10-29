@@ -47,4 +47,3 @@ func Cache(req *gc.Request, next gc.Middleware) gc.Response {
 	cache.Set(primary, secondary, config, res)
 	return res
 }
-
