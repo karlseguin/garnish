@@ -17,6 +17,6 @@ type Runtime struct {
 // initialize any jobs we need to run
 func (r *Runtime) Start() {
 	if len(r.StatsFileName) > 0 {
-		go StatsWorker(r)
+		go NewStatsWorker(r).Run()
 	}
 }

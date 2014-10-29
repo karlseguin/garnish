@@ -18,7 +18,7 @@ func (_ *ResponseTests) Empty() {
 	Expect(len(res.Header())).To.Equal(0)
 }
 
-func (_  *ResponseTests) Fatal() {
+func (_ *ResponseTests) Fatal() {
 	res := Fatal("a message")
 	Expect(res.Status()).To.Equal(500)
 	Expect(res.Body()).To.Equal(nil)

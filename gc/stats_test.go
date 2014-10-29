@@ -1,11 +1,11 @@
 package gc
 
 import (
+	. "github.com/karlseguin/expect"
+	"github.com/karlseguin/typed"
+	"os"
 	"testing"
 	"time"
-	. "github.com/karlseguin/expect"
-	"os"
-	"github.com/karlseguin/typed"
 )
 
 type StatsTests struct{}
@@ -17,7 +17,7 @@ func Test_Stats(t *testing.T) {
 func (_ *StatsTests) CalculatesThePercentils() {
 	s := NewStats(time.Minute)
 	for i := 1; i <= 20; i++ {
-		s.Hit(Respond(200, ""), time.Millisecond * time.Duration(i))
+		s.Hit(Respond(200, ""), time.Millisecond*time.Duration(i))
 	}
 	snapshot := s.Snapshot()
 	Expect(snapshot["75p"]).To.Equal(int64(15250))
@@ -27,7 +27,7 @@ func (_ *StatsTests) CalculatesThePercentils() {
 func (_ *StatsTests) TracksSlows() {
 	s := NewStats(time.Millisecond * 10)
 	for i := 1; i <= 20; i++ {
-		s.Hit(Respond(200, ""), time.Millisecond * time.Duration(i))
+		s.Hit(Respond(200, ""), time.Millisecond*time.Duration(i))
 	}
 	snapshot := s.Snapshot()
 	Expect(snapshot["slow"]).To.Equal(int64(10))
@@ -64,7 +64,7 @@ func (_ *StatsTests) Persists() {
 	defer os.Remove("test_stats.json")
 	s := NewStats(time.Millisecond * 350)
 	for i := 297; i < 504; i++ {
-		s.Hit(Respond(i, ""), time.Millisecond * time.Duration(i))
+		s.Hit(Respond(i, ""), time.Millisecond*time.Duration(i))
 	}
 	runtime := &Runtime{
 		StatsFileName: "test_stats.json",
@@ -72,14 +72,19 @@ func (_ *StatsTests) Persists() {
 			"about": &Route{Stats: s},
 		},
 	}
-	dumpStats(runtime)
+	NewStatsWorker(runtime).work()
 	t, _ := typed.JsonFile("test_stats.json")
-	t = t.Object("routes").Object("about")
-	Expect(t.Int("slow")).To.Equal(153)
-	Expect(t.Int("hits")).To.Equal(207)
-	Expect(t.Int("2xx")).To.Equal(103)
-	Expect(t.Int("4xx")).To.Equal(100)
-	Expect(t.Int("5xx")).To.Equal(4)
-	Expect(t.Int("75p")).To.Equal(451500)
-	Expect(t.Int("95p")).To.Equal(492700)
+	r := t.Object("routes").Object("about")
+	Expect(r.Int("slow")).To.Equal(153)
+	Expect(r.Int("hits")).To.Equal(207)
+	Expect(r.Int("2xx")).To.Equal(103)
+	Expect(r.Int("4xx")).To.Equal(100)
+	Expect(r.Int("5xx")).To.Equal(4)
+	Expect(r.Int("75p")).To.Equal(451500)
+	Expect(r.Int("95p")).To.Equal(492700)
+
+	r = t.Object("runtime")
+	// hard to tell for sure what these are going to be...
+	Expect(r.Int("gc")).Greater.Than(0)
+	Expect(r.Int("go")).Greater.Than(0)
 }
