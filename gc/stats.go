@@ -122,26 +122,26 @@ func percentile(values []int, p float64, size int) int64 {
 }
 
 type StatsWorker struct {
-	fileName string
-	routes  map[string]*Route
-	gcstats *debug.GCStats
-	rt      map[string]int64
-	stats   map[string]interface{}
+	fileName  string
+	routes    map[string]*Route
+	gcstats   *debug.GCStats
+	rt        map[string]int64
+	stats     map[string]interface{}
 	reporters map[string]Reporter
 }
 
 func NewStatsWorker(runtime *Runtime, fileName string) *StatsWorker {
 	rt := map[string]int64{"gc": 0, "go": 0}
 	return &StatsWorker{
-		rt:      rt,
-		routes: runtime.Routes,
-		gcstats: new(debug.GCStats),
+		rt:       rt,
+		routes:   runtime.Routes,
+		gcstats:  new(debug.GCStats),
 		fileName: fileName,
 		stats: map[string]interface{}{
 			"time":    time.Now(),
 			"routes":  nil,
 			"runtime": rt,
-			"other": nil,
+			"other":   nil,
 		},
 		reporters: make(map[string]Reporter),
 	}

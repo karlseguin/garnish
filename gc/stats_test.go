@@ -74,7 +74,7 @@ func (_ *StatsTests) Persists() {
 	sw := NewStatsWorker(runtime, "test_stats.json")
 	runtime.StatsWorker = sw
 
-	runtime.RegisterStats("test", func()map[string]int64{
+	runtime.RegisterStats("test", func() map[string]int64 {
 		return map[string]int64{"abc": 123, "991": 944}
 	})
 

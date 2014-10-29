@@ -6,12 +6,12 @@ import (
 )
 
 type Runtime struct {
-	Executor      Middleware
-	Upstreams     map[string]*Upstream
-	Routes        map[string]*Route
-	Router        *router.Router
-	BytePool      *bytepool.Pool
-	StatsWorker   *StatsWorker
+	Executor    Middleware
+	Upstreams   map[string]*Upstream
+	Routes      map[string]*Route
+	Router      *router.Router
+	BytePool    *bytepool.Pool
+	StatsWorker *StatsWorker
 }
 
 func (r *Runtime) RegisterStats(name string, reporter Reporter) {
