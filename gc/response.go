@@ -117,7 +117,7 @@ func (r *CloseableResponse) Cached() bool {
 func CloneResponse(r Response) Response {
 	h := r.Header()
 	clone := &NormalResponse{
-		body: r.Body(),
+		body:   r.Body(),
 		status: r.Status(),
 		header: make(http.Header, len(h)),
 	}

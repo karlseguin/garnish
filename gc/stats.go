@@ -34,7 +34,7 @@ type RouteStats struct {
 	errors   int64
 	failures int64
 	slow     int64
-	cached    int64
+	cached   int64
 }
 
 func NewRouteStats(treshold time.Duration) *RouteStats {

@@ -45,12 +45,11 @@ func (_ *StatsTests) TracksStatus() {
 	Expect(snapshot["5xx"]).To.Equal(int64(3))
 }
 
-
 func (_ *StatsTests) TracksCache() {
 	s := NewRouteStats(time.Millisecond * 10)
 	for i := 298; i < 503; i++ {
 		r := Respond(i, "")
-		r.(*NormalResponse).cached = i % 2 == 0
+		r.(*NormalResponse).cached = i%2 == 0
 		s.Hit(r, time.Millisecond)
 	}
 	snapshot := s.Snapshot()
