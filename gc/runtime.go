@@ -12,6 +12,7 @@ type Runtime struct {
 	Router      *router.Router
 	BytePool    *bytepool.Pool
 	StatsWorker *StatsWorker
+	Cache       *Cache
 }
 
 func (r *Runtime) RegisterStats(name string, reporter Reporter) {

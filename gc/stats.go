@@ -20,7 +20,7 @@ var STATS_PERCENTILES = map[string]float64{"75p": 0.75, "95p": 0.95}
 type Snapshot map[string]int64
 type Reporter func() map[string]int64
 
-type Stats struct {
+type RouteStats struct {
 	Treshold time.Duration
 	snapshot Snapshot
 
@@ -36,8 +36,8 @@ type Stats struct {
 	slow     int64
 }
 
-func NewStats(treshold time.Duration) *Stats {
-	return &Stats{
+func NewRouteStats(treshold time.Duration) *RouteStats {
+	return &RouteStats{
 		Treshold: treshold,
 		snapshot: make(Snapshot, 5+len(STATS_PERCENTILES)),
 		samplesA: make([]int, STATS_SAMPLE_SIZE),
@@ -45,7 +45,7 @@ func NewStats(treshold time.Duration) *Stats {
 	}
 }
 
-func (s *Stats) Hit(response Response, t time.Duration) {
+func (s *RouteStats) Hit(response Response, t time.Duration) {
 	hits := atomic.AddInt64(&s.hits, 1)
 	status := response.Status()
 	if status > 499 {
@@ -61,7 +61,7 @@ func (s *Stats) Hit(response Response, t time.Duration) {
 	s.sample(hits, t)
 }
 
-func (s *Stats) sample(hits int64, t time.Duration) {
+func (s *RouteStats) sample(hits int64, t time.Duration) {
 	index := -1
 	sampleCount := atomic.LoadInt64(&s.sampleCount)
 	if sampleCount < STATS_SAMPLE_SIZE {
@@ -77,7 +77,7 @@ func (s *Stats) sample(hits int64, t time.Duration) {
 	}
 }
 
-func (s *Stats) Snapshot() Snapshot {
+func (s *RouteStats) Snapshot() Snapshot {
 	hits := atomic.SwapInt64(&s.hits, 0)
 	s.snapshot["2xx"] = atomic.SwapInt64(&s.oks, 0)
 	s.snapshot["4xx"] = atomic.SwapInt64(&s.errors, 0)
@@ -163,7 +163,6 @@ func (w *StatsWorker) register(name string, reporter Reporter) {
 }
 
 func (w *StatsWorker) work() {
-	Log.Info("stats work start")
 	w.stats["time"] = time.Now()
 	w.stats["routes"] = w.collectRouteStats()
 	w.stats["other"] = w.collectReporters()
@@ -180,10 +179,6 @@ func (w *StatsWorker) collectRouteStats() map[string]Snapshot {
 		if snapshot["hits"] > 0 {
 			routes[name] = snapshot
 		}
-	}
-
-	if len(routes) == 0 {
-		Log.Info("no route stats")
 	}
 	return routes
 }

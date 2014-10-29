@@ -45,6 +45,8 @@ type Route struct {
 	method   string
 	upstream string
 	slow     time.Duration
+	cacheTTL time.Duration
+	cacheKeyLookup gc.CacheKeyLookup
 }
 
 func (r *Route) Upstream(upstream string) *Route {
@@ -102,12 +104,23 @@ func (r *Route) Slow(max time.Duration) *Route {
 	return r
 }
 
+func (r *Route) CacheTTL(ttl time.Duration) *Route {
+	r.cacheTTL = ttl
+	return r
+}
+
+func (r *Route) CacheKeyLookup(lookup gc.CacheKeyLookup) *Route {
+	r.cacheKeyLookup = lookup
+	return r
+}
+
 func (r *Route) Build(runtime *gc.Runtime) *gc.Route {
 	ok := true
 
 	route := &gc.Route{
 		Name:  r.name,
-		Stats: gc.NewStats(r.slow),
+		Stats: gc.NewRouteStats(r.slow),
+		Cache: gc.NewRouteCache(r.cacheTTL, r.cacheKeyLookup),
 	}
 
 	if len(r.method) == 0 {

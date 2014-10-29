@@ -8,6 +8,10 @@ var (
 	NotFoundResponse = Empty(404)
 )
 
+type Detachable interface {
+	Detach() Response
+}
+
 type ByteCloser interface {
 	Bytes() []byte
 	Close() error
@@ -104,4 +108,12 @@ func (r *CloseableResponse) Header() http.Header {
 
 func (r *CloseableResponse) Close() {
 	r.body.Close()
+}
+
+func (r *CloseableResponse) Detach() Response {
+	defer r.Close()
+	body := r.body.Bytes()
+	clone := make([]byte, len(body))
+	copy(clone, body)
+	return RespondH(r.status, r.header, clone)
 }

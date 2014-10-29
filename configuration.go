@@ -13,6 +13,7 @@ type Configuration struct {
 	stats     *configurations.Stats
 	router    *configurations.Router
 	upstreams *configurations.Upstreams
+	cache     *configurations.Cache
 	bytePool  PoolConfiguration
 	catch     gc.MiddlewareHandler
 }
@@ -79,6 +80,13 @@ func (c *Configuration) Stats() *configurations.Stats {
 	return c.stats
 }
 
+func (c *Configuration) Cache() *configurations.Cache {
+	if c.cache == nil {
+		c.cache = configurations.NewCache()
+	}
+	return c.cache
+}
+
 func (c *Configuration) Build() *gc.Runtime {
 	ok := true
 	logger := gc.Log
@@ -104,6 +112,14 @@ func (c *Configuration) Build() *gc.Runtime {
 
 	if c.router.Build(runtime) == false {
 		ok = false
+	}
+
+	if c.cache != nil {
+		if c.cache.Build(runtime) == false {
+			ok = false
+		} else {
+			runtime.Executor = gc.WrapMiddleware("cache", middlewares.Cache, runtime.Executor)
+		}
 	}
 
 	if c.stats != nil {

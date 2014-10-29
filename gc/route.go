@@ -1,7 +1,24 @@
 package gc
 
+import (
+	"time"
+)
+
 type Route struct {
 	Name     string
 	Upstream *Upstream
-	Stats    *Stats
+	Stats    *RouteStats
+	Cache    *RouteCache
+}
+
+type RouteCache struct {
+	KeyLookup CacheKeyLookup
+	TTL time.Duration
+}
+
+func NewRouteCache(ttl time.Duration, keyLookup CacheKeyLookup) *RouteCache {
+	return &RouteCache{
+		TTL: ttl,
+		KeyLookup: keyLookup,
+	}
 }

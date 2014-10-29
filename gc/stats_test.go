@@ -15,7 +15,7 @@ func Test_Stats(t *testing.T) {
 }
 
 func (_ *StatsTests) CalculatesThePercentils() {
-	s := NewStats(time.Minute)
+	s := NewRouteStats(time.Minute)
 	for i := 1; i <= 20; i++ {
 		s.Hit(Respond(200, ""), time.Millisecond*time.Duration(i))
 	}
@@ -25,7 +25,7 @@ func (_ *StatsTests) CalculatesThePercentils() {
 }
 
 func (_ *StatsTests) TracksSlows() {
-	s := NewStats(time.Millisecond * 10)
+	s := NewRouteStats(time.Millisecond * 10)
 	for i := 1; i <= 20; i++ {
 		s.Hit(Respond(200, ""), time.Millisecond*time.Duration(i))
 	}
@@ -34,7 +34,7 @@ func (_ *StatsTests) TracksSlows() {
 }
 
 func (_ *StatsTests) TracksStatus() {
-	s := NewStats(time.Millisecond * 10)
+	s := NewRouteStats(time.Millisecond * 10)
 	for i := 298; i < 503; i++ {
 		s.Hit(Respond(i, ""), time.Millisecond)
 	}
@@ -46,7 +46,7 @@ func (_ *StatsTests) TracksStatus() {
 }
 
 func (_ *StatsTests) Resets() {
-	s := NewStats(time.Millisecond * 10)
+	s := NewRouteStats(time.Millisecond * 10)
 	for i := 298; i < 503; i++ {
 		s.Hit(Respond(i, ""), time.Millisecond)
 	}
@@ -62,7 +62,7 @@ func (_ *StatsTests) Resets() {
 
 func (_ *StatsTests) Persists() {
 	defer os.Remove("test_stats.json")
-	s := NewStats(time.Millisecond * 350)
+	s := NewRouteStats(time.Millisecond * 350)
 	for i := 297; i < 504; i++ {
 		s.Hit(Respond(i, ""), time.Millisecond*time.Duration(i))
 	}
