@@ -28,11 +28,13 @@ func (s *Stats) Slow(slow time.Duration) *Stats {
 }
 
 func (s *Stats) Build(runtime *gc.Runtime) bool {
-	runtime.StatsFileName = s.fileName
 	for _, route := range runtime.Routes {
 		if route.Stats.Treshold == -1 {
 			route.Stats.Treshold = s.slow
 		}
 	}
+	sw := gc.NewStatsWorker(runtime, s.fileName)
+	runtime.StatsWorker = sw
+	go sw.Run()
 	return true
 }

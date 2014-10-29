@@ -11,12 +11,11 @@ type Runtime struct {
 	Routes        map[string]*Route
 	Router        *router.Router
 	BytePool      *bytepool.Pool
-	StatsFileName string
+	StatsWorker   *StatsWorker
 }
 
-// initialize any jobs we need to run
-func (r *Runtime) Start() {
-	if len(r.StatsFileName) > 0 {
-		go NewStatsWorker(r).Run()
+func (r *Runtime) RegisterStats(name string, reporter Reporter) {
+	if r.StatsWorker != nil {
+		r.StatsWorker.register(name, reporter)
 	}
 }

@@ -67,12 +67,18 @@ func (_ *StatsTests) Persists() {
 		s.Hit(Respond(i, ""), time.Millisecond*time.Duration(i))
 	}
 	runtime := &Runtime{
-		StatsFileName: "test_stats.json",
 		Routes: map[string]*Route{
 			"about": &Route{Stats: s},
 		},
 	}
-	NewStatsWorker(runtime).work()
+	sw := NewStatsWorker(runtime, "test_stats.json")
+	runtime.StatsWorker = sw
+
+	runtime.RegisterStats("test", func()map[string]int64{
+		return map[string]int64{"abc": 123, "991": 944}
+	})
+
+	sw.work()
 	t, _ := typed.JsonFile("test_stats.json")
 	r := t.Object("routes").Object("about")
 	Expect(r.Int("slow")).To.Equal(153)
@@ -87,4 +93,8 @@ func (_ *StatsTests) Persists() {
 	// hard to tell for sure what these are going to be...
 	Expect(r.Int("gc")).Greater.Than(0)
 	Expect(r.Int("go")).Greater.Than(0)
+
+	r = t.Object("other").Object("test")
+	Expect(r.Int("abc")).To.Equal(123)
+	Expect(r.Int("991")).To.Equal(944)
 }

@@ -11,7 +11,6 @@ func Start(configuration *Configuration) {
 	if runtime == nil {
 		return
 	}
-	runtime.Start()
 	s := http.Server{
 		Addr:         configuration.address,
 		Handler:      &Handler{runtime},

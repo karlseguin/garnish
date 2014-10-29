@@ -119,5 +119,6 @@ func (c *Configuration) Build() *gc.Runtime {
 	}
 
 	runtime.BytePool = bytepool.New(c.bytePool.capacity, c.bytePool.size)
+	runtime.RegisterStats("bytepool", runtime.BytePool.Stats)
 	return runtime
 }

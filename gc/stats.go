@@ -18,6 +18,7 @@ var STATS_SAMPLE_SIZE_F = float64(STATS_SAMPLE_SIZE)
 var STATS_PERCENTILES = map[string]float64{"75p": 0.75, "95p": 0.95}
 
 type Snapshot map[string]int64
+type Reporter func() map[string]int64
 
 type Stats struct {
 	Treshold time.Duration
@@ -121,23 +122,28 @@ func percentile(values []int, p float64, size int) int64 {
 }
 
 type StatsWorker struct {
-	runtime *Runtime
+	fileName string
+	routes  map[string]*Route
 	gcstats *debug.GCStats
 	rt      map[string]int64
 	stats   map[string]interface{}
+	reporters map[string]Reporter
 }
 
-func NewStatsWorker(runtime *Runtime) *StatsWorker {
+func NewStatsWorker(runtime *Runtime, fileName string) *StatsWorker {
 	rt := map[string]int64{"gc": 0, "go": 0}
 	return &StatsWorker{
-		runtime: runtime,
-		gcstats: new(debug.GCStats),
 		rt:      rt,
+		routes: runtime.Routes,
+		gcstats: new(debug.GCStats),
+		fileName: fileName,
 		stats: map[string]interface{}{
 			"time":    time.Now(),
 			"routes":  nil,
 			"runtime": rt,
+			"other": nil,
 		},
+		reporters: make(map[string]Reporter),
 	}
 }
 
@@ -148,10 +154,19 @@ func (w *StatsWorker) Run() {
 	}
 }
 
+func (w *StatsWorker) register(name string, reporter Reporter) {
+	if _, exists := w.reporters[name]; exists {
+		Log.Warn("reporter with name %q was already registered.", name)
+		return
+	}
+	w.reporters[name] = reporter
+}
+
 func (w *StatsWorker) work() {
 	Log.Info("stats work start")
 	w.stats["time"] = time.Now()
 	w.stats["routes"] = w.collectRouteStats()
+	w.stats["other"] = w.collectReporters()
 	debug.ReadGCStats(w.gcstats)
 	w.rt["gc"] = w.gcstats.NumGC
 	w.rt["go"] = int64(runtime.NumGoroutine())
@@ -160,7 +175,7 @@ func (w *StatsWorker) work() {
 
 func (w *StatsWorker) collectRouteStats() map[string]Snapshot {
 	routes := make(map[string]Snapshot)
-	for name, route := range w.runtime.Routes {
+	for name, route := range w.routes {
 		snapshot := route.Stats.Snapshot()
 		if snapshot["hits"] > 0 {
 			routes[name] = snapshot
@@ -168,10 +183,17 @@ func (w *StatsWorker) collectRouteStats() map[string]Snapshot {
 	}
 
 	if len(routes) == 0 {
-		Log.Info("stats none")
-		return nil
+		Log.Info("no route stats")
 	}
 	return routes
+}
+
+func (w *StatsWorker) collectReporters() map[string]Snapshot {
+	reporters := make(map[string]Snapshot)
+	for name, reporter := range w.reporters {
+		reporters[name] = reporter()
+	}
+	return reporters
 }
 
 func (w *StatsWorker) save() {
@@ -181,7 +203,7 @@ func (w *StatsWorker) save() {
 		return
 	}
 
-	file, err := os.OpenFile(w.runtime.StatsFileName, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
+	file, err := os.OpenFile(w.fileName, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
 	if err != nil {
 		Log.Error("stats save %v", err)
 		return
