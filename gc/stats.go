@@ -34,20 +34,21 @@ type RouteStats struct {
 	errors   int64
 	failures int64
 	slow     int64
+	cached    int64
 }
 
 func NewRouteStats(treshold time.Duration) *RouteStats {
 	return &RouteStats{
 		Treshold: treshold,
-		snapshot: make(Snapshot, 5+len(STATS_PERCENTILES)),
+		snapshot: make(Snapshot, 6+len(STATS_PERCENTILES)),
 		samplesA: make([]int, STATS_SAMPLE_SIZE),
 		samplesB: make([]int, STATS_SAMPLE_SIZE),
 	}
 }
 
-func (s *RouteStats) Hit(response Response, t time.Duration) {
+func (s *RouteStats) Hit(res Response, t time.Duration) {
 	hits := atomic.AddInt64(&s.hits, 1)
-	status := response.Status()
+	status := res.Status()
 	if status > 499 {
 		atomic.AddInt64(&s.failures, 1)
 	} else if status > 399 {
@@ -58,7 +59,12 @@ func (s *RouteStats) Hit(response Response, t time.Duration) {
 	if t > s.Treshold {
 		atomic.AddInt64(&s.slow, 1)
 	}
-	s.sample(hits, t)
+	if res.Cached() {
+		atomic.AddInt64(&s.cached, 1)
+	} else {
+		//don't sample cache hits it'll make us look too good
+		s.sample(hits, t)
+	}
 }
 
 func (s *RouteStats) sample(hits int64, t time.Duration) {
@@ -83,6 +89,7 @@ func (s *RouteStats) Snapshot() Snapshot {
 	s.snapshot["4xx"] = atomic.SwapInt64(&s.errors, 0)
 	s.snapshot["5xx"] = atomic.SwapInt64(&s.failures, 0)
 	s.snapshot["slow"] = atomic.SwapInt64(&s.slow, 0)
+	s.snapshot["cached"] = atomic.SwapInt64(&s.cached, 0)
 	s.snapshot["hits"] = hits
 
 	s.sampleLock.Lock()

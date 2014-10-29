@@ -74,5 +74,7 @@ func (ct *CacheTests) GraceDownload() {
 	c.Grace("ab", "cd", ct.request, func(req *Request) Response {
 		return Respond(200, "ok")
 	})
-	Expect(string(c.Get("ab", "cd").Value().(Response).Body())).To.Equal("ok")
+	res := c.Get("ab", "cd").Value().(Response)
+	Expect(string(res.Body())).To.Equal("ok")
+	Expect(res.Cached()).To.Equal(true)
 }

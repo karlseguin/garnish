@@ -45,6 +45,18 @@ func (_ *StatsTests) TracksStatus() {
 	Expect(snapshot["5xx"]).To.Equal(int64(3))
 }
 
+
+func (_ *StatsTests) TracksCache() {
+	s := NewRouteStats(time.Millisecond * 10)
+	for i := 298; i < 503; i++ {
+		r := Respond(i, "")
+		r.(*NormalResponse).cached = i % 2 == 0
+		s.Hit(r, time.Millisecond)
+	}
+	snapshot := s.Snapshot()
+	Expect(snapshot["cached"]).To.Equal(int64(103))
+}
+
 func (_ *StatsTests) Resets() {
 	s := NewRouteStats(time.Millisecond * 10)
 	for i := 298; i < 503; i++ {
@@ -53,6 +65,7 @@ func (_ *StatsTests) Resets() {
 	snapshot := s.Snapshot()
 	snapshot = s.Snapshot()
 	Expect(snapshot["hits"]).To.Equal(int64(0))
+	Expect(snapshot["cached"]).To.Equal(int64(0))
 	Expect(snapshot["2xx"]).To.Equal(int64(0))
 	Expect(snapshot["4xx"]).To.Equal(int64(0))
 	Expect(snapshot["5xx"]).To.Equal(int64(0))

@@ -8,10 +8,6 @@ var (
 	NotFoundResponse = Empty(404)
 )
 
-type Detachable interface {
-	Detach() Response
-}
-
 type ByteCloser interface {
 	Bytes() []byte
 	Close() error
@@ -22,6 +18,7 @@ type Response interface {
 	Status() int
 	Header() http.Header
 	Close()
+	Cached() bool
 }
 
 func Empty(status int) Response {
@@ -37,9 +34,9 @@ func Respond(status int, body interface{}) Response {
 func RespondH(status int, header http.Header, body interface{}) Response {
 	switch b := body.(type) {
 	case string:
-		return &NormalResponse{[]byte(b), status, header}
+		return &NormalResponse{body: []byte(b), status: status, header: header}
 	case []byte:
-		return &NormalResponse{b, status, header}
+		return &NormalResponse{body: b, status: status, header: header}
 	case ByteCloser:
 		return &CloseableResponse{b, status, header}
 	default:
@@ -51,6 +48,7 @@ type NormalResponse struct {
 	body   []byte
 	status int
 	header http.Header
+	cached bool
 }
 
 func (r *NormalResponse) Body() []byte {
@@ -65,8 +63,10 @@ func (r *NormalResponse) Header() http.Header {
 	return r.header
 }
 
-func (r *NormalResponse) Close() {
+func (r *NormalResponse) Close() {}
 
+func (r *NormalResponse) Cached() bool {
+	return r.cached
 }
 
 type FatalResponse struct {
@@ -110,10 +110,19 @@ func (r *CloseableResponse) Close() {
 	r.body.Close()
 }
 
-func (r *CloseableResponse) Detach() Response {
-	defer r.Close()
-	body := r.body.Bytes()
-	clone := make([]byte, len(body))
-	copy(clone, body)
-	return RespondH(r.status, r.header, clone)
+func (r *CloseableResponse) Cached() bool {
+	return false
+}
+
+func CloneResponse(r Response) Response {
+	h := r.Header()
+	clone := &NormalResponse{
+		body: r.Body(),
+		status: r.Status(),
+		header: make(http.Header, len(h)),
+	}
+	for k, v := range h {
+		clone.header[k] = v
+	}
+	return clone
 }

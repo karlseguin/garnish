@@ -83,6 +83,7 @@ func (ht *HandlerTests) NoCacheForPost() {
 	out := httptest.NewRecorder()
 	handler.ServeHTTP(out, req)
 	Expect(out.Body.String()).To.Equal("ok")
+	Expect(out.HeaderMap.Get("X-Cache")).To.Equal("")
 }
 
 func (ht *HandlerTests) NoCacheForDisabledCache() {
@@ -92,6 +93,7 @@ func (ht *HandlerTests) NoCacheForDisabledCache() {
 	out := httptest.NewRecorder()
 	handler.ServeHTTP(out, req)
 	Expect(out.Body.String()).To.Equal("ok3")
+	Expect(out.HeaderMap.Get("X-Cache")).To.Equal("")
 }
 
 func (ht *HandlerTests) CachesValues() {
@@ -108,6 +110,7 @@ func (ht *HandlerTests) CachesValues() {
 	out := httptest.NewRecorder()
 	handler.ServeHTTP(out, req)
 	Expect(out.Body.String()).To.Equal("res")
+	Expect(out.HeaderMap.Get("X-Cache")).To.Equal("hit")
 }
 
 func (ht *HandlerTests) SaintMode() {

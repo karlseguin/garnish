@@ -34,10 +34,10 @@ func (c *Cache) Set(primary string, secondary string, config *RouteCache, res Re
 	if ttl == 0 {
 		return
 	}
-	cacheable := res
-	if dt, ok := res.(Detachable); ok {
-		cacheable = dt.Detach()
-	}
+
+	cacheable := CloneResponse(res)
+	cacheable.(*NormalResponse).cached = true
+	cacheable.Header().Set("X-Cache", "hit")
 	c.LayeredCache.Set(primary, secondary, cacheable, ttl)
 }
 
@@ -79,10 +79,13 @@ func (c *Cache) Grace(primary string, secondary string, req *Request, next Middl
 		delete(c.downloads, key)
 		c.graceLock.Unlock()
 	}()
-
-	if res := next(req); res == nil {
+	res := next(req)
+	if res == nil {
 		Log.Error("grace nil response for %q", req.URL.String())
-	} else if res.Status() >= 500 {
+		return
+	}
+	defer res.Close()
+	if res.Status() >= 500 {
 		Log.Error("grace error for %q: %s", req.URL.String(), string(res.Body()))
 	} else {
 		c.Set(primary, secondary, req.Route.Cache, res)
