@@ -36,9 +36,10 @@ The most common global setting is:
 
 Other settings you likely won't have to change:
 
-* `Debug()` - enable debug logging
-* `Logger(gc.Logs)` - use your own logger
-* `BytePool(capacity, size uint32)` - a byte pool used whenever your upstreams reply with a Content-Length less than `capacity`. Bytes required will be `capacity * size`.
+* `Debug()` - Enable debug logging
+* `Logger(gc.Logs)` - Use your own logger
+* `BytePool(capacity, size uint32)` - A byte pool used whenever your upstreams reply with a Content-Length less than `capacity`. Bytes required will be `capacity * size`.
+* `DnsTTL(ttl time.Duration)` - The default TTL to cache dns lookups for. Can be overwritten on a per-upstream basis.
 
 ### Middleware
 

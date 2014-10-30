@@ -148,7 +148,7 @@ type HandlerHelper struct {
 
 func newHelper() *HandlerHelper {
 	logger := NewFakeLogger()
-	config := Configure().Logger(logger)
+	config := Configure().Logger(logger).DnsTTL(-1)
 	config.Cache()
 	config.Stats()
 	config.Upstream("test").Address("http://localhost:9001")

@@ -14,14 +14,14 @@ func Test_Configuration(t *testing.T) {
 
 func (_ *ConfigurationTests) FailedBuildWithoutUpstream() {
 	logger := NewFakeLogger()
-	c := Configure().Logger(logger)
+	c := Configure().Logger(logger).DnsTTL(-1)
 	Expect(c.Build()).To.Equal(nil)
 	Expect(logger.errors).To.Contain("Atleast one upstream must be configured")
 }
 
 func (_ *ConfigurationTests) FailedBuildWithMissingUpstreamAddress() {
 	logger := NewFakeLogger()
-	c := Configure().Logger(logger)
+	c := Configure().Logger(logger).DnsTTL(-1)
 	c.Upstream("test")
 	Expect(c.Build()).To.Equal(nil)
 	Expect(logger.errors).To.Contain(`Upstream test has an invalid address: ""`)
@@ -29,7 +29,7 @@ func (_ *ConfigurationTests) FailedBuildWithMissingUpstreamAddress() {
 
 func (_ *ConfigurationTests) FailedBuildWithInvalidUpstreamAddress() {
 	logger := NewFakeLogger()
-	c := Configure().Logger(logger)
+	c := Configure().Logger(logger).DnsTTL(-1)
 	c.Upstream("test1").Address("http://openmymind.net/")
 	c.Upstream("test2").Address("128.93.202.0")
 	Expect(c.Build()).To.Equal(nil)
@@ -38,7 +38,7 @@ func (_ *ConfigurationTests) FailedBuildWithInvalidUpstreamAddress() {
 
 func (_ *ConfigurationTests) FailedBuildWithoutRoute() {
 	logger := NewFakeLogger()
-	c := Configure().Logger(logger)
+	c := Configure().Logger(logger).DnsTTL(-1)
 	c.Upstream("test1").Address("http://openmymind.net/")
 	Expect(c.Build()).To.Equal(nil)
 	Expect(logger.errors).To.Contain("Atleast one route must be configured")

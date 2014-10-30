@@ -84,7 +84,7 @@ func startServer() *os.Process {
 }
 
 func testHandler() *Handler {
-	config := Configure()
+	config := Configure().DnsTTL(-1)
 	config.Upstream("test").Address("http://127.0.0.1:4005").KeepAlive(2).Headers("X-Spice")
 	config.Upstream("tweaked").Address("http://127.0.0.1:4005").KeepAlive(2).Tweaker(func(in *gc.Request, out *http.Request) {
 		out.Header.Set("X-Tweaked", "true")

@@ -18,6 +18,7 @@ type Configuration struct {
 	upstreams *configurations.Upstreams
 	cache     *configurations.Cache
 	bytePool  poolConfiguration
+	dnsTTL    time.Duration
 }
 
 type poolConfiguration struct {
@@ -29,6 +30,7 @@ type poolConfiguration struct {
 func Configure() *Configuration {
 	return &Configuration{
 		address:  ":8080",
+		dnsTTL:  time.Minute,
 		bytePool: poolConfiguration{65536, 64},
 	}
 }
@@ -58,6 +60,14 @@ func (c *Configuration) Logger(logger gc.Logs) *Configuration {
 // [65536, 64]
 func (c *Configuration) BytePool(capacity, size uint32) *Configuration {
 	c.bytePool.capacity, c.bytePool.size = int(capacity), int(size)
+	return c
+}
+
+// The default time to cache DNS lookups. Overwritable on a per-upstream basis
+// Even a short value (1s) can help under heavy load
+// [1 minute]
+func (c *Configuration) DnsTTL(ttl time.Duration) *Configuration {
+	c.dnsTTL = ttl
 	return c
 }
 
@@ -105,7 +115,7 @@ func (c *Configuration) Build() *gc.Runtime {
 	}
 
 	runtime := &gc.Runtime{
-		Resolver: dnscache.New(time.Minute),
+		Resolver: dnscache.New(c.dnsTTL),
 		Router:   router.New(router.Configure()),
 		Executor: gc.WrapMiddleware("upstream", middlewares.Upstream, nil),
 	}
