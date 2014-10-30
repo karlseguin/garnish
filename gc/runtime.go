@@ -3,6 +3,7 @@ package gc
 import (
 	"github.com/karlseguin/bytepool"
 	"github.com/karlseguin/router"
+	"github.com/karlseguin/dnscache"
 )
 
 // All the data needed to serve requests
@@ -15,6 +16,7 @@ type Runtime struct {
 	BytePool    *bytepool.Pool
 	StatsWorker *StatsWorker
 	Cache       *Cache
+	Resolver    *dnscache.Resolver
 }
 
 func (r *Runtime) RegisterStats(name string, reporter Reporter) {

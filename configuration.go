@@ -6,6 +6,8 @@ import (
 	"github.com/karlseguin/garnish/gc"
 	"github.com/karlseguin/garnish/middlewares"
 	"github.com/karlseguin/router"
+	"github.com/karlseguin/dnscache"
+	"time"
 )
 
 // Configuration
@@ -103,6 +105,7 @@ func (c *Configuration) Build() *gc.Runtime {
 	}
 
 	runtime := &gc.Runtime{
+		Resolver: dnscache.New(time.Minute),
 		Router:   router.New(router.Configure()),
 		Executor: gc.WrapMiddleware("upstream", middlewares.Upstream, nil),
 	}

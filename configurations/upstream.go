@@ -1,7 +1,6 @@
 package configurations
 
 import (
-	"github.com/karlseguin/dnscache"
 	"github.com/karlseguin/garnish/gc"
 	"net"
 	"net/http"
@@ -41,7 +40,7 @@ func (u *Upstreams) Build(runtime *gc.Runtime) bool {
 	ok := true
 	upstreams := make(map[string]*gc.Upstream, len(u.upstreams))
 	for name, one := range u.upstreams {
-		if upstream := one.Build(); upstream != nil {
+		if upstream := one.Build(runtime); upstream != nil {
 			upstreams[name] = upstream
 		} else {
 			ok = false
@@ -95,12 +94,18 @@ func (u *Upstream) Tweaker(tweaker gc.RequestTweaker) *Upstream {
 	return u
 }
 
-func (u *Upstream) Build() *gc.Upstream {
+func (u *Upstream) Build(runtime *gc.Runtime) *gc.Upstream {
 	if len(u.address) < 8 {
 		gc.Log.Error("Upstream %s has an invalid address: %q", u.name, u.address)
 		return nil
 	}
-	if u.address[:6] != "unix:/" && u.address[:7] != "http://" && u.address[:8] != "https://" {
+	var domain string
+	if u.address[:7] == "http://" {
+		domain = u.address[7:]
+	} else if u.address[:8] == "https://" {
+		domain = u.address[8:]
+	}
+	if u.address[:6] != "unix:/" && len(domain) == 0 {
 		gc.Log.Error("Upstream %s's address should begin with unix:/, http:// or https://", u.name)
 		return nil
 	}
@@ -110,8 +115,9 @@ func (u *Upstream) Build() *gc.Upstream {
 		Headers: u.headers,
 		Tweaker: u.tweaker,
 	}
-	if u.dnsDuration > 0 {
-		upstream.Resolver = dnscache.New(u.dnsDuration)
+
+	if u.dnsDuration > 0 && len(domain) > 0 {
+		runtime.Resolver.TTL(domain, u.dnsDuration)
 	}
 
 	transport := &http.Transport{
@@ -131,7 +137,7 @@ func (u *Upstream) Build() *gc.Upstream {
 	} else {
 		transport.Dial = func(network, address string) (net.Conn, error) {
 			separator := strings.LastIndex(address, ":")
-			ip, _ := upstream.Resolver.FetchOneString(address[:separator])
+			ip, _ := runtime.Resolver.FetchOneString(address[:separator])
 			return net.Dial(network, ip+address[separator:])
 		}
 	}

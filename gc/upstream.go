@@ -1,7 +1,6 @@
 package gc
 
 import (
-	"github.com/karlseguin/dnscache"
 	"net/http"
 	"net/url"
 )
@@ -16,11 +15,11 @@ type Upstream struct {
 	Name      string
 	Address   string
 	Transport *http.Transport
-	Resolver  *dnscache.Resolver
 	Headers   []string
 	Tweaker   RequestTweaker
 }
 
+// Issues a request to the upstream
 func (u *Upstream) RoundTrip(in *Request) (*http.Response, error) {
 	return u.Transport.RoundTrip(u.createRequest(in))
 }
