@@ -49,66 +49,84 @@ type Route struct {
 	cacheKeyLookup gc.CacheKeyLookup
 }
 
+// Specify the name of the upstream.
 func (r *Route) Upstream(upstream string) *Route {
 	r.upstream = upstream
 	return r
 }
 
+// Register a route for requests issued with a GET
 func (r *Route) Get(path string) *Route {
 	r.method, r.path = "GET", path
 	return r
 }
 
+// Register a route for requests issued with a POST
 func (r *Route) Post(path string) *Route {
 	r.method, r.path = "POST", path
 	return r
 }
 
+// Register a route for requests issued with a PUT
 func (r *Route) Put(path string) *Route {
 	r.method, r.path = "PUT", path
 	return r
 }
 
+// Register a route for requests issued with a DELETE
 func (r *Route) Delete(path string) *Route {
 	r.method, r.path = "DELETE", path
 	return r
 }
 
+// Register a route for requests issued with a PURGE
 func (r *Route) Purge(path string) *Route {
 	r.method, r.path = "PURGE", path
 	return r
 }
 
+// Register a route for requests issued with a PATCH
 func (r *Route) Patch(path string) *Route {
 	r.method, r.path = "PATCH", path
 	return r
 }
 
+// Register a route for requests issued with a HEAD
 func (r *Route) Head(path string) *Route {
 	r.method, r.path = "HEAD", path
 	return r
 }
 
+// Register a route for requests issued with an OPTIONS
 func (r *Route) Options(path string) *Route {
 	r.method, r.path = "OPTIONS", path
 	return r
 }
 
+// Register a route for all methods. Can be overwritten on a per-method basis
+// by registering the method-specific route BEFORE specifying the All variant.
 func (r *Route) All(path string) *Route {
 	r.method, r.path = "ALL", path
 	return r
 }
 
+// The amount of time before this request is logged as a slow request
+// (overwrites the global Stat's slow value)
 func (r *Route) Slow(max time.Duration) *Route {
 	r.slow = max
 	return r
 }
 
+// The amount of time to cachet his request. If not specified, the
+// Cache-Control header will be used (including not caching private).
+// A value < 0 disables the cache for this route
 func (r *Route) CacheTTL(ttl time.Duration) *Route {
 	r.cacheTTL = ttl
 	return r
 }
 
+// The function used to get the cache key for this route.
+// (overwrites the global Cache's lookup)
 func (r *Route) CacheKeyLookup(lookup gc.CacheKeyLookup) *Route {
 	r.cacheKeyLookup = lookup
 	return r

@@ -68,7 +68,7 @@ config.Stats().FileName("stats.json").Slow(time.Millisecond * 100)
 ```
 
 * `FileName(name string)` - the path to save the statistics to
-* `Slow(d time.Duration)` - the default value to consider a request as being slow
+* `Slow(d time.Duration)` - the default value to consider a request as being slow. (overwritable on a per-route basis)
 
 #### Upstreams
 
@@ -87,4 +87,41 @@ The name given to the upstream is used later whe defining routes.
 * `Headers(headers ...string)` - The headers to forward to the upstream
 * `Tweaker(tweaker gc.RequestTweaker)` - A RequestTweaker exposes the incoming and outgoing request, allowing you to make any custom changes to the outgoing request.
 
+
+#### Cache
+
+The cache middleware is disabled by default.
+
+```go
+config.Cache().Grace(time.Minute * 2)
+```
+
+* `Count(num int)` - The maximum number of responses to keep in the cache
+* `Grace(window time.Duration)` - The window to allow a grace response
+* `NoSaint()` - Disables saint mode
+* `KeyLookup(gc.CacheKeyLookup)` - The function that determines the cache keys to use for this request. A default based on the request's URL + QueryString is used. (overwritable on a per-route basis)
+
+#### Route
+
+At least 1 route must be registered. Routes are registered with a method and associated with an upstream:
+
+```go
+config.Route("users").Get("/user/:id").Upstream("test")
+```
+
+All routes must have a unique name. Paths support parameters in the form of `:name`, which will be exposed via the `*gc.Request`'s `Param` method. Paths can also end with a wildcard `*`, which acts as a prefix match.
+
+- `Upstream(name string)` - The name of the upstream to send this request to
+- `Get(path string)` - The path for a GET method
+- `Post(path string)` - The path for a POST method
+- `Put(path string)` - The path for a PUT method
+- `Delete(path string)` - The path for a DELETE method
+- `Purge(path string)` - The path for a PURGE method
+- `Patch(path string)` - The path for a PATCH method
+- `Head(path string)` - The path for a HEAD method
+- `Options(path string)` - The path for a OPTIONS method
+- `All(path string)` - The path for a all methods. Can be overwritten for specific methods by specifying the method route first.
+- `Slow(t time.Duration)` - Any requests that take longer than `t` to process will be flagged as a slow request by the stats worker. Overwrite's the stat's slow value for this route.
+- `CacheTTL(ttl time.Duration)` - The amount of time to cache the response for. Values < 0 will cause the item to never be cached. If the value isn't set, the Cache-Control header received from the upstream will be used.
+- `CacheKeyLookup(gc.CacheKeyLookup)` - The function that generates the cache key to use. Overwrites the cache's lookup for this route.
 

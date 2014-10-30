@@ -13,13 +13,25 @@ import (
 	"time"
 )
 
+// The number of samples to keep
 var STATS_SAMPLE_SIZE int64 = 1000
+
+// The number of samples to keep as a float
 var STATS_SAMPLE_SIZE_F = float64(STATS_SAMPLE_SIZE)
+
+// The percentiles to measure. The key is used as the stat name.
 var STATS_PERCENTILES = map[string]float64{"75p": 0.75, "95p": 0.95}
 
+// A set of metrics
 type Snapshot map[string]int64
+
+// A reporter of metrics
 type Reporter func() map[string]int64
 
+// Each route has its own stats. To avoid having to store
+// potentially unlimited values to calculate percentiles, sampling is used.
+// The total memory required for this is:
+//  STATS_SAMPLE_SIZE * 2 * 64 * <NUMBER_OF_ROUTES>
 type RouteStats struct {
 	Treshold time.Duration
 	snapshot Snapshot
@@ -46,6 +58,7 @@ func NewRouteStats(treshold time.Duration) *RouteStats {
 	}
 }
 
+// Called on each request
 func (s *RouteStats) Hit(res Response, t time.Duration) {
 	hits := atomic.AddInt64(&s.hits, 1)
 	status := res.Status()
@@ -83,6 +96,8 @@ func (s *RouteStats) sample(hits int64, t time.Duration) {
 	}
 }
 
+// Get a snapsnot of this route's current stats
+// Getting a snapshot resets all statistics
 func (s *RouteStats) Snapshot() Snapshot {
 	hits := atomic.SwapInt64(&s.hits, 0)
 	s.snapshot["2xx"] = atomic.SwapInt64(&s.oks, 0)
@@ -128,6 +143,7 @@ func percentile(values []int, p float64, size int) int64 {
 	return int64(math.Ceil(valueK + (f * (float64(values[k+1]) - valueK))))
 }
 
+// Background worker that persists the stats every minute
 type StatsWorker struct {
 	fileName  string
 	routes    map[string]*Route
@@ -154,6 +170,7 @@ func NewStatsWorker(runtime *Runtime, fileName string) *StatsWorker {
 	}
 }
 
+// Run the worker
 func (w *StatsWorker) Run() {
 	for {
 		time.Sleep(time.Minute)

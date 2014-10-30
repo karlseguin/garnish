@@ -5,6 +5,8 @@ import (
 	"github.com/karlseguin/router"
 )
 
+// All the data needed to serve requests
+// Built automatically when the garnish.Start() is called
 type Runtime struct {
 	Executor    Middleware
 	Upstreams   map[string]*Upstream
