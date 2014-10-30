@@ -130,10 +130,6 @@ func (u *Upstream) Build(runtime *gc.Runtime) *gc.Upstream {
 			//strip out the :80 which Go adds
 			return net.Dial("unix", address[:len(address)-3])
 		}
-	} else if u.dnsDuration == 0 {
-		transport.Dial = func(network, address string) (net.Conn, error) {
-			return net.Dial(network, address)
-		}
 	} else {
 		transport.Dial = func(network, address string) (net.Conn, error) {
 			separator := strings.LastIndex(address, ":")
