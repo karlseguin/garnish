@@ -15,12 +15,17 @@ type Logs interface {
 	// Log an error message using the specified format
 	Error(format string, v ...interface{})
 
-	//enable logging info messages
+	// Enable logging info messages
 	Verbose()
 
+	// Returns true if verbose logging is enabled
 	IsVerbose() bool
 }
 
+// Garnish's global logger
+// If you want to log something and have access to a *gc.Request,
+// you should consider using its Info and Error methods for more
+// context-aware messages
 var Log Logs = new(Logger)
 
 type Logger struct {

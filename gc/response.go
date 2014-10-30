@@ -5,6 +5,7 @@ import (
 )
 
 var (
+	// The response to send when the route isn't found
 	NotFoundResponse = Empty(404)
 )
 

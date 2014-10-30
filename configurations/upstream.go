@@ -9,6 +9,7 @@ import (
 	"time"
 )
 
+// The default headers to forward to the upstream
 var DefaultHeaders = []string{"Content-Length"}
 
 type Upstreams struct {
@@ -21,6 +22,7 @@ func NewUpstreams() *Upstreams {
 	}
 }
 
+// Used internally
 func (u *Upstreams) Add(name string) *Upstream {
 	if _, exists := u.upstreams[name]; exists {
 		gc.Log.Warn("Upstream %q already defined. Overwriting.", name)
@@ -67,8 +69,8 @@ func (u *Upstream) Address(address string) *Upstream {
 
 // the number of connections to keep alive. Set to 0 to disable
 // [16]
-func (u *Upstream) KeepAlive(count int) *Upstream {
-	u.keepalive = count
+func (u *Upstream) KeepAlive(count uint32) *Upstream {
+	u.keepalive = int(count)
 	return u
 }
 
