@@ -117,14 +117,33 @@ func (ht *HandlerTests) CachesValues() {
 	Expect(out.HeaderMap.Get("ETag")).To.Equal(`"726573d41d8cd98f00b204e9800998ecf8427e"`)
 }
 
+func (ht *HandlerTests) IfNoneMatch() {
+	called := false
+	handler, req := ht.h.Catch(func(req *gc.Request) gc.Response {
+		if called {
+			return gc.Respond(200, "fail2")
+		}
+		called = true
+		return gc.Respond(200, "res2")
+	}).Get("/cache")
+
+	out := httptest.NewRecorder()
+	handler.ServeHTTP(out, req)
+	req.Header.Set("If-None-Match", out.HeaderMap.Get("ETag"))
+	out = httptest.NewRecorder()
+	handler.ServeHTTP(out, req)
+	Expect(out.Code).To.Equal(304)
+	Expect(out.Body.String()).To.Equal("")
+}
+
 func (ht *HandlerTests) SaintMode() {
 	called := false
 	handler, req := ht.h.Catch(func(req *gc.Request) gc.Response {
 		if called {
-			return gc.Respond(500, "fail")
+			return gc.Respond(500, "fail3")
 		}
 		called = true
-		return gc.Respond(200, "res")
+		return gc.Respond(200, "res3")
 	}).Get("/cache")
 
 	handler.ServeHTTP(httptest.NewRecorder(), req)
@@ -133,7 +152,7 @@ func (ht *HandlerTests) SaintMode() {
 	item := handler.Runtime.Cache.Get("/cache", "")
 	item.Extend(time.Hour * -1)
 	handler.ServeHTTP(out, req)
-	Expect(out.Body.String()).To.Equal("res")
+	Expect(out.Body.String()).To.Equal("res3")
 }
 
 func assertStats(handler *Handler, values ...interface{}) {
