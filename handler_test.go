@@ -106,11 +106,15 @@ func (ht *HandlerTests) CachesValues() {
 		return gc.Respond(200, "res")
 	}).Get("/cache")
 
-	handler.ServeHTTP(httptest.NewRecorder(), req)
 	out := httptest.NewRecorder()
+	handler.ServeHTTP(out, req)
+	Expect(out.HeaderMap.Get("ETag")).To.Equal(`"726573d41d8cd98f00b204e9800998ecf8427e"`)
+
+	out = httptest.NewRecorder()
 	handler.ServeHTTP(out, req)
 	Expect(out.Body.String()).To.Equal("res")
 	Expect(out.HeaderMap.Get("X-Cache")).To.Equal("hit")
+	Expect(out.HeaderMap.Get("ETag")).To.Equal(`"726573d41d8cd98f00b204e9800998ecf8427e"`)
 }
 
 func (ht *HandlerTests) SaintMode() {

@@ -6,6 +6,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"crypto/md5"
+	"fmt"
 )
 
 type CacheKeyLookup func(req *Request) (string, string)
@@ -35,6 +37,7 @@ func (c *Cache) Set(primary string, secondary string, config *RouteCache, res Re
 		return
 	}
 
+	res.Header().Set("ETag", c.etagFor(res))
 	cacheable := CloneResponse(res)
 	cacheable.(*NormalResponse).cached = true
 	cacheable.Header().Set("X-Cache", "hit")
@@ -66,6 +69,10 @@ func (c *Cache) ttl(config *RouteCache, res Response) time.Duration {
 		}
 	}
 	return 0
+}
+
+func (c *Cache) etagFor(res Response) string {
+	return fmt.Sprintf(`"%x"`, md5.New().Sum(res.Body()))
 }
 
 func (c *Cache) Grace(primary string, secondary string, req *Request, next Middleware) {

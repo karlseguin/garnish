@@ -44,7 +44,7 @@ func Empty(status int) Response {
 // The body can be a string, []byte, of ByteCloser
 // Will generate a generic Fatal (500) response for other types
 func Respond(status int, body interface{}) Response {
-	return RespondH(status, nil, body)
+	return RespondH(status, make(http.Header, 3), body)
 }
 
 // Builds a response with the given status code, headers and body
