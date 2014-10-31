@@ -1,6 +1,8 @@
 package gc
 
 import (
+	"net"
+	"strings"
 	"net/http"
 	"net/url"
 )
@@ -48,6 +50,13 @@ func (u *Upstream) createRequest(in *Request) *http.Request {
 		if len(value) > 0 {
 			out.Header[k] = value
 		}
+	}
+
+	if clientIP, _, err := net.SplitHostPort(in.RemoteAddr); err == nil {
+		if prior, ok := out.Header["X-Forwarded-For"]; ok {
+			clientIP = strings.Join(prior, ", ") + ", " + clientIP
+		}
+		out.Header.Set("X-Forwarded-For", clientIP)
 	}
 
 	if u.Tweaker != nil {
