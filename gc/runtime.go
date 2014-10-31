@@ -2,8 +2,8 @@ package gc
 
 import (
 	"github.com/karlseguin/bytepool"
-	"github.com/karlseguin/router"
 	"github.com/karlseguin/dnscache"
+	"github.com/karlseguin/router"
 )
 
 // All the data needed to serve requests

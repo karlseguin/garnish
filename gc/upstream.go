@@ -2,9 +2,9 @@ package gc
 
 import (
 	"net"
-	"strings"
 	"net/http"
 	"net/url"
+	"strings"
 )
 
 // The User Agent to send to the upstream

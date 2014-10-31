@@ -2,11 +2,11 @@ package garnish
 
 import (
 	"github.com/karlseguin/bytepool"
+	"github.com/karlseguin/dnscache"
 	"github.com/karlseguin/garnish/configurations"
 	"github.com/karlseguin/garnish/gc"
 	"github.com/karlseguin/garnish/middlewares"
 	"github.com/karlseguin/router"
-	"github.com/karlseguin/dnscache"
 	"time"
 )
 
@@ -30,7 +30,7 @@ type poolConfiguration struct {
 func Configure() *Configuration {
 	return &Configuration{
 		address:  ":8080",
-		dnsTTL:  time.Minute,
+		dnsTTL:   time.Minute,
 		bytePool: poolConfiguration{65536, 64},
 	}
 }

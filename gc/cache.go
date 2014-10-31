@@ -1,13 +1,13 @@
 package gc
 
 import (
+	"crypto/md5"
+	"fmt"
 	"github.com/karlseguin/ccache"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
-	"crypto/md5"
-	"fmt"
 )
 
 type CacheKeyLookup func(req *Request) (string, string)

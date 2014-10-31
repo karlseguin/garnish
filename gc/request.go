@@ -9,11 +9,11 @@ import (
 
 // Extends an *http.Request
 type Request struct {
-	scope string
-	params  params.Params
+	scope  string
+	params params.Params
 
 	// Every request has a unique id. This is forwarded to the upstreams in the X-Request-Id header
-	Id    string
+	Id string
 
 	// The time the request started at (used by stats to track the time taken to process)
 	Start time.Time
@@ -22,7 +22,7 @@ type Request struct {
 	*http.Request
 
 	// The route this request is associated with
-	Route   *Route
+	Route *Route
 
 	// Garnish's runtime
 	Runtime *Runtime
