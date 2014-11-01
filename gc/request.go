@@ -45,6 +45,27 @@ func (r *Request) Params(key string) string {
 	return r.params.Get(key)
 }
 
+func (r *Request) Clone() *Request {
+	clone := &Request{
+		Id:      r.Id,
+		Route:   r.Route,
+		scope:   r.scope,
+		Start:   r.Start,
+		Request: r.Request,
+		Runtime: r.Runtime,
+	}
+	if r.params.Len() == 0 {
+		clone.params = params.Empty
+	} else {
+		params := clone.Runtime.Router.ParamPool.Checkout()
+		r.params.Each(func(key, value string) {
+			params.Set(key, value)
+		})
+		clone.params = params
+	}
+	return clone
+}
+
 // Used internally to release any resources associated with the request
 func (r *Request) Close() {
 	r.params.Release()

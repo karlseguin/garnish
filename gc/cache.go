@@ -92,6 +92,11 @@ func (c *Cache) etagFor(res Response) string {
 	return fmt.Sprintf(`"%x"`, md5.New().Sum(res.Body()))
 }
 
+// Assuming that our caller executes Grace in a goroutine, we trust that
+// it also passed us a clone of the initial request.
+// A clone is critical since the original request is likely to be closed
+// before we're finishing with Grace and we might end up with a request
+// that contains data from multiple sources.
 func (c *Cache) Grace(primary string, secondary string, req *Request, next Middleware) {
 	key := primary + secondary
 	if c.reserveDownload(key) == false {
@@ -103,6 +108,7 @@ func (c *Cache) Grace(primary string, secondary string, req *Request, next Middl
 		delete(c.downloads, key)
 		c.graceLock.Unlock()
 	}()
+
 	res := next(req)
 	if res == nil {
 		Log.Error("grace nil response for %q", req.URL.String())

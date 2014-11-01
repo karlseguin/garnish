@@ -12,6 +12,7 @@ var NotModifiedResponse = gc.Empty(304)
 func Cache(req *gc.Request, next gc.Middleware) gc.Response {
 	cache := req.Runtime.Cache
 	config := req.Route.Cache
+
 	if req.Method == "PURGE" && cache.PurgeHandler != nil {
 		if res := cache.PurgeHandler(req, config.KeyLookup, cache); res != nil {
 			return res
@@ -19,13 +20,7 @@ func Cache(req *gc.Request, next gc.Middleware) gc.Response {
 		return next(req)
 	}
 
-	if req.Method != "GET" {
-		req.Info("non-GET")
-		return next(req)
-	}
-
-	if config.TTL < 0 {
-		req.Info("route no-cache")
+	if req.Method != "GET" || config.TTL < 0 {
 		return next(req)
 	}
 	primary, secondary := config.KeyLookup(req)
@@ -40,7 +35,7 @@ func Cache(req *gc.Request, next gc.Middleware) gc.Response {
 		}
 		if expires.Add(cache.GraceTTL).After(now) {
 			req.Info("grace")
-			go cache.Grace(primary, secondary, req, next)
+			go cache.Grace(primary, secondary, req.Clone(), next)
 			return cacheServe(req, item.Value().(gc.Response))
 		}
 	}
