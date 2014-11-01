@@ -6,6 +6,11 @@ import (
 	"github.com/karlseguin/router"
 )
 
+var UnauthorizedResponse = Empty(401)
+
+// Authorization / authentication handler
+type AuthHandler func(req *Request) Response
+
 // All the data needed to serve requests
 // Built automatically when the garnish.Start() is called
 type Runtime struct {
@@ -17,6 +22,7 @@ type Runtime struct {
 	StatsWorker *StatsWorker
 	Cache       *Cache
 	Resolver    *dnscache.Resolver
+	AuthHandler AuthHandler
 }
 
 func (r *Runtime) RegisterStats(name string, reporter Reporter) {

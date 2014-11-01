@@ -17,6 +17,7 @@ type Configuration struct {
 	router    *configurations.Router
 	upstreams *configurations.Upstreams
 	cache     *configurations.Cache
+	auth      *configurations.Auth
 	bytePool  poolConfiguration
 	dnsTTL    time.Duration
 }
@@ -68,6 +69,12 @@ func (c *Configuration) BytePool(capacity, size uint32) *Configuration {
 // [1 minute]
 func (c *Configuration) DnsTTL(ttl time.Duration) *Configuration {
 	c.dnsTTL = ttl
+	return c
+}
+
+// Enable and configure the auth middleware
+func (c *Configuration) Auth(handler gc.AuthHandler) *Configuration {
+	c.auth = configurations.NewAuth(handler)
 	return c
 }
 
@@ -138,6 +145,14 @@ func (c *Configuration) Build() *gc.Runtime {
 			ok = false
 		} else {
 			runtime.Executor = gc.WrapMiddleware("cache", middlewares.Cache, runtime.Executor)
+		}
+	}
+
+	if c.auth != nil {
+		if c.auth.Build(runtime) == false {
+			ok = false
+		} else {
+			runtime.Executor = gc.WrapMiddleware("auth", middlewares.Auth, runtime.Executor)
 		}
 	}
 

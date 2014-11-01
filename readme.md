@@ -71,6 +71,36 @@ config.Stats().FileName("stats.json").Slow(time.Millisecond * 100)
 * `FileName(name string)` - the path to save the statistics to
 * `Slow(d time.Duration)` - the default value to consider a request as being slow. (overwritable on a per-route basis)
 
+#### Authentication
+
+The auth middleware is diabled by default. To enable it, provide the configuration with the `gc.AuthHandler` to use:
+
+```go
+config.Auth(authHandler)
+...
+func authHandler(req *gc.Request) gc.Response {
+    ...
+}
+```
+
+If the configured `AuthHandler` returns a response, that response is immediately returned returned to the client and no further processing is done. In other words, to allow the request to proceed, return `nil` from the handler.
+
+This middleware has no additional configuration.
+
+#### Cache
+
+The cache middleware is disabled by default.
+
+```go
+config.Cache().Grace(time.Minute * 2)
+```
+
+* `Count(num int)` - The maximum number of responses to keep in the cache
+* `Grace(window time.Duration)` - The window to allow a grace response
+* `NoSaint()` - Disables saint mode
+* `KeyLookup(gc.CacheKeyLookup)` - The function that determines the cache keys to use for this request. A default based on the request's URL + QueryString is used. (overwritable on a per-route basis)
+* `PurgeHandler(gc.PurgeHandler)` - The function to call on PURGE requests. No default is provided (it's good to authorize purge requests). If the handler returns a nil response, the request proceeds as normal (thus allowing you to purge the garnish cache and still send the request to the upstream). When a `PurgeHandler` is configured, a route is automatically added to handle any PURGE request.
+
 #### Upstreams
 
 Configures your upstreams. Garnish requires at least 1 upstream to be defined:
@@ -87,21 +117,6 @@ The name given to the upstream is used later whe defining routes.
 * `DnsCache(ttl time.Duration)` - The length of time to cache the upstream's IP. Even setting this to a short value (1s) can have a significant impact
 * `Headers(headers ...string)` - The headers to forward to the upstream
 * `Tweaker(tweaker gc.RequestTweaker)` - A RequestTweaker exposes the incoming and outgoing request, allowing you to make any custom changes to the outgoing request.
-
-
-#### Cache
-
-The cache middleware is disabled by default.
-
-```go
-config.Cache().Grace(time.Minute * 2)
-```
-
-* `Count(num int)` - The maximum number of responses to keep in the cache
-* `Grace(window time.Duration)` - The window to allow a grace response
-* `NoSaint()` - Disables saint mode
-* `KeyLookup(gc.CacheKeyLookup)` - The function that determines the cache keys to use for this request. A default based on the request's URL + QueryString is used. (overwritable on a per-route basis)
-* `PurgeHandler(gc.PurgeHandler)` - The function to call on PURGE requests. No default is provided (it's good to authorize purge requests). If the handler returns a nil response, the request proceeds as normal (thus allowing you to purge the garnish cache and still send the request to the upstream). When a `PurgeHandler` is configured, a route is automatically added to handle any PURGE request.
 
 #### Route
 

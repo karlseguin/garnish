@@ -179,6 +179,14 @@ func (ht *HandlerTests) Purge() {
 	Expect(out.Code).To.Equal(200)
 }
 
+func (ht *HandlerTests) Authentication() {
+	handler, req := ht.h.Get("/noauth")
+	out := httptest.NewRecorder()
+	handler.ServeHTTP(out, req)
+	Expect(out.Body.String()).To.Equal("")
+	Expect(out.Code).To.Equal(401)
+}
+
 func assertStats(handler *Handler, values ...interface{}) {
 	snapshot := handler.Runtime.Routes["control"].Stats.Snapshot()
 
@@ -202,11 +210,18 @@ func newHelper() *HandlerHelper {
 		}
 		return gc.PurgeHitResponse
 	})
+	config.Auth(func(req *gc.Request) gc.Response {
+		if req.URL.Path == "/noauth" {
+			return gc.UnauthorizedResponse
+		}
+		return nil
+	})
 	config.Stats()
 	config.Upstream("test").Address("http://localhost:9001")
 	config.Route("control").Get("/control").Upstream("test")
 	config.Route("cache").Get("/cache").Upstream("test").CacheTTL(time.Minute)
 	config.Route("nocache").Get("/nocache").Upstream("test").CacheTTL(-1)
+	config.Route("noauth").Get("/noauth").Upstream("test")
 
 	rb := &HandlerHelper{
 		logger:  logger,
