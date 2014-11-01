@@ -35,7 +35,7 @@ func Cache(req *gc.Request, next gc.Middleware) gc.Response {
 		}
 		if expires.Add(cache.GraceTTL).After(now) {
 			req.Info("grace")
-			go cache.Grace(primary, secondary, req.Clone(), next)
+			cache.Grace(primary, secondary, req, next)
 			return cacheServe(req, item.Value().(gc.Response))
 		}
 	}

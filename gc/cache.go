@@ -33,7 +33,7 @@ func DefaultCacheKeyLookup(req *Request) (string, string) {
 }
 
 type Cache struct {
-	graceLock sync.Mutex
+	graceLock sync.RWMutex
 	*ccache.LayeredCache
 	downloads    map[string]time.Time
 	Saint        bool
@@ -92,8 +92,6 @@ func (c *Cache) etagFor(res Response) string {
 	return fmt.Sprintf(`"%x"`, md5.New().Sum(res.Body()))
 }
 
-// Assuming that our caller executes Grace in a goroutine, we trust that
-// it also passed us a clone of the initial request.
 // A clone is critical since the original request is likely to be closed
 // before we're finishing with Grace and we might end up with a request
 // that contains data from multiple sources.
@@ -102,7 +100,10 @@ func (c *Cache) Grace(primary string, secondary string, req *Request, next Middl
 	if c.reserveDownload(key) == false {
 		return
 	}
+	go c.grace(key, primary, secondary, req.Clone(), next)
+}
 
+func (c *Cache) grace(key string, primary string, secondary string, req *Request, next Middleware) {
 	defer func() {
 		c.graceLock.Lock()
 		delete(c.downloads, key)
@@ -124,12 +125,20 @@ func (c *Cache) Grace(primary string, secondary string, req *Request, next Middl
 
 func (c *Cache) reserveDownload(key string) bool {
 	now := time.Now()
-	c.graceLock.Lock()
-	defer c.graceLock.Unlock()
+	c.graceLock.RLock()
 	expires, exists := c.downloads[key]
+	c.graceLock.RUnlock()
 	if exists && expires.After(now) {
 		return false
 	}
+
+	c.graceLock.Lock()
+	defer c.graceLock.Unlock()
+	expires, exists = c.downloads[key]
+	if exists && expires.After(now) {
+		return false
+	}
+
 	c.downloads[key] = now.Add(time.Second * 30)
 	return true
 }

@@ -3,6 +3,7 @@ package gc
 import (
 	. "github.com/karlseguin/expect"
 	"github.com/karlseguin/expect/build"
+	"github.com/karlseguin/params"
 	"net/http"
 	"testing"
 	"time"
@@ -17,6 +18,7 @@ func Test_Cache(t *testing.T) {
 	ct := &CacheTests{
 		request: NewRequest(build.Request().Request, route, nil),
 	}
+	ct.request.params = params.Empty
 	Expectify(ct, t)
 }
 
@@ -64,6 +66,7 @@ func (ct *CacheTests) GraceForcesOnStaleDownloads() {
 		called = true
 		return Respond(200, "ok")
 	})
+	time.Sleep(time.Millisecond * 10)
 	Expect(called).To.Equal(true)
 	Expect(c.downloads).Not.To.Contain("pk")
 }
@@ -71,7 +74,7 @@ func (ct *CacheTests) GraceForcesOnStaleDownloads() {
 func (ct *CacheTests) GraceDownload() {
 	c := NewCache(10)
 	c.downloads["abcd"] = time.Now().Add(time.Minute * -1)
-	c.Grace("ab", "cd", ct.request, func(req *Request) Response {
+	c.grace("abcd", "ab", "cd", ct.request, func(req *Request) Response {
 		return Respond(200, "ok")
 	})
 	res := c.Get("ab", "cd").Value().(Response)
