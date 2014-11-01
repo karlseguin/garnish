@@ -6,10 +6,11 @@ import (
 )
 
 type Cache struct {
-	count  int
-	grace  time.Duration
-	saint  bool
-	lookup gc.CacheKeyLookup
+	count        int
+	grace        time.Duration
+	saint        bool
+	lookup       gc.CacheKeyLookup
+	purgeHandler gc.PurgeHandler
 }
 
 func NewCache() *Cache {
@@ -60,12 +61,34 @@ func (c *Cache) KeyLookup(lookup gc.CacheKeyLookup) *Cache {
 	return c
 }
 
+// The function which will handle purge requests
+// No default is provided since some level of custom authorization should be done
+// If the handler returns a response, the middleware chain is stopped and the
+// specified response is returned.
+// If the handler does not return a response, the chain continues.
+// This makes it possible to purge the garnish cache while allowing the purge
+// request to be sent to the upstream
+func (c *Cache) PurgeHandler(handler gc.PurgeHandler) *Cache {
+	c.purgeHandler = handler
+	return c
+}
+
 func (c *Cache) Build(runtime *gc.Runtime) bool {
 	runtime.Cache = gc.NewCache(c.count)
 	runtime.Cache.Saint = c.saint
 	runtime.Cache.GraceTTL = c.grace
+
+	if c.purgeHandler != nil {
+		runtime.Cache.PurgeHandler = c.purgeHandler
+		runtime.Router.AddNamed("_gc_purge_all", "ALL", "/*", nil)
+		runtime.Routes["_gc_purge_all"] = &gc.Route{
+			Stats: gc.NewRouteStats(time.Millisecond * 500),
+			Cache: gc.NewRouteCache(-1, c.lookup),
+		}
+	}
+
 	for _, route := range runtime.Routes {
-		if route.Cache.KeyLookup == nil {
+		if route.Cache != nil && route.Cache.KeyLookup == nil {
 			route.Cache.KeyLookup = c.lookup
 		}
 	}

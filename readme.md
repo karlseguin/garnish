@@ -101,6 +101,7 @@ config.Cache().Grace(time.Minute * 2)
 * `Grace(window time.Duration)` - The window to allow a grace response
 * `NoSaint()` - Disables saint mode
 * `KeyLookup(gc.CacheKeyLookup)` - The function that determines the cache keys to use for this request. A default based on the request's URL + QueryString is used. (overwritable on a per-route basis)
+* `PurgeHandler(gc.PurgeHandler)` - The function to call on PURGE requests. No default is provided (it's good to authorize purge requests). If the handler returns a nil response, the request proceeds as normal (thus allowing you to purge the garnish cache and still send the request to the upstream). When a `PurgeHandler` is configured, a route is automatically added to handle any PURGE request.
 
 #### Route
 

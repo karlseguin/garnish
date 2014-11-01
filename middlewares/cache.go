@@ -10,16 +10,24 @@ var NotModifiedResponse = gc.Empty(304)
 
 //TODO: handle purge
 func Cache(req *gc.Request, next gc.Middleware) gc.Response {
+	cache := req.Runtime.Cache
+	config := req.Route.Cache
+	if req.Method == "PURGE" && cache.PurgeHandler != nil {
+		if res := cache.PurgeHandler(req, config.KeyLookup, cache); res != nil {
+			return res
+		}
+		return next(req)
+	}
+
 	if req.Method != "GET" {
 		req.Info("non-GET")
 		return next(req)
 	}
-	config := req.Route.Cache
+
 	if config.TTL < 0 {
 		req.Info("route no-cache")
 		return next(req)
 	}
-	cache := req.Runtime.Cache
 	primary, secondary := config.KeyLookup(req)
 
 	item := cache.Get(primary, secondary)

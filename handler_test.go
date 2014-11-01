@@ -155,6 +155,30 @@ func (ht *HandlerTests) SaintMode() {
 	Expect(out.Body.String()).To.Equal("res3")
 }
 
+func (ht *HandlerTests) Purge() {
+	handler, req := ht.h.Catch(func(req *gc.Request) gc.Response {
+		return gc.Respond(200, "res")
+	}).Get("/cache")
+
+	// make this independent of other tests, blah
+	req.URL.RawQuery += "purge=test"
+
+	out := httptest.NewRecorder()
+	req.Method = "PURGE"
+	handler.ServeHTTP(out, req)
+	Expect(out.Body.String()).To.Equal("")
+	Expect(out.Code).To.Equal(204)
+
+	req.Method = "GET"
+	handler.ServeHTTP(httptest.NewRecorder(), req)
+
+	out = httptest.NewRecorder()
+	req.Method = "PURGE"
+	handler.ServeHTTP(out, req)
+	Expect(out.Body.String()).To.Equal("")
+	Expect(out.Code).To.Equal(200)
+}
+
 func assertStats(handler *Handler, values ...interface{}) {
 	snapshot := handler.Runtime.Routes["control"].Stats.Snapshot()
 
@@ -172,7 +196,12 @@ type HandlerHelper struct {
 func newHelper() *HandlerHelper {
 	logger := NewFakeLogger()
 	config := Configure().Logger(logger).DnsTTL(-1)
-	config.Cache()
+	config.Cache().PurgeHandler(func(req *gc.Request, lookup gc.CacheKeyLookup, cache gc.Purgeable) gc.Response {
+		if cache.Delete(lookup(req)) == false {
+			return gc.PurgeMissResponse
+		}
+		return gc.PurgeHitResponse
+	})
 	config.Stats()
 	config.Upstream("test").Address("http://localhost:9001")
 	config.Route("control").Get("/control").Upstream("test")

@@ -10,7 +10,23 @@ import (
 	"time"
 )
 
+var (
+	PurgeHitResponse  = Empty(200)
+	PurgeMissResponse = Empty(204)
+)
+
+// A function that generates cache keys from a request
 type CacheKeyLookup func(req *Request) (string, string)
+
+// A function that purges the cache
+// Returning a nil response means that the request will be forward onwards
+type PurgeHandler func(req *Request, lookup CacheKeyLookup, cache Purgeable) Response
+
+// An interface for deleting items
+type Purgeable interface {
+	Delete(primary, secondary string) bool
+	DeleteAll(primary string) bool
+}
 
 func DefaultCacheKeyLookup(req *Request) (string, string) {
 	return req.URL.Path, req.URL.RawQuery
@@ -19,9 +35,10 @@ func DefaultCacheKeyLookup(req *Request) (string, string) {
 type Cache struct {
 	graceLock sync.Mutex
 	*ccache.LayeredCache
-	Saint     bool
-	GraceTTL  time.Duration
-	downloads map[string]time.Time
+	downloads    map[string]time.Time
+	Saint        bool
+	GraceTTL     time.Duration
+	PurgeHandler PurgeHandler
 }
 
 func NewCache(count int) *Cache {
