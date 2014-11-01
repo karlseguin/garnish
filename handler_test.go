@@ -35,7 +35,8 @@ func (ht *HandlerTests) NilResponse() {
 	handler.ServeHTTP(out, req)
 	Expect(out.Code).To.Equal(500)
 	Expect(out.HeaderMap.Get("Content-Length")).To.Equal("0")
-	Expect(ht.h.logger.(*FakeLogger).errors).To.Contain(`[500] "nil response object" "http://local.test/control"`)
+	errors := ht.h.logger.(*FakeLogger).errors
+	Expect(errors[len(errors)-1]).To.Contain(`nil response object`)
 }
 
 func (ht *HandlerTests) OkStats() {

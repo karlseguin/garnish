@@ -48,7 +48,7 @@ func (l *Logger) Error(format string, v ...interface{}) {
 }
 
 func (l *Logger) log(level, format string, v ...interface{}) {
-	fmt.Printf("%s | %s | ", level, time.Now().UTC().Format("2006-01-02 15:04:05"))
+	fmt.Printf("%s %s ", level, time.Now().UTC().Format("2006-01-02 15:04:05"))
 	fmt.Println(fmt.Sprintf(format, v...))
 }
 

@@ -80,7 +80,7 @@ func (c *Cache) Build(runtime *gc.Runtime) bool {
 
 	if c.purgeHandler != nil {
 		runtime.Cache.PurgeHandler = c.purgeHandler
-		runtime.Router.AddNamed("_gc_purge_all", "ALL", "/*", nil)
+		runtime.Router.AddNamed("_gc_purge_all", "PURGE", "/*", nil)
 		runtime.Routes["_gc_purge_all"] = &gc.Route{
 			Stats: gc.NewRouteStats(time.Millisecond * 500),
 			Cache: gc.NewRouteCache(-1, c.lookup),

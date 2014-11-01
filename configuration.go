@@ -124,7 +124,7 @@ func (c *Configuration) Build() *gc.Runtime {
 	runtime := &gc.Runtime{
 		Resolver: dnscache.New(c.dnsTTL),
 		Router:   router.New(router.Configure()),
-		Executor: gc.WrapMiddleware("upstream", middlewares.Upstream, nil),
+		Executor: gc.WrapMiddleware("upst", middlewares.Upstream, nil),
 	}
 
 	if c.upstreams.Build(runtime) == false {
@@ -144,7 +144,7 @@ func (c *Configuration) Build() *gc.Runtime {
 		if c.cache.Build(runtime) == false {
 			ok = false
 		} else {
-			runtime.Executor = gc.WrapMiddleware("cache", middlewares.Cache, runtime.Executor)
+			runtime.Executor = gc.WrapMiddleware("cach", middlewares.Cache, runtime.Executor)
 		}
 	}
 
@@ -160,7 +160,7 @@ func (c *Configuration) Build() *gc.Runtime {
 		if c.stats.Build(runtime) == false {
 			ok = false
 		} else {
-			runtime.Executor = gc.WrapMiddleware("stats", middlewares.Stats, runtime.Executor)
+			runtime.Executor = gc.WrapMiddleware("stat", middlewares.Stats, runtime.Executor)
 		}
 	}
 

@@ -13,9 +13,11 @@ type Handler struct {
 func (h *Handler) ServeHTTP(out http.ResponseWriter, r *http.Request) {
 	req := h.route(r)
 	if req == nil {
-		reply(out, gc.NotFoundResponse, req)
+		gc.Log.Info("404 %s", r.URL.String())
+		reply(out, gc.NotFoundResponse, nil)
 		return
 	}
+	req.Info(req.URL.String())
 	defer req.Close()
 	reply(out, h.Executor(req), req)
 }
@@ -35,12 +37,15 @@ func reply(out http.ResponseWriter, res gc.Response, req *gc.Request) {
 	}
 	oh["Content-Length"] = []string{strconv.Itoa(len(body))}
 
-	if status >= 500 {
-		if fatal, ok := res.(*gc.FatalResponse); ok {
-			gc.Log.Error("[500] %q %q", fatal.Err, req.URL)
-		} else {
-			gc.Log.Error("[%d] %q %q", status, string(body), req.URL)
+	if req != nil {
+		if status >= 500 {
+			if fatal, ok := res.(*gc.FatalResponse); ok {
+				req.Error(fatal.Err)
+			} else {
+				req.Error(string(body))
+			}
 		}
+		req.Info("%d", status)
 	}
 	out.WriteHeader(status)
 	out.Write(body)

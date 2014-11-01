@@ -30,6 +30,7 @@ type Request struct {
 
 func NewRequest(req *http.Request, route *Route, params params.Params) *Request {
 	return &Request{
+		scope:   "root",
 		Request: req,
 		Route:   route,
 		params:  params,

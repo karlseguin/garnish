@@ -8,9 +8,7 @@ func WrapMiddleware(name string, m MiddlewareHandler, next Middleware) Middlewar
 	return func(req *Request) Response {
 		old := req.scope
 		req.scope = name
-		req.Info("entr")
 		res := m(req, next)
-		req.Info("exit")
 		req.scope = old
 		return res
 	}
