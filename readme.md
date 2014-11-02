@@ -142,3 +142,11 @@ All routes must have a unique name. Paths support parameters in the form of `:na
 - `CacheTTL(ttl time.Duration)` - The amount of time to cache the response for. Values < 0 will cause the item to never be cached. If the value isn't set, the Cache-Control header received from the upstream will be used.
 - `CacheKeyLookup(gc.CacheKeyLookup)` - The function that generates the cache key to use. Overwrites the cache's lookup for this route.
 
+
+## TODO
+- Handle input body draining
+- Don't read upstream body until needed (possibly never, thus allowing us to pipe it directly to the ResponseWriter)
+- Upstream load balancing
+- TCP upstream
+- Hydration
+- Dispatcher

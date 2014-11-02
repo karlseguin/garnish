@@ -3,6 +3,7 @@ package gc
 import (
 	"github.com/karlseguin/nd"
 	"github.com/karlseguin/params"
+	"io"
 	"net/http"
 	"time"
 )
@@ -43,6 +44,10 @@ func NewRequest(req *http.Request, route *Route, params params.Params) *Request 
 // Given a route /users/:id  we can expect a param with a key of "id"
 func (r *Request) Params(key string) string {
 	return r.params.Get(key)
+}
+
+func (r *Request) Body() io.ReadCloser {
+	return r.Request.Body
 }
 
 func (r *Request) Clone() *Request {

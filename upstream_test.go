@@ -6,6 +6,7 @@ import (
 	"github.com/karlseguin/garnish/gc"
 	"github.com/karlseguin/nd"
 	"github.com/karlseguin/typed"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -75,6 +76,14 @@ func (_ *UpstreamTests) Body() {
 	Expect(out.Body.String()).To.Equal("it's over 9000!!")
 }
 
+func (_ *UpstreamTests) DrainedBody() {
+	handler := testHandler()
+	out := httptest.NewRecorder()
+	handler.ServeHTTP(out, build.Request().Method("POST").Path("/drain").Body("the spice must flow").Request)
+	Expect(out.Code).To.Equal(200)
+	Expect(out.Body.String()).To.Equal("the spice must flow")
+}
+
 func startServer() *os.Process {
 	cmd := exec.Command("coffee", "server_test.coffee")
 	if err := cmd.Start(); err != nil {
@@ -90,10 +99,19 @@ func testHandler() *Handler {
 		out.Header.Set("X-Tweaked", "true")
 		out.URL.Path = "/headers"
 	})
+	config.Upstream("drain").Address("http://127.0.0.1:4005").KeepAlive(2).Tweaker(func(in *gc.Request, out *http.Request) {
+		_, err := ioutil.ReadAll(in.Body())
+		if err != nil {
+			panic(err)
+		}
+		in.Body().Close()
+		out.URL.Path = "/body"
+	})
 	config.Route("plain").Get("/plain").Upstream("test")
 	config.Route("headers").Get("/headers").Upstream("test")
 	config.Route("tweaked").Get("/tweaked").Upstream("tweaked")
 	config.Route("body").Post("/body").Upstream("test")
+	config.Route("drain").Post("/drain").Upstream("drain")
 	runtime := config.Build()
 	return &Handler{runtime}
 }

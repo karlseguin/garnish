@@ -58,6 +58,7 @@ func (c *Configuration) Logger(logger gc.Logs) *Configuration {
 // The size of each buffer and the number of buffers to keep in a the pool
 // Upstream replies with a content length which fit within the specified
 // capacity wil perform better.
+// The pool is also used for incoming requests with bodies.
 // [65536, 64]
 func (c *Configuration) BytePool(capacity, size uint32) *Configuration {
 	c.bytePool.capacity, c.bytePool.size = int(capacity), int(size)
