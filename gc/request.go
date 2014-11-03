@@ -61,6 +61,9 @@ func (r *Request) Body() []byte {
 	return r.body.Bytes()
 }
 
+// For now we don't clone the body.
+// Clone is only used by the cache/grace right now, what are the chances
+// that we want to cache a GET request with a body?
 func (r *Request) Clone() *Request {
 	clone := &Request{
 		Id:      r.Id,

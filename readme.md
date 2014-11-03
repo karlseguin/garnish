@@ -144,7 +144,6 @@ All routes must have a unique name. Paths support parameters in the form of `:na
 
 
 ## TODO
-- Handle input body draining
 - Don't read upstream body until needed (possibly never, thus allowing us to pipe it directly to the ResponseWriter)
 - Upstream load balancing
 - TCP upstream
