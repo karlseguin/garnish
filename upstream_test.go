@@ -6,7 +6,6 @@ import (
 	"github.com/karlseguin/garnish/gc"
 	"github.com/karlseguin/nd"
 	"github.com/karlseguin/typed"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -94,17 +93,20 @@ func startServer() *os.Process {
 
 func testHandler() *Handler {
 	config := Configure().DnsTTL(-1)
+	config.Auth(func(req *gc.Request) gc.Response {
+		if req.URL.Path == "/drain" {
+			// if len(req.Body()) == 0 {
+			// 	panic("fail")
+			// }
+		}
+		return nil
+	})
 	config.Upstream("test").Address("http://127.0.0.1:4005").KeepAlive(2).Headers("X-Spice")
 	config.Upstream("tweaked").Address("http://127.0.0.1:4005").KeepAlive(2).Tweaker(func(in *gc.Request, out *http.Request) {
 		out.Header.Set("X-Tweaked", "true")
 		out.URL.Path = "/headers"
 	})
 	config.Upstream("drain").Address("http://127.0.0.1:4005").KeepAlive(2).Tweaker(func(in *gc.Request, out *http.Request) {
-		_, err := ioutil.ReadAll(in.Body())
-		if err != nil {
-			panic(err)
-		}
-		in.Body().Close()
 		out.URL.Path = "/body"
 	})
 	config.Route("plain").Get("/plain").Upstream("test")

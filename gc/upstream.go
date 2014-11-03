@@ -39,10 +39,15 @@ func (u *Upstream) createRequest(in *Request) *http.Request {
 		ProtoMajor:    1,
 		ProtoMinor:    1,
 		Host:          in.Host,
-		Body:          in.Body(),
 		Method:        in.Method,
 		ContentLength: in.ContentLength,
 		Header:        http.Header{"X-Request-Id": []string{in.Id}, "User-Agent": DefaultUserAgent},
+	}
+
+	if in.body != nil {
+		out.Body = in.body
+	} else {
+		out.Body = in.Request.Body
 	}
 
 	for _, k := range u.Headers {

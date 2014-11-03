@@ -1,9 +1,9 @@
 package gc
 
 import (
+	"github.com/karlseguin/bytepool"
 	"github.com/karlseguin/nd"
 	"github.com/karlseguin/params"
-	"io"
 	"net/http"
 	"time"
 )
@@ -11,6 +11,7 @@ import (
 // Extends an *http.Request
 type Request struct {
 	scope  string
+	body   *bytepool.Bytes
 	params params.Params
 
 	// Every request has a unique id. This is forwarded to the upstreams in the X-Request-Id header
@@ -46,8 +47,16 @@ func (r *Request) Params(key string) string {
 	return r.params.Get(key)
 }
 
-func (r *Request) Body() io.ReadCloser {
-	return r.Request.Body
+func (r *Request) Body() []byte {
+	if r.body == nil {
+		if r.Request.Body == nil {
+			return nil
+		}
+		r.body = r.Runtime.BytePool.Checkout()
+		r.body.ReadFrom(r.Request.Body)
+		r.Request.Body.Close()
+	}
+	return r.body.Bytes()
 }
 
 func (r *Request) Clone() *Request {
@@ -74,6 +83,9 @@ func (r *Request) Clone() *Request {
 // Used internally to release any resources associated with the request
 func (r *Request) Close() {
 	r.params.Release()
+	if r.body != nil {
+		r.body.Close()
+	}
 }
 
 // Context-aware info message (only displayed if the global configuration
