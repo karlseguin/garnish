@@ -95,9 +95,9 @@ func testHandler() *Handler {
 	config := Configure().DnsTTL(-1)
 	config.Auth(func(req *gc.Request) gc.Response {
 		if req.URL.Path == "/drain" {
-			// if len(req.Body()) == 0 {
-			// 	panic("fail")
-			// }
+			if len(req.Body()) == 0 {
+				panic("fail")
+			}
 		}
 		return nil
 	})

@@ -47,6 +47,8 @@ func (r *Request) Params(key string) string {
 	return r.params.Get(key)
 }
 
+// The request's body. This value is only available before the upstrea
+// is called (at which point it is drained)
 func (r *Request) Body() []byte {
 	if r.body == nil {
 		if r.Request.Body == nil {

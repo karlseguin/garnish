@@ -46,6 +46,7 @@ func (u *Upstream) createRequest(in *Request) *http.Request {
 
 	if in.body != nil {
 		out.Body = in.body
+		in.body = nil //the upstream call will take care of closing it
 	} else {
 		out.Body = in.Request.Body
 	}
