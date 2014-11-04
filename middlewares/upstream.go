@@ -13,9 +13,7 @@ func Upstream(req *gc.Request, next gc.Middleware) gc.Response {
 	if err != nil {
 		return gc.FatalErr(err)
 	}
-	defer r.Body.Close()
-	buffer := req.Runtime.BytePool.Checkout()
-	buffer.ReadFrom(r.Body)
-	req.Info("%s | %d | %d", req.URL.String(), r.StatusCode, buffer.Len())
-	return gc.RespondH(r.StatusCode, r.Header, buffer)
+
+	req.Info("%s | %d | %d", req.URL.String(), r.StatusCode, r.ContentLength)
+	return req.RespondH(r.StatusCode, r.Header, r.Body)
 }

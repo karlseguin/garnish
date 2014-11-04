@@ -48,7 +48,7 @@ func reply(out http.ResponseWriter, res gc.Response, req *gc.Request) {
 		req.Info("%d", status)
 	}
 	out.WriteHeader(status)
-	out.Write(body)
+	res.Write(out)
 }
 
 func (h *Handler) route(req *http.Request) *gc.Request {

@@ -1,6 +1,7 @@
 package gc
 
 import (
+	"io"
 	"net/http"
 )
 
@@ -16,8 +17,10 @@ type ByteCloser interface {
 
 // An http response
 type Response interface {
-	// The body
 	Body() []byte
+
+	// Write out the response
+	Write(w io.Writer)
 
 	// The status code
 	Status() int
@@ -44,7 +47,7 @@ func Empty(status int) Response {
 // The body can be a string, []byte, of ByteCloser
 // Will generate a generic Fatal (500) response for other types
 func Respond(status int, body interface{}) Response {
-	return RespondH(status, make(http.Header, 3), body)
+	return RespondH(status, make(http.Header), body)
 }
 
 // Builds a response with the given status code, headers and body
@@ -75,6 +78,10 @@ type NormalResponse struct {
 
 func (r *NormalResponse) Body() []byte {
 	return r.body
+}
+
+func (r *NormalResponse) Write(w io.Writer) {
+	w.Write(r.body)
 }
 
 func (r *NormalResponse) Status() int {
@@ -126,6 +133,10 @@ func (r *CloseableResponse) Body() []byte {
 	return r.body.Bytes()
 }
 
+func (r *CloseableResponse) Write(w io.Writer) {
+	w.Write(r.body.Bytes())
+}
+
 func (r *CloseableResponse) Status() int {
 	return r.status
 }
@@ -156,4 +167,51 @@ func CloneResponse(r Response) Response {
 		clone.header[k] = v
 	}
 	return clone
+}
+
+// A standard response. This response is used by the cache.
+// It's also used when the upstream didn't provide a Content-Length, or
+// whe the Content-Length was greater then the configured BytePool's capacity
+type StreamingResponse struct {
+	bytes   ByteCloser
+	body    io.ReadCloser
+	runtime *Runtime
+	status  int
+	header  http.Header
+}
+
+func (r *StreamingResponse) Body() []byte {
+	if r.bytes == nil {
+		bytes := r.runtime.BytePool.Checkout()
+		bytes.ReadFrom(r.body)
+		r.bytes = bytes
+	}
+	return r.bytes.Bytes()
+}
+
+func (r *StreamingResponse) Write(w io.Writer) {
+	if r.bytes != nil {
+		w.Write(r.bytes.Bytes())
+	} else {
+		io.Copy(w, r.body)
+	}
+}
+
+func (r *StreamingResponse) Status() int {
+	return r.status
+}
+
+func (r *StreamingResponse) Header() http.Header {
+	return r.header
+}
+
+func (r *StreamingResponse) Close() {
+	r.body.Close()
+	if r.bytes != nil {
+		r.bytes.Close()
+	}
+}
+
+func (r *StreamingResponse) Cached() bool {
+	return false
 }

@@ -4,6 +4,7 @@ import (
 	"github.com/karlseguin/bytepool"
 	"github.com/karlseguin/nd"
 	"github.com/karlseguin/params"
+	"io"
 	"net/http"
 	"time"
 )
@@ -59,6 +60,23 @@ func (r *Request) Body() []byte {
 		r.Request.Body.Close()
 	}
 	return r.body.Bytes()
+}
+
+// Create a streaming response
+// For any other type of response, simply use the gc.Response() function
+func (r *Request) Respond(status int, rc io.ReadCloser) Response {
+	return r.RespondH(status, make(http.Header), rc)
+}
+
+// Create a streaming response with the specified hdeader
+// For any other type of response, simply use the gc.Response() function
+func (r *Request) RespondH(status int, header http.Header, rc io.ReadCloser) Response {
+	return &StreamingResponse{
+		body:    rc,
+		status:  status,
+		header:  header,
+		runtime: r.Runtime,
+	}
 }
 
 // For now we don't clone the body.

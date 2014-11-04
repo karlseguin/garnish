@@ -3,6 +3,8 @@ http = require('http')
 handlers =
   plain: (req, res) -> res.end('hello world')
 
+  cached: (req, res) -> res.end('will it cache?')
+
   headers: (req, res) -> res.end(JSON.stringify(req.headers))
 
   body: (req, res) ->

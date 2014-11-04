@@ -17,8 +17,8 @@ import (
 type UpstreamTests struct{}
 
 func Test_Upstream(t *testing.T) {
-	server := startServer()
-	defer server.Kill()
+	// server := startServer()
+	// defer server.Kill()
 	//what could go wrong?
 	time.Sleep(time.Second)
 	Expectify(new(UpstreamTests), t)
@@ -29,7 +29,6 @@ func (_ *UpstreamTests) Request() {
 	out := httptest.NewRecorder()
 	handler.ServeHTTP(out, build.Request().Path("/plain").Request)
 	Expect(out.Code).To.Equal(200)
-	Expect(out.HeaderMap.Get("Content-Length")).To.Equal("11")
 	Expect(out.Body.String()).To.Equal("hello world")
 }
 
@@ -83,6 +82,19 @@ func (_ *UpstreamTests) DrainedBody() {
 	Expect(out.Body.String()).To.Equal("the spice must flow")
 }
 
+func (_ *UpstreamTests) ForCache() {
+	handler := testHandler()
+	out := httptest.NewRecorder()
+	handler.ServeHTTP(out, build.Request().Path("/cached").Request)
+	Expect(out.Code).To.Equal(200)
+	Expect(out.Body.String()).To.Equal("will it cache?")
+
+	out = httptest.NewRecorder()
+	handler.ServeHTTP(out, build.Request().Path("/cached").Request)
+	Expect(out.Code).To.Equal(200)
+	Expect(out.Body.String()).To.Equal("will it cache?")
+}
+
 func startServer() *os.Process {
 	cmd := exec.Command("coffee", "server_test.coffee")
 	if err := cmd.Start(); err != nil {
@@ -93,6 +105,7 @@ func startServer() *os.Process {
 
 func testHandler() *Handler {
 	config := Configure().DnsTTL(-1)
+	config.Cache()
 	config.Auth(func(req *gc.Request) gc.Response {
 		if req.URL.Path == "/drain" {
 			if len(req.Body()) == 0 {
@@ -114,6 +127,7 @@ func testHandler() *Handler {
 	config.Route("tweaked").Get("/tweaked").Upstream("tweaked")
 	config.Route("body").Post("/body").Upstream("test")
 	config.Route("drain").Post("/drain").Upstream("drain")
+	config.Route("cached").Get("/cached").Upstream("test").CacheTTL(time.Minute)
 	runtime := config.Build()
 	return &Handler{runtime}
 }
