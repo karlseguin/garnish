@@ -15,5 +15,5 @@ func Upstream(req *gc.Request, next gc.Middleware) gc.Response {
 	}
 
 	req.Info("%s | %d | %d", req.URL.String(), r.StatusCode, r.ContentLength)
-	return req.RespondH(r.StatusCode, r.Header, r.Body)
+	return req.Respond(r)
 }

@@ -17,7 +17,12 @@ type ByteCloser interface {
 
 // An http response
 type Response interface {
+	// The response's body
 	Body() []byte
+
+	// The response's content length
+	// Should return -1 when unknown
+	ContentLength() int
 
 	// Write out the response
 	Write(w io.Writer)
@@ -59,8 +64,6 @@ func RespondH(status int, header http.Header, body interface{}) Response {
 		return &NormalResponse{body: []byte(b), status: status, header: header}
 	case []byte:
 		return &NormalResponse{body: b, status: status, header: header}
-	case ByteCloser:
-		return &CloseableResponse{b, status, header}
 	default:
 		return Fatal("invalid body type")
 	}
@@ -78,6 +81,10 @@ type NormalResponse struct {
 
 func (r *NormalResponse) Body() []byte {
 	return r.body
+}
+
+func (r *NormalResponse) ContentLength() int {
+	return len(r.body)
 }
 
 func (r *NormalResponse) Write(w io.Writer) {
@@ -122,62 +129,16 @@ func FatalErr(err error) Response {
 	}
 }
 
-// A response with a body of type ByteCloser
-type CloseableResponse struct {
-	body   ByteCloser
-	status int
-	header http.Header
-}
-
-func (r *CloseableResponse) Body() []byte {
-	return r.body.Bytes()
-}
-
-func (r *CloseableResponse) Write(w io.Writer) {
-	w.Write(r.body.Bytes())
-}
-
-func (r *CloseableResponse) Status() int {
-	return r.status
-}
-
-func (r *CloseableResponse) Header() http.Header {
-	return r.header
-}
-
-func (r *CloseableResponse) Close() {
-	r.body.Close()
-}
-
-func (r *CloseableResponse) Cached() bool {
-	return false
-}
-
-// Clones a response
-// Used by the cache to turn any other type of response into
-// a NormalResponse with its own copy of the body and header
-func CloneResponse(r Response) Response {
-	h := r.Header()
-	clone := &NormalResponse{
-		body:   r.Body(),
-		status: r.Status(),
-		header: make(http.Header, len(h)),
-	}
-	for k, v := range h {
-		clone.header[k] = v
-	}
-	return clone
-}
-
 // A standard response. This response is used by the cache.
 // It's also used when the upstream didn't provide a Content-Length, or
 // whe the Content-Length was greater then the configured BytePool's capacity
 type StreamingResponse struct {
-	bytes   ByteCloser
-	body    io.ReadCloser
-	runtime *Runtime
-	status  int
-	header  http.Header
+	bytes         ByteCloser
+	body          io.ReadCloser
+	runtime       *Runtime
+	status        int
+	contentLength int
+	header        http.Header
 }
 
 func (r *StreamingResponse) Body() []byte {
@@ -187,6 +148,13 @@ func (r *StreamingResponse) Body() []byte {
 		r.bytes = bytes
 	}
 	return r.bytes.Bytes()
+}
+
+func (r *StreamingResponse) ContentLength() int {
+	if r.bytes == nil {
+		return r.contentLength
+	}
+	return len(r.bytes.Bytes())
 }
 
 func (r *StreamingResponse) Write(w io.Writer) {
@@ -214,4 +182,20 @@ func (r *StreamingResponse) Close() {
 
 func (r *StreamingResponse) Cached() bool {
 	return false
+}
+
+// Clones a response
+// Used by the cache to turn any other type of response into
+// a NormalResponse with its own copy of the body and header
+func CloneResponse(r Response) Response {
+	h := r.Header()
+	clone := &NormalResponse{
+		body:   r.Body(),
+		status: r.Status(),
+		header: make(http.Header, len(h)),
+	}
+	for k, v := range h {
+		clone.header[k] = v
+	}
+	return clone
 }

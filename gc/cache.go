@@ -54,7 +54,9 @@ func (c *Cache) Set(primary string, secondary string, config *RouteCache, res Re
 		return
 	}
 
-	res.Header().Set("ETag", c.etagFor(res))
+	// ClonseResponse is going to have to read the Body() anyways,
+	// so we can read it for the Etag (knowing that it'll be mnenomized)
+	res.Header().Set("ETag", fmt.Sprintf(`"%x"`, md5.New().Sum(res.Body())))
 	cacheable := CloneResponse(res)
 	cacheable.(*NormalResponse).cached = true
 	cacheable.Header().Set("X-Cache", "hit")
@@ -86,10 +88,6 @@ func (c *Cache) ttl(config *RouteCache, res Response) time.Duration {
 		}
 	}
 	return 0
-}
-
-func (c *Cache) etagFor(res Response) string {
-	return fmt.Sprintf(`"%x"`, md5.New().Sum(res.Body()))
 }
 
 // A clone is critical since the original request is likely to be closed

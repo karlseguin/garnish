@@ -29,20 +29,21 @@ func reply(out http.ResponseWriter, res gc.Response, req *gc.Request) {
 	defer res.Close()
 
 	oh := out.Header()
-	body := res.Body()
 	status := res.Status()
 
 	for k, v := range res.Header() {
 		oh[k] = v
 	}
-	oh["Content-Length"] = []string{strconv.Itoa(len(body))}
+	if cl := res.ContentLength(); cl > -1 {
+		oh["Content-Length"] = []string{strconv.Itoa(cl)}
+	}
 
 	if req != nil {
 		if status >= 500 {
 			if fatal, ok := res.(*gc.FatalResponse); ok {
 				req.Error(fatal.Err)
 			} else {
-				req.Error(string(body))
+				req.Error(string(res.Body()))
 			}
 		}
 		req.Info("%d", status)

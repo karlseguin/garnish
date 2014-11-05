@@ -17,8 +17,8 @@ import (
 type UpstreamTests struct{}
 
 func Test_Upstream(t *testing.T) {
-	// server := startServer()
-	// defer server.Kill()
+	server := startServer()
+	defer server.Kill()
 	//what could go wrong?
 	time.Sleep(time.Second)
 	Expectify(new(UpstreamTests), t)

@@ -141,6 +141,8 @@ func (ht *HandlerTests) SaintMode() {
 	called := false
 	handler, req := ht.h.Catch(func(req *gc.Request) gc.Response {
 		if called {
+			//this actually gets called from grace mode
+			//but our assertions don't look at that
 			return gc.Respond(500, "fail3")
 		}
 		called = true
