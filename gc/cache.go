@@ -1,8 +1,6 @@
 package gc
 
 import (
-	"crypto/md5"
-	"fmt"
 	"github.com/karlseguin/ccache"
 	"strconv"
 	"strings"
@@ -54,11 +52,7 @@ func (c *Cache) Set(primary string, secondary string, config *RouteCache, res Re
 		return
 	}
 
-	// ClonseResponse is going to have to read the Body() anyways,
-	// so we can read it for the Etag (knowing that it'll be mnenomized)
-	res.Header().Set("ETag", fmt.Sprintf(`"%x"`, md5.New().Sum(res.Body())))
-	cacheable := CloneResponse(res)
-	cacheable.(*NormalResponse).cached = true
+	cacheable := res.ToCacheable()
 	cacheable.Header().Set("X-Cache", "hit")
 	c.LayeredCache.Set(primary, secondary, cacheable, ttl)
 }
@@ -115,7 +109,7 @@ func (c *Cache) grace(key string, primary string, secondary string, req *Request
 	}
 	defer res.Close()
 	if res.Status() >= 500 {
-		Log.Error("grace error for %q: %s", req.URL.String(), string(res.Body()))
+		Log.Error("grace error for %q", req.URL.String())
 	} else {
 		c.Set(primary, secondary, req.Route.Cache, res)
 	}

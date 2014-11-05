@@ -1,6 +1,7 @@
 package gc
 
 import (
+	"bytes"
 	"io"
 	"net/http"
 )
@@ -17,21 +18,21 @@ type ByteCloser interface {
 
 // An http response
 type Response interface {
-	// The response's body
-	Body() []byte
-
 	// The response's content length
 	// Should return -1 when unknown
 	ContentLength() int
 
 	// Write out the response
-	Write(w io.Writer)
+	Write(runtime *Runtime, w io.Writer)
 
 	// The status code
 	Status() int
 
 	// The headers
 	Header() http.Header
+
+	// Returns a cacheable version of this response
+	ToCacheable() Response
 
 	// Releases any resources associated with the response
 	Close()
@@ -64,6 +65,8 @@ func RespondH(status int, header http.Header, body interface{}) Response {
 		return &NormalResponse{body: []byte(b), status: status, header: header}
 	case []byte:
 		return &NormalResponse{body: b, status: status, header: header}
+	case io.ReadCloser:
+		return &StreamingResponse{body: b, status: status, header: header}
 	default:
 		return Fatal("invalid body type")
 	}
@@ -79,15 +82,11 @@ type NormalResponse struct {
 	cached bool
 }
 
-func (r *NormalResponse) Body() []byte {
-	return r.body
-}
-
 func (r *NormalResponse) ContentLength() int {
 	return len(r.body)
 }
 
-func (r *NormalResponse) Write(w io.Writer) {
+func (r *NormalResponse) Write(runtime *Runtime, w io.Writer) {
 	w.Write(r.body)
 }
 
@@ -100,6 +99,19 @@ func (r *NormalResponse) Header() http.Header {
 }
 
 func (r *NormalResponse) Close() {}
+
+func (r *NormalResponse) ToCacheable() Response {
+	clone := &NormalResponse{
+		body:   r.body,
+		status: r.status,
+		header: make(http.Header, len(r.header)),
+		cached: true,
+	}
+	for k, v := range r.header {
+		clone.header[k] = v
+	}
+	return clone
+}
 
 func (r *NormalResponse) Cached() bool {
 	return r.cached
@@ -133,33 +145,23 @@ func FatalErr(err error) Response {
 // It's also used when the upstream didn't provide a Content-Length, or
 // whe the Content-Length was greater then the configured BytePool's capacity
 type StreamingResponse struct {
-	bytes         ByteCloser
-	body          io.ReadCloser
-	runtime       *Runtime
-	status        int
-	contentLength int
-	header        http.Header
-}
-
-func (r *StreamingResponse) Body() []byte {
-	if r.bytes == nil {
-		bytes := r.runtime.BytePool.Checkout()
-		bytes.ReadFrom(r.body)
-		r.bytes = bytes
-	}
-	return r.bytes.Bytes()
+	bytes  []byte
+	body   io.ReadCloser
+	status int
+	header http.Header
+	CL     int64
 }
 
 func (r *StreamingResponse) ContentLength() int {
 	if r.bytes == nil {
-		return r.contentLength
+		return int(r.CL)
 	}
-	return len(r.bytes.Bytes())
+	return len(r.bytes)
 }
 
-func (r *StreamingResponse) Write(w io.Writer) {
+func (r *StreamingResponse) Write(runtime *Runtime, w io.Writer) {
 	if r.bytes != nil {
-		w.Write(r.bytes.Bytes())
+		w.Write(r.bytes)
 	} else {
 		io.Copy(w, r.body)
 	}
@@ -173,29 +175,42 @@ func (r *StreamingResponse) Header() http.Header {
 	return r.header
 }
 
+func (r *StreamingResponse) ToCacheable() Response {
+	if r.bytes == nil {
+		r.read()
+	}
+	clone := &NormalResponse{
+		body:   r.bytes,
+		status: r.status,
+		header: make(http.Header, len(r.header)),
+		cached: true,
+	}
+	for k, v := range r.header {
+		clone.header[k] = v
+	}
+	return clone
+}
+
+func (r *StreamingResponse) read() {
+	if r.CL > 0 {
+		r.bytes = make([]byte, r.CL)
+		io.ReadFull(r.body, r.bytes)
+		return
+	}
+
+	tmp := bytes.NewBuffer(make([]byte, 0, 65536))
+	io.Copy(tmp, r.body)
+	// read is being called by ToCacheable
+	// which will cache our response, let's not waste any space in the cache
+	r.bytes = make([]byte, tmp.Len())
+	copy(r.bytes, tmp.Bytes())
+}
+
 func (r *StreamingResponse) Close() {
 	r.body.Close()
-	if r.bytes != nil {
-		r.bytes.Close()
-	}
+	r.body = nil
 }
 
 func (r *StreamingResponse) Cached() bool {
 	return false
-}
-
-// Clones a response
-// Used by the cache to turn any other type of response into
-// a NormalResponse with its own copy of the body and header
-func CloneResponse(r Response) Response {
-	h := r.Header()
-	clone := &NormalResponse{
-		body:   r.Body(),
-		status: r.Status(),
-		header: make(http.Header, len(h)),
-	}
-	for k, v := range h {
-		clone.header[k] = v
-	}
-	return clone
 }

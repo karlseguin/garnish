@@ -61,18 +61,6 @@ func (r *Request) Body() []byte {
 	return r.body.Bytes()
 }
 
-// Create a streaming response
-// For any other type of response, simply use the gc.Response() function
-func (r *Request) Respond(res *http.Response) Response {
-	return &StreamingResponse{
-		body:          res.Body,
-		contentLength: int(res.ContentLength),
-		status:        res.StatusCode,
-		header:        res.Header,
-		runtime:       r.Runtime,
-	}
-}
-
 // For now we don't clone the body.
 // Clone is only used by the cache/grace right now, what are the chances
 // that we want to cache a GET request with a body?

@@ -14,15 +14,15 @@ func (h *Handler) ServeHTTP(out http.ResponseWriter, r *http.Request) {
 	req := h.route(r)
 	if req == nil {
 		gc.Log.Info("404 %s", r.URL.String())
-		reply(out, gc.NotFoundResponse, nil)
+		h.reply(out, gc.NotFoundResponse, nil)
 		return
 	}
 	req.Info(req.URL.String())
 	defer req.Close()
-	reply(out, h.Executor(req), req)
+	h.reply(out, h.Executor(req), req)
 }
 
-func reply(out http.ResponseWriter, res gc.Response, req *gc.Request) {
+func (h *Handler) reply(out http.ResponseWriter, res gc.Response, req *gc.Request) {
 	if res == nil {
 		res = gc.Fatal("nil response object")
 	}
@@ -42,14 +42,12 @@ func reply(out http.ResponseWriter, res gc.Response, req *gc.Request) {
 		if status >= 500 {
 			if fatal, ok := res.(*gc.FatalResponse); ok {
 				req.Error(fatal.Err)
-			} else {
-				req.Error(string(res.Body()))
 			}
 		}
 		req.Info("%d", status)
 	}
 	out.WriteHeader(status)
-	res.Write(out)
+	res.Write(h.Runtime, out)
 }
 
 func (h *Handler) route(req *http.Request) *gc.Request {

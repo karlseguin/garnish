@@ -31,12 +31,12 @@ func Cache(req *gc.Request, next gc.Middleware) gc.Response {
 		expires := item.Expires()
 		if expires.After(now) {
 			req.Info("hit")
-			cacheServe(req, item.Value().(gc.Response))
+			return item.Value().(gc.Response)
 		}
 		if expires.Add(cache.GraceTTL).After(now) {
 			req.Info("grace")
 			cache.Grace(primary, secondary, req, next)
-			return cacheServe(req, item.Value().(gc.Response))
+			return item.Value().(gc.Response)
 		}
 	}
 
@@ -51,21 +51,5 @@ func Cache(req *gc.Request, next gc.Middleware) gc.Response {
 		return item.Value().(gc.Response)
 	}
 	cache.Set(primary, secondary, config, res)
-	return res
-}
-
-func cacheServe(req *gc.Request, res gc.Response) gc.Response {
-	match := req.Header["If-None-Match"]
-	l := len(match)
-	if l == 0 {
-		return res
-	}
-
-	etag := res.Header().Get("ETag")
-	for i := 0; i < l; i++ {
-		if etag == match[i] {
-			return NotModifiedResponse
-		}
-	}
 	return res
 }

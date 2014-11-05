@@ -21,6 +21,7 @@ type Runtime struct {
 	BytePool    *bytepool.Pool
 	StatsWorker *StatsWorker
 	Cache       *Cache
+	Hydrate     *Hydrate
 	Resolver    *dnscache.Resolver
 	AuthHandler AuthHandler
 }

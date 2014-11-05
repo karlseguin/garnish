@@ -17,6 +17,7 @@ type Configuration struct {
 	router    *configurations.Router
 	upstreams *configurations.Upstreams
 	cache     *configurations.Cache
+	hydrate   *configurations.Hydrate
 	auth      *configurations.Auth
 	bytePool  poolConfiguration
 	dnsTTL    time.Duration
@@ -95,7 +96,15 @@ func (c *Configuration) Upstream(name string) *configurations.Upstream {
 	return c.upstreams.Add(name)
 }
 
-// Enable and configure the cace middleware
+// Enable and configure the hydration middleware
+func (c *Configuration) Hydrate(loader gc.HydrateLoader) *configurations.Hydrate {
+	if c.hydrate == nil {
+		c.hydrate = configurations.NewHydrate(loader)
+	}
+	return c.hydrate
+}
+
+// Enable and configure the cache middleware
 func (c *Configuration) Cache() *configurations.Cache {
 	if c.cache == nil {
 		c.cache = configurations.NewCache()
@@ -141,12 +150,26 @@ func (c *Configuration) Build() *gc.Runtime {
 		ok = false
 	}
 
+	hydrateOn := false
+	if c.hydrate != nil {
+		if c.hydrate.Build(runtime) == false {
+			ok = false
+		} else {
+			hydrateOn = true
+			runtime.Executor = gc.WrapMiddleware("hdrL", middlewares.HydrateLoader, runtime.Executor)
+		}
+	}
+
 	if c.cache != nil {
 		if c.cache.Build(runtime) == false {
 			ok = false
 		} else {
 			runtime.Executor = gc.WrapMiddleware("cach", middlewares.Cache, runtime.Executor)
 		}
+	}
+
+	if hydrateOn {
+		runtime.Executor = gc.WrapMiddleware("hdrP", middlewares.HydrateParser, runtime.Executor)
 	}
 
 	if c.auth != nil {
