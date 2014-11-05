@@ -144,8 +144,11 @@ func (r *Route) Build(runtime *gc.Runtime) *gc.Route {
 	ok := true
 
 	route := &gc.Route{
-		Name:  r.name,
-		Stats: gc.NewRouteStats(r.slow),
+		Name: r.name,
+	}
+
+	if r.slow > -1 {
+		route.Stats = gc.NewRouteStats(r.slow)
 	}
 
 	if len(r.method) == 0 {

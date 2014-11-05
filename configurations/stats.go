@@ -38,8 +38,8 @@ func (s *Stats) Slow(slow time.Duration) *Stats {
 // Builds the stats middleware into the runtime
 func (s *Stats) Build(runtime *gc.Runtime) bool {
 	for _, route := range runtime.Routes {
-		if route.Stats.Treshold == -1 {
-			route.Stats.Treshold = s.slow
+		if route.Stats == nil {
+			route.Stats = gc.NewRouteStats(s.slow)
 		}
 	}
 	sw := gc.NewStatsWorker(runtime, s.fileName)
