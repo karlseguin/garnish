@@ -124,7 +124,6 @@ func (c *Configuration) Route(name string) *configurations.Route {
 // Builds a *gc.Runtime based on the configuration. Returns nil on error
 // and prints those errors to *gc.Logger
 func (c *Configuration) Build() *gc.Runtime {
-	ok := true
 	logger := gc.Log
 	if c.upstreams == nil {
 		logger.Error("Atleast one upstream must be configured")
@@ -138,7 +137,7 @@ func (c *Configuration) Build() *gc.Runtime {
 	}
 
 	if c.upstreams.Build(runtime) == false {
-		ok = false
+		return nil
 	}
 
 	if c.router == nil {
@@ -147,49 +146,39 @@ func (c *Configuration) Build() *gc.Runtime {
 	}
 
 	if c.router.Build(runtime) == false {
-		ok = false
+		return nil
 	}
 
-	hydrateOn := false
 	if c.hydrate != nil {
 		if c.hydrate.Build(runtime) == false {
-			ok = false
-		} else {
-			hydrateOn = true
-			runtime.Executor = gc.WrapMiddleware("hdrL", middlewares.HydrateLoader, runtime.Executor)
+			return nil
 		}
+		runtime.Executor = gc.WrapMiddleware("hdrL", middlewares.HydrateLoader, runtime.Executor)
 	}
 
 	if c.cache != nil {
 		if c.cache.Build(runtime) == false {
-			ok = false
-		} else {
-			runtime.Executor = gc.WrapMiddleware("cach", middlewares.Cache, runtime.Executor)
+			return nil
 		}
+		runtime.Executor = gc.WrapMiddleware("cach", middlewares.Cache, runtime.Executor)
 	}
 
-	if hydrateOn {
-		runtime.Executor = gc.WrapMiddleware("hdrP", middlewares.HydrateParser, runtime.Executor)
+	if c.hydrate != nil {
+		runtime.Executor = gc.WrapMiddleware("hdrL", middlewares.HydrateLoader, runtime.Executor)
 	}
 
 	if c.auth != nil {
 		if c.auth.Build(runtime) == false {
-			ok = false
-		} else {
-			runtime.Executor = gc.WrapMiddleware("auth", middlewares.Auth, runtime.Executor)
+			return nil
 		}
+		runtime.Executor = gc.WrapMiddleware("auth", middlewares.Auth, runtime.Executor)
 	}
 
 	if c.stats != nil {
 		if c.stats.Build(runtime) == false {
-			ok = false
-		} else {
-			runtime.Executor = gc.WrapMiddleware("stat", middlewares.Stats, runtime.Executor)
+			return nil
 		}
-	}
-
-	if ok == false {
-		return nil
+		runtime.Executor = gc.WrapMiddleware("stat", middlewares.Stats, runtime.Executor)
 	}
 
 	runtime.BytePool = bytepool.New(c.bytePool.capacity, c.bytePool.size)
