@@ -2,6 +2,7 @@ package configurations
 
 import (
 	"github.com/karlseguin/garnish/gc"
+	"github.com/karlseguin/garnish/middlewares"
 )
 
 type Hydrate struct {
@@ -24,7 +25,9 @@ func (h *Hydrate) Header(name string) *Hydrate {
 	return h
 }
 
-func (h *Hydrate) Build(runtime *gc.Runtime) bool {
-	// runtime.Hydrate = gc.NewHydrate(h.loader, h.header)
-	return true
+func (h *Hydrate) Build(runtime *gc.Runtime) *middlewares.Hydrate {
+	runtime.HydrateLoader = h.loader
+	return &middlewares.Hydrate{
+		Header: h.header,
+	}
 }

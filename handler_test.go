@@ -1,15 +1,28 @@
 package garnish
 
 import (
+	"fmt"
 	. "github.com/karlseguin/expect"
 	"github.com/karlseguin/expect/build"
 	"github.com/karlseguin/garnish/gc"
 	"github.com/karlseguin/garnish/middlewares"
+	"github.com/karlseguin/typed"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 )
+
+var hydrateBody = `
+{
+  "page":1,
+  "total": 54,
+  "results": [
+    {"!ref": {"id": "9001p", "type": "product"}},
+    {"!ref": {"id": "9002p", "type": "product"}},
+    {"!ref": {"id": "9003p", "type": "cats"}}
+  ]
+}`
 
 type HandlerTests struct {
 	h *HandlerHelper
@@ -191,6 +204,50 @@ func (ht *HandlerTests) Authentication() {
 	Expect(out.Code).To.Equal(401)
 }
 
+func (ht *HandlerTests) Hydrate() {
+	handler, req := ht.h.Catch(func(req *gc.Request) gc.Response {
+		return gc.RespondH(200, http.Header{"X-Hydrate": []string{"!ref"}}, hydrateBody)
+	}).Get("/hydrate")
+
+	out := httptest.NewRecorder()
+	handler.ServeHTTP(out, req)
+	assertHydrate(out)
+	Expect(out.HeaderMap.Get("X-Cache")).To.Equal("")
+
+}
+
+func (ht *HandlerTests) CachedHydrate() {
+	called := 0
+	handler, req := ht.h.Catch(func(req *gc.Request) gc.Response {
+		called += 1
+		return gc.RespondH(200, http.Header{"X-Hydrate": []string{"!ref"}}, hydrateBody)
+	}).Get("/hydrate2")
+
+	out := httptest.NewRecorder()
+	handler.ServeHTTP(out, req)
+	assertHydrate(out)
+
+	out = httptest.NewRecorder()
+	handler.ServeHTTP(out, req)
+
+	Expect(called).To.Equal(1)
+	assertHydrate(out)
+	Expect(out.HeaderMap.Get("X-Cache")).To.Equal("hit")
+}
+
+func assertHydrate(out *httptest.ResponseRecorder) {
+	Expect(out.Code).To.Equal(200)
+	b, _ := typed.Json(out.Body.Bytes())
+	Expect(b.Int("page")).To.Equal(1)
+	Expect(b.Int("total")).To.Equal(54)
+	results := b.Objects("results")
+	Expect(results[0].String("i")).To.Equal("9001p")
+	Expect(results[0].String("p")).To.Equal("product")
+	Expect(results[1].String("i")).To.Equal("9002p")
+	Expect(results[1].String("p")).To.Equal("product")
+	Expect(results[2].String("i")).To.Equal("9003p")
+	Expect(results[2].String("p")).To.Equal("cats")
+}
 func assertStats(handler *Handler, values ...interface{}) {
 	snapshot := handler.Runtime.Routes["control"].Stats.Snapshot()
 
@@ -208,6 +265,10 @@ type HandlerHelper struct {
 func newHelper() *HandlerHelper {
 	logger := NewFakeLogger()
 	config := Configure().Logger(logger).DnsTTL(-1)
+	config.Hydrate(func(reference *gc.ReferenceFragment) []byte {
+		return []byte(fmt.Sprintf(`{"i": %q, "p": %q}`, reference.Id, reference.T))
+	})
+
 	config.Cache().PurgeHandler(func(req *gc.Request, lookup gc.CacheKeyLookup, cache gc.Purgeable) gc.Response {
 		if cache.Delete(lookup(req)) == false {
 			return gc.PurgeMissResponse
@@ -226,6 +287,8 @@ func newHelper() *HandlerHelper {
 	config.Route("cache").Get("/cache").Upstream("test").CacheTTL(time.Minute)
 	config.Route("nocache").Get("/nocache").Upstream("test").CacheTTL(-1)
 	config.Route("noauth").Get("/noauth").Upstream("test")
+	config.Route("hydrate").Get("/hydrate").Upstream("test")
+	config.Route("hydrate2").Get("/hydrate2").Upstream("test").CacheTTL(time.Minute)
 
 	rb := &HandlerHelper{
 		logger:  logger,

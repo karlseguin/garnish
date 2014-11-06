@@ -150,10 +150,11 @@ func (c *Configuration) Build() *gc.Runtime {
 	}
 
 	if c.hydrate != nil {
-		if c.hydrate.Build(runtime) == false {
+		if m := c.hydrate.Build(runtime); m != nil {
+			runtime.Executor = gc.WrapMiddleware("hdrt", m.Handler, runtime.Executor)
+		} else {
 			return nil
 		}
-		runtime.Executor = gc.WrapMiddleware("hdrL", middlewares.HydrateLoader, runtime.Executor)
 	}
 
 	if c.cache != nil {
@@ -161,10 +162,6 @@ func (c *Configuration) Build() *gc.Runtime {
 			return nil
 		}
 		runtime.Executor = gc.WrapMiddleware("cach", middlewares.Cache, runtime.Executor)
-	}
-
-	if c.hydrate != nil {
-		runtime.Executor = gc.WrapMiddleware("hdrL", middlewares.HydrateLoader, runtime.Executor)
 	}
 
 	if c.auth != nil {

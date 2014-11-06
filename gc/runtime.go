@@ -14,16 +14,16 @@ type AuthHandler func(req *Request) Response
 // All the data needed to serve requests
 // Built automatically when the garnish.Start() is called
 type Runtime struct {
-	Executor    Middleware
-	Upstreams   map[string]*Upstream
-	Routes      map[string]*Route
-	Router      *router.Router
-	BytePool    *bytepool.Pool
-	StatsWorker *StatsWorker
-	Cache       *Cache
-	Hydrate     *Hydrate
-	Resolver    *dnscache.Resolver
-	AuthHandler AuthHandler
+	Executor      Middleware
+	Upstreams     map[string]*Upstream
+	Routes        map[string]*Route
+	Router        *router.Router
+	BytePool      *bytepool.Pool
+	StatsWorker   *StatsWorker
+	Cache         *Cache
+	Resolver      *dnscache.Resolver
+	AuthHandler   AuthHandler
+	HydrateLoader HydrateLoader
 }
 
 func (r *Runtime) RegisterStats(name string, reporter Reporter) {
