@@ -213,7 +213,6 @@ func (ht *HandlerTests) Hydrate() {
 	handler.ServeHTTP(out, req)
 	assertHydrate(out)
 	Expect(out.HeaderMap.Get("X-Cache")).To.Equal("")
-
 }
 
 func (ht *HandlerTests) CachedHydrate() {

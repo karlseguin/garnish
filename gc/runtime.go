@@ -22,7 +22,6 @@ type Runtime struct {
 	StatsWorker   *StatsWorker
 	Cache         *Cache
 	Resolver      *dnscache.Resolver
-	AuthHandler   AuthHandler
 	HydrateLoader HydrateLoader
 }
 

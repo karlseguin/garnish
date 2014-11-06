@@ -165,10 +165,11 @@ func (c *Configuration) Build() *gc.Runtime {
 	}
 
 	if c.auth != nil {
-		if c.auth.Build(runtime) == false {
+		if m := c.auth.Build(runtime); m != nil {
+			runtime.Executor = gc.WrapMiddleware("auth", m.Handle, runtime.Executor)
+		} else {
 			return nil
 		}
-		runtime.Executor = gc.WrapMiddleware("auth", middlewares.Auth, runtime.Executor)
 	}
 
 	if c.stats != nil {

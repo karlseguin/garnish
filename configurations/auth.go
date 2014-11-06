@@ -2,6 +2,7 @@ package configurations
 
 import (
 	"github.com/karlseguin/garnish/gc"
+	"github.com/karlseguin/garnish/middlewares"
 )
 
 type Auth struct {
@@ -14,7 +15,8 @@ func NewAuth(handler gc.AuthHandler) *Auth {
 	}
 }
 
-func (a *Auth) Build(runtime *gc.Runtime) bool {
-	runtime.AuthHandler = a.handler
-	return true
+func (a *Auth) Build(runtime *gc.Runtime) *middlewares.Auth {
+	return &middlewares.Auth{
+		Handler: a.handler,
+	}
 }
