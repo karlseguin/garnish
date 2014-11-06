@@ -5,9 +5,6 @@ import (
 	"time"
 )
 
-// used when etags match
-var NotModifiedResponse = gc.Empty(304)
-
 //TODO: handle purge
 func Cache(req *gc.Request, next gc.Middleware) gc.Response {
 	cache := req.Runtime.Cache

@@ -49,6 +49,10 @@ func (r *HydrateResponse) Write(runtime *Runtime, w io.Writer) {
 	}
 }
 
+func (r *HydrateResponse) ETag() string {
+	return ""
+}
+
 func (r *HydrateResponse) Status() int {
 	return r.status
 }

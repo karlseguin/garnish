@@ -9,8 +9,9 @@ import (
 )
 
 var (
-	PurgeHitResponse  = Empty(200)
-	PurgeMissResponse = Empty(204)
+	PurgeHitResponse    = Empty(200)
+	PurgeMissResponse   = Empty(204)
+	NotModifiedResponse = Empty(304)
 )
 
 // A function that generates cache keys from a request

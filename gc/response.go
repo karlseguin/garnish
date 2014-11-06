@@ -2,6 +2,8 @@ package gc
 
 import (
 	"bytes"
+	"crypto/md5"
+	"encoding/hex"
 	"io"
 	"net/http"
 )
@@ -40,6 +42,8 @@ type Response interface {
 	// Whether or not the response came from a cached source
 	// (affects the cache stat)
 	Cached() bool
+
+	ETag() string
 }
 
 // Builds a response with no body and the given status
@@ -84,6 +88,10 @@ type NormalResponse struct {
 
 func (r *NormalResponse) ContentLength() int {
 	return len(r.body)
+}
+
+func (r *NormalResponse) ETag() string {
+	return ETagGenerator(r.body)
 }
 
 func (r *NormalResponse) Write(runtime *Runtime, w io.Writer) {
@@ -167,6 +175,13 @@ func (r *StreamingResponse) Write(runtime *Runtime, w io.Writer) {
 	}
 }
 
+func (r *StreamingResponse) ETag() string {
+	if r.bytes != nil {
+		return ETagGenerator(r.bytes)
+	}
+	return ""
+}
+
 func (r *StreamingResponse) Status() int {
 	return r.status
 }
@@ -213,4 +228,8 @@ func (r *StreamingResponse) Close() {
 
 func (r *StreamingResponse) Cached() bool {
 	return false
+}
+
+var ETagGenerator = func(data []byte) string {
+	return `"` + hex.EncodeToString(md5.New().Sum(data)) + `"`
 }

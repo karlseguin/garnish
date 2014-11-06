@@ -122,17 +122,16 @@ func (ht *HandlerTests) CachesValues() {
 
 	out := httptest.NewRecorder()
 	handler.ServeHTTP(out, req)
-	// Expect(out.HeaderMap.Get("ETag")).To.Equal(`"726573d41d8cd98f00b204e9800998ecf8427e"`)
+	Expect(out.HeaderMap.Get("ETag")).To.Equal(`"726573d41d8cd98f00b204e9800998ecf8427e"`)
 
 	out = httptest.NewRecorder()
 	handler.ServeHTTP(out, req)
 	Expect(out.Body.String()).To.Equal("res")
 	Expect(out.HeaderMap.Get("X-Cache")).To.Equal("hit")
-	// Expect(out.HeaderMap.Get("ETag")).To.Equal(`"726573d41d8cd98f00b204e9800998ecf8427e"`)
+	Expect(out.HeaderMap.Get("ETag")).To.Equal(`"726573d41d8cd98f00b204e9800998ecf8427e"`)
 }
 
 func (ht *HandlerTests) IfNoneMatch() {
-	Skip("etags diabled for now")
 	called := false
 	handler, req := ht.h.Catch(func(req *gc.Request) gc.Response {
 		if called {
