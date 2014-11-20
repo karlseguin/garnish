@@ -143,10 +143,7 @@ func Fatal(message string) Response {
 // Generate a response with a 500 error code
 // err will be logged to the logger
 func FatalErr(err error) Response {
-	return &FatalResponse{
-		Err:      err.Error(),
-		Response: Empty(500),
-	}
+	return Fatal(err.Error())
 }
 
 // A standard response. This response is used by the cache.
@@ -231,5 +228,7 @@ func (r *StreamingResponse) Cached() bool {
 }
 
 var ETagGenerator = func(data []byte) string {
-	return `"` + hex.EncodeToString(md5.New().Sum(data)) + `"`
+	h := md5.New()
+	h.Write(data)
+	return hex.EncodeToString(h.Sum(nil))
 }
