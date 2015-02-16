@@ -27,7 +27,10 @@ type Response interface {
 	Header() http.Header
 
 	// Returns a cacheable version of this response
-	ToCacheable() Response
+	// When detached is true, it's expected that the original
+	// response will continue to be used. Detached = false is
+	// an optimization for grace mode which discards the original response
+	ToCacheable(detached bool) Response
 
 	// Releases any resources associated with the response
 	Close()
@@ -95,7 +98,12 @@ func (r *NormalResponse) Header() http.Header {
 
 func (r *NormalResponse) Close() {}
 
-func (r *NormalResponse) ToCacheable() Response {
+func (r *NormalResponse) ToCacheable(detached bool) Response {
+	if detached == false {
+		r.cached = true
+		return r
+	}
+
 	clone := &NormalResponse{
 		body:   r.body,
 		status: r.status,
@@ -137,16 +145,25 @@ func FatalErr(err error) Response {
 // It's also used when the upstream didn't provide a Content-Length, or
 // whe the Content-Length was greater then the configured BytePool's capacity
 type StreamingResponse struct {
-	bytes  []byte
-	body   io.ReadCloser
-	status int
-	header http.Header
-	CL     int64
+	bytes         []byte
+	body          io.ReadCloser
+	status        int
+	header        http.Header
+	contentLength int64
+}
+
+func Streaming(status int, header http.Header, contentLength int64, body io.ReadCloser) Response {
+	return &StreamingResponse{
+		status:        status,
+		header:        header,
+		contentLength: contentLength,
+		body:          body,
+	}
 }
 
 func (r *StreamingResponse) ContentLength() int {
 	if r.bytes == nil {
-		return int(r.CL)
+		return int(r.contentLength)
 	}
 	return len(r.bytes)
 }
@@ -167,25 +184,29 @@ func (r *StreamingResponse) Header() http.Header {
 	return r.header
 }
 
-func (r *StreamingResponse) ToCacheable() Response {
+func (r *StreamingResponse) ToCacheable(detached bool) Response {
 	if r.bytes == nil {
 		r.read()
 	}
 	clone := &NormalResponse{
 		body:   r.bytes,
 		status: r.status,
-		header: make(http.Header, len(r.header)),
 		cached: true,
 	}
-	for k, v := range r.header {
-		clone.header[k] = v
+	if detached == false {
+		clone.header = r.header
+	} else {
+		clone.header = make(http.Header, len(r.header))
+		for k, v := range r.header {
+			clone.header[k] = v
+		}
 	}
 	return clone
 }
 
 func (r *StreamingResponse) read() {
-	if r.CL > 0 {
-		r.bytes = make([]byte, r.CL)
+	if r.contentLength > 0 {
+		r.bytes = make([]byte, r.contentLength)
 		io.ReadFull(r.body, r.bytes)
 		return
 	}

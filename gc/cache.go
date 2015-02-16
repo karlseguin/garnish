@@ -12,6 +12,8 @@ var (
 	PurgeHitResponse    = Empty(200)
 	PurgeMissResponse   = Empty(204)
 	NotModifiedResponse = Empty(304)
+
+	hitHeaderValue = []string{"hit"}
 )
 
 // A function that generates cache keys from a request
@@ -32,8 +34,8 @@ func DefaultCacheKeyLookup(req *Request) (string, string) {
 }
 
 type Cache struct {
-	graceLock sync.RWMutex
 	*ccache.LayeredCache
+	graceLock    sync.RWMutex
 	downloads    map[string]time.Time
 	Saint        bool
 	GraceTTL     time.Duration
@@ -42,19 +44,20 @@ type Cache struct {
 
 func NewCache(count int) *Cache {
 	return &Cache{
-		LayeredCache: ccache.Layered(ccache.Configure().MaxSize(int64(count))),
 		downloads:    make(map[string]time.Time),
+		LayeredCache: ccache.Layered(ccache.Configure().MaxSize(int64(count))),
 	}
 }
 
-func (c *Cache) Set(primary string, secondary string, config *RouteCache, res Response) {
+func (c *Cache) Set(primary string, secondary string, config *RouteCache, res Response, grace bool) {
 	ttl := c.ttl(config, res)
 	if ttl == 0 {
 		return
 	}
 
-	cacheable := res.ToCacheable()
-	cacheable.Header().Set("X-Cache", "hit")
+	detach := grace == false
+	cacheable := res.ToCacheable(detach)
+	cacheable.Header()["X-Cache"] = hitHeaderValue
 	c.LayeredCache.Set(primary, secondary, cacheable, ttl)
 }
 
@@ -105,14 +108,14 @@ func (c *Cache) grace(key string, primary string, secondary string, req *Request
 
 	res := next(req)
 	if res == nil {
-		Log.Error("grace nil response for %q", req.URL.String())
+		Log.Error("grace nil response for %q", req.URL)
 		return
 	}
 	defer res.Close()
 	if res.Status() >= 500 {
-		Log.Error("grace error for %q", req.URL.String())
+		Log.Error("grace error for %q", req.URL)
 	} else {
-		c.Set(primary, secondary, req.Route.Cache, res)
+		c.Set(primary, secondary, req.Route.Cache, res, true)
 	}
 }
 

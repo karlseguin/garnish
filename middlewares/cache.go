@@ -47,6 +47,6 @@ func Cache(req *gc.Request, next gc.Middleware) gc.Response {
 		item.Extend(time.Second * 5)
 		return item.Value().(gc.Response)
 	}
-	cache.Set(primary, secondary, config, res)
+	cache.Set(primary, secondary, config, res, false)
 	return res
 }

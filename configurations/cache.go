@@ -49,7 +49,7 @@ func (c *Cache) NoSaint() *Cache {
 }
 
 // The function used to generate the primary and secondary cache keys
-// This defaults used the URL for the primary key and the QueryString
+// This defaults use the URL for the primary key and the QueryString
 // for the secondary key
 // Having a separate primary and secondary cache key allows us to purge
 // a group of values. For example:

@@ -49,10 +49,6 @@ func (r *HydrateResponse) Write(runtime *Runtime, w io.Writer) {
 	}
 }
 
-func (r *HydrateResponse) ETag() string {
-	return ""
-}
-
 func (r *HydrateResponse) Status() int {
 	return r.status
 }
@@ -71,7 +67,12 @@ func (r *HydrateResponse) Cached() bool {
 	return r.cached
 }
 
-func (r *HydrateResponse) ToCacheable() Response {
+func (r *HydrateResponse) ToCacheable(detached bool) Response {
+	if detached == false {
+		r.cached = true
+		return r
+	}
+
 	clone := &HydrateResponse{
 		cached:    true,
 		status:    r.status,
