@@ -17,7 +17,7 @@ func NewRouter() *Router {
 
 func (r *Router) Add(name string) *Route {
 	if _, exists := r.routes[name]; exists {
-		gc.Log.Warn("Route %q already defined. Overwriting.", name)
+		gc.Log.Warnf("Route %q already defined. Overwriting.", name)
 	}
 	route := &Route{name: name, slow: -1}
 	r.routes[name] = route
@@ -124,7 +124,7 @@ func (r *Route) CacheTTL(ttl time.Duration) *Route {
 	if r.method == "GET" || r.method == "ALL" {
 		r.cacheTTL = ttl
 	} else {
-		gc.Log.Warn("CacheTTL can only be specified for a GET", r.name)
+		gc.Log.Warnf("CacheTTL can only be specified for a GET", r.name)
 	}
 	return r
 }
@@ -135,7 +135,7 @@ func (r *Route) CacheKeyLookup(lookup gc.CacheKeyLookup) *Route {
 	if r.method == "GET" || r.method == "ALL" {
 		r.cacheKeyLookup = lookup
 	} else {
-		gc.Log.Warn("CacheKeyLookup can only be specified for a GET", r.name)
+		gc.Log.Warnf("CacheKeyLookup can only be specified for a GET", r.name)
 	}
 	return r
 }
@@ -152,7 +152,7 @@ func (r *Route) Build(runtime *gc.Runtime) *gc.Route {
 	}
 
 	if len(r.method) == 0 {
-		gc.Log.Error("Route %q doesn't have a method+path", r.name)
+		gc.Log.Errorf("Route %q doesn't have a method+path", r.name)
 		ok = false
 	}
 
@@ -161,7 +161,7 @@ func (r *Route) Build(runtime *gc.Runtime) *gc.Route {
 	}
 
 	if upstream, exists := runtime.Upstreams[r.upstream]; exists == false {
-		gc.Log.Error("Route %q has an unknown upstream %q", r.name, r.upstream)
+		gc.Log.Errorf("Route %q has an unknown upstream %q", r.name, r.upstream)
 		ok = false
 	} else {
 		route.Upstream = upstream

@@ -12,6 +12,6 @@ func Stats(req *gc.Request, next gc.Middleware) gc.Response {
 	}
 	elapsed := time.Now().Sub(req.Start)
 	req.Route.Stats.Hit(res, elapsed)
-	req.Info("%d µs", elapsed/1000)
+	req.Infof("%d µs", elapsed/1000)
 	return res
 }

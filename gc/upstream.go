@@ -29,7 +29,7 @@ func (u *Upstream) RoundTrip(in *Request) (*http.Response, error) {
 func (u *Upstream) createRequest(in *Request) *http.Request {
 	targetUrl, err := url.Parse(u.Address + in.URL.RequestURI())
 	if err != nil {
-		in.Error("upstream url %s %v", u.Address+in.URL.RequestURI(), err)
+		in.Errorf("upstream url %s %v", u.Address+in.URL.RequestURI(), err)
 		targetUrl = in.URL
 	}
 	out := &http.Request{

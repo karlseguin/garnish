@@ -96,13 +96,24 @@ func (r *Request) Close() {
 
 // Context-aware info message (only displayed if the global configuration
 // has Debug logging enabled)
-func (r *Request) Info(format string, args ...interface{}) {
+func (r *Request) Infof(format string, args ...interface{}) {
 	if Log.IsVerbose() {
-		Log.Info(r.Id+" | "+r.scope+" | "+format, args...)
+		Log.Infof(r.Id+" | "+r.scope+" | "+format, args...)
 	}
 }
 
 // Context-aware error message
-func (r *Request) Error(format string, args ...interface{}) {
-	Log.Error(r.Id+" | "+r.scope+" | "+format, args...)
+func (r *Request) Errorf(format string, args ...interface{}) {
+	Log.Errorf(r.Id+" | "+r.scope+" | "+format, args...)
+}
+
+func (r *Request) Info(message string) {
+	if Log.IsVerbose() {
+		Log.Info(r.Id + " | " + r.scope + " | " + message)
+	}
+}
+
+// Context-aware error message
+func (r *Request) Error(message string) {
+	Log.Error(r.Id + " | " + r.scope + " | " + message)
 }

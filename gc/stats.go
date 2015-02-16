@@ -180,7 +180,7 @@ func (w *StatsWorker) Run() {
 
 func (w *StatsWorker) register(name string, reporter Reporter) {
 	if _, exists := w.reporters[name]; exists {
-		Log.Warn("reporter with name %q was already registered.", name)
+		Log.Warnf("reporter with name %q was already registered.", name)
 		return
 	}
 	w.reporters[name] = reporter
@@ -218,18 +218,18 @@ func (w *StatsWorker) collectReporters() map[string]Snapshot {
 func (w *StatsWorker) save() {
 	bytes, err := json.Marshal(w.stats)
 	if err != nil {
-		Log.Error("stats serialize %v", err)
+		Log.Errorf("stats serialize %v", err)
 		return
 	}
 
 	file, err := os.OpenFile(w.fileName, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
 	if err != nil {
-		Log.Error("stats save %v", err)
+		Log.Errorf("stats save %v", err)
 		return
 	}
 	defer file.Close()
 
 	if _, err := file.Write(bytes); err != nil {
-		Log.Error("stats write %v", err)
+		Log.Errorf("stats write %v", err)
 	}
 }

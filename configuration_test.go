@@ -54,15 +54,27 @@ func NewFakeLogger() *FakeLogger {
 	return &FakeLogger{}
 }
 
-func (f *FakeLogger) Info(format string, v ...interface{}) {
+func (f *FakeLogger) Info(message string) {
+	f.infos = append(f.infos, message)
+}
+
+func (f *FakeLogger) Infof(format string, v ...interface{}) {
 	f.infos = append(f.infos, fmt.Sprintf(format, v...))
 }
 
-func (f *FakeLogger) Warn(format string, v ...interface{}) {
+func (f *FakeLogger) Warn(message string) {
+	f.warns = append(f.warns, message)
+}
+
+func (f *FakeLogger) Warnf(format string, v ...interface{}) {
 	f.warns = append(f.warns, fmt.Sprintf(format, v...))
 }
 
-func (f *FakeLogger) Error(format string, v ...interface{}) {
+func (f *FakeLogger) Error(message string) {
+	f.errors = append(f.errors, message)
+}
+
+func (f *FakeLogger) Errorf(format string, v ...interface{}) {
 	f.errors = append(f.errors, fmt.Sprintf(format, v...))
 }
 

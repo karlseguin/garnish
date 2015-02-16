@@ -17,6 +17,6 @@ func Start(configuration *Configuration) {
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
 	}
-	gc.Log.Info("listening on %s", configuration.address)
+	gc.Log.Infof("listening on %s", configuration.address)
 	panic(s.ListenAndServe())
 }

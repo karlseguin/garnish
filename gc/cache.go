@@ -80,7 +80,7 @@ func (c *Cache) ttl(config *RouteCache, res Response) time.Duration {
 			if seconds, err := strconv.Atoi(value[index+8:]); err == nil {
 				return time.Second * time.Duration(seconds)
 			} else {
-				Log.Warn("invalid cache control header %q", value)
+				Log.Warnf("invalid cache control header %q", value)
 				break
 			}
 		}
@@ -108,12 +108,12 @@ func (c *Cache) grace(key string, primary string, secondary string, req *Request
 
 	res := next(req)
 	if res == nil {
-		Log.Error("grace nil response for %q", req.URL)
+		Log.Errorf("grace nil response for %q", req.URL)
 		return
 	}
 	defer res.Close()
 	if res.Status() >= 500 {
-		Log.Error("grace error for %q", req.URL)
+		Log.Errorf("grace error for %q", req.URL)
 	} else {
 		c.Set(primary, secondary, req.Route.Cache, res, true)
 	}

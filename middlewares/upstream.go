@@ -14,6 +14,6 @@ func Upstream(req *gc.Request, next gc.Middleware) gc.Response {
 		return gc.FatalErr(err)
 	}
 
-	req.Info("%s | %d | %d", req.URL, r.StatusCode, r.ContentLength)
+	req.Infof("%s | %d | %d", req.URL, r.StatusCode, r.ContentLength)
 	return gc.Streaming(r.StatusCode, r.Header, r.ContentLength, r.Body)
 }

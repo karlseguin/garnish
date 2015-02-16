@@ -48,7 +48,7 @@ func (h *Hydrate) convert(req *gc.Request, res gc.Response, fieldName string) gc
 		end += 1
 		var ref map[string]string
 		if err := json.Unmarshal(body[start:end], &ref); err != nil {
-			req.Error("invalid hydration payload", err)
+			req.Errorf("invalid hydration payload: %v", err)
 			return res
 		}
 		fragments = append(fragments, &gc.ReferenceFragment{Id: ref["id"], T: ref["type"], Data: ref})

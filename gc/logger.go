@@ -6,14 +6,20 @@ import (
 )
 
 type Logs interface {
+	// Log an information message
+	Info(message string)
 	// Log an informational message using the specified format
-	Info(format string, v ...interface{})
+	Infof(format string, v ...interface{})
 
-	// Log an error message using the specified format
-	Warn(format string, v ...interface{})
+	// Log a warning message
+	Warn(message string)
+	// Log a warning message using the specified format
+	Warnf(format string, v ...interface{})
 
+	// Log an error message
+	Error(message string)
 	// Log an error message using the specified format
-	Error(format string, v ...interface{})
+	Errorf(format string, v ...interface{})
 
 	// Enable logging info messages
 	Verbose()
@@ -32,18 +38,33 @@ type Logger struct {
 	info bool
 }
 
-func (l *Logger) Info(format string, v ...interface{}) {
+func (l *Logger) Info(message string) {
+	if l.info == false {
+		return
+	}
+	l.log("i", message)
+}
+
+func (l *Logger) Infof(format string, v ...interface{}) {
 	if l.info == false {
 		return
 	}
 	l.log("i", format, v...)
 }
 
-func (l *Logger) Warn(format string, v ...interface{}) {
+func (l *Logger) Warn(message string) {
+	l.log("w", message)
+}
+
+func (l *Logger) Warnf(format string, v ...interface{}) {
 	l.log("w", format, v...)
 }
 
-func (l *Logger) Error(format string, v ...interface{}) {
+func (l *Logger) Error(message string) {
+	l.log("e", message)
+}
+
+func (l *Logger) Errorf(format string, v ...interface{}) {
 	l.log("e", format, v...)
 }
 

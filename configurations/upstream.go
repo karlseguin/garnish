@@ -24,7 +24,7 @@ func NewUpstreams() *Upstreams {
 // Used internally
 func (u *Upstreams) Add(name string) *Upstream {
 	if _, exists := u.upstreams[name]; exists {
-		gc.Log.Warn("Upstream %q already defined. Overwriting.", name)
+		gc.Log.Warnf("Upstream %q already defined. Overwriting.", name)
 	}
 	one := &Upstream{
 		name:        name,
@@ -96,7 +96,7 @@ func (u *Upstream) Tweaker(tweaker gc.RequestTweaker) *Upstream {
 
 func (u *Upstream) Build(runtime *gc.Runtime) *gc.Upstream {
 	if len(u.address) < 8 {
-		gc.Log.Error("Upstream %s has an invalid address: %q", u.name, u.address)
+		gc.Log.Errorf("Upstream %s has an invalid address: %q", u.name, u.address)
 		return nil
 	}
 	var domain string
@@ -106,7 +106,7 @@ func (u *Upstream) Build(runtime *gc.Runtime) *gc.Upstream {
 		domain = u.address[8:]
 	}
 	if u.address[:6] != "unix:/" && len(domain) == 0 {
-		gc.Log.Error("Upstream %s's address should begin with unix:/, http:// or https://", u.name)
+		gc.Log.Errorf("Upstream %s's address should begin with unix:/, http:// or https://", u.name)
 		return nil
 	}
 	upstream := &gc.Upstream{
