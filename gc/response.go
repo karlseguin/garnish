@@ -11,11 +11,6 @@ var (
 	NotFoundResponse = Empty(404)
 )
 
-type ByteCloser interface {
-	Bytes() []byte
-	Close() error
-}
-
 // An http response
 type Response interface {
 	// The response's content length
@@ -50,14 +45,14 @@ func Empty(status int) Response {
 }
 
 // Builds a response with the given status code and body
-// The body can be a string, []byte, of ByteCloser
+// The body can be a string, []byte, or io.ReadCloser.
 // Will generate a generic Fatal (500) response for other types
 func Respond(status int, body interface{}) Response {
 	return RespondH(status, make(http.Header), body)
 }
 
 // Builds a response with the given status code, headers and body
-// The body can be a string, []byte, of ByteCloser.
+// The body can be a string, []byte, or io.ReadCloser.
 // Will generate a generic Fatal (500) response for other types
 func RespondH(status int, header http.Header, body interface{}) Response {
 	switch b := body.(type) {

@@ -13,11 +13,11 @@ type Handler struct {
 func (h *Handler) ServeHTTP(out http.ResponseWriter, r *http.Request) {
 	req := h.route(r)
 	if req == nil {
-		gc.Log.Info("404 %s", r.URL.String())
+		gc.Log.Info("404 %s", r.URL)
 		h.reply(out, gc.NotFoundResponse, nil)
 		return
 	}
-	req.Info(req.URL.String())
+	req.Info("%s", req.URL)
 	defer req.Close()
 	h.reply(out, h.Executor(req), req)
 }

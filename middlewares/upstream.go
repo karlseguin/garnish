@@ -14,7 +14,7 @@ func Upstream(req *gc.Request, next gc.Middleware) gc.Response {
 		return gc.FatalErr(err)
 	}
 
-	req.Info("%s | %d | %d", req.URL.String(), r.StatusCode, r.ContentLength)
+	req.Info("%s | %d | %d", req.URL, r.StatusCode, r.ContentLength)
 	res := gc.RespondH(r.StatusCode, r.Header, r.Body)
 	res.(*gc.StreamingResponse).CL = r.ContentLength
 	return res
