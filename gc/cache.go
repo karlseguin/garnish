@@ -34,8 +34,8 @@ func DefaultCacheKeyLookup(req *Request) (string, string) {
 }
 
 type Cache struct {
+	sync.Mutex
 	*ccache.LayeredCache
-	graceLock    sync.RWMutex
 	downloads    map[string]time.Time
 	Saint        bool
 	GraceTTL     time.Duration
@@ -101,9 +101,9 @@ func (c *Cache) Grace(primary string, secondary string, req *Request, next Middl
 
 func (c *Cache) grace(key string, primary string, secondary string, req *Request, next Middleware) {
 	defer func() {
-		c.graceLock.Lock()
+		c.Lock()
 		delete(c.downloads, key)
-		c.graceLock.Unlock()
+		c.Unlock()
 	}()
 
 	res := next(req)
@@ -121,20 +121,11 @@ func (c *Cache) grace(key string, primary string, secondary string, req *Request
 
 func (c *Cache) reserveDownload(key string) bool {
 	now := time.Now()
-	c.graceLock.RLock()
-	expires, exists := c.downloads[key]
-	c.graceLock.RUnlock()
-	if exists && expires.After(now) {
+	c.Lock()
+	defer c.Unlock()
+	if expires, exists := c.downloads[key]; exists && expires.After(now) {
 		return false
 	}
-
-	c.graceLock.Lock()
-	defer c.graceLock.Unlock()
-	expires, exists = c.downloads[key]
-	if exists && expires.After(now) {
-		return false
-	}
-
 	c.downloads[key] = now.Add(time.Second * 30)
 	return true
 }
