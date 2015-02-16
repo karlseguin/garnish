@@ -25,7 +25,7 @@ type Configuration struct {
 
 type poolConfiguration struct {
 	capacity int
-	size     int
+	count    int
 }
 
 // Create a configuration
@@ -61,8 +61,8 @@ func (c *Configuration) Logger(logger gc.Logs) *Configuration {
 // capacity wil perform better.
 // The pool is also used for incoming requests with bodies.
 // [65536, 64]
-func (c *Configuration) BytePool(capacity, size uint32) *Configuration {
-	c.bytePool.capacity, c.bytePool.size = int(capacity), int(size)
+func (c *Configuration) BytePool(capacity, count uint32) *Configuration {
+	c.bytePool.capacity, c.bytePool.count = int(capacity), int(count)
 	return c
 }
 
@@ -179,7 +179,7 @@ func (c *Configuration) Build() *gc.Runtime {
 		runtime.Executor = gc.WrapMiddleware("stat", middlewares.Stats, runtime.Executor)
 	}
 
-	runtime.BytePool = bytepool.New(c.bytePool.capacity, c.bytePool.size)
+	runtime.BytePool = bytepool.New(c.bytePool.capacity, c.bytePool.count)
 	runtime.RegisterStats("bytepool", runtime.BytePool.Stats)
 	return runtime
 }
