@@ -1,9 +1,9 @@
 package gc
 
 import (
-	"github.com/karlseguin/bytepool"
-	"github.com/karlseguin/nd"
-	"github.com/karlseguin/params"
+	"gopkg.in/karlseguin/bytepool.v3"
+	"gopkg.in/karlseguin/nd.v1"
+	"gopkg.in/karlseguin/params.v1"
 	"net/http"
 	"time"
 )
@@ -44,7 +44,8 @@ func NewRequest(req *http.Request, route *Route, params params.Params) *Request 
 // Params are values extracted from the URL of a route.
 // Given a route /users/:id  we can expect a param with a key of "id"
 func (r *Request) Params(key string) string {
-	return r.params.Get(key)
+	s, _ := r.params.Get(key)
+	return s
 }
 
 // The request's body. This value is only available before the upstrea

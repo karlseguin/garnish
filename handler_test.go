@@ -6,7 +6,7 @@ import (
 	"github.com/karlseguin/expect/build"
 	"github.com/karlseguin/garnish/gc"
 	"github.com/karlseguin/garnish/middlewares"
-	"github.com/karlseguin/typed"
+	"gopkg.in/karlseguin/typed.v1"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -32,7 +32,7 @@ func Test_Handler(t *testing.T) {
 	Expectify(&HandlerTests{newHelper()}, t)
 }
 
-func (_ *HandlerTests) NotFoundForUnknownRoute() {
+func (_ HandlerTests) NotFoundForUnknownRoute() {
 	handler := testHandler()
 	out := httptest.NewRecorder()
 	handler.ServeHTTP(out, build.Request().Path("/fail").Request)
@@ -122,32 +122,11 @@ func (ht *HandlerTests) CachesValues() {
 
 	out := httptest.NewRecorder()
 	handler.ServeHTTP(out, req)
-	Expect(out.HeaderMap.Get("ETag")).To.Equal(`"726573d41d8cd98f00b204e9800998ecf8427e"`)
 
 	out = httptest.NewRecorder()
 	handler.ServeHTTP(out, req)
 	Expect(out.Body.String()).To.Equal("res")
 	Expect(out.HeaderMap.Get("X-Cache")).To.Equal("hit")
-	Expect(out.HeaderMap.Get("ETag")).To.Equal(`"726573d41d8cd98f00b204e9800998ecf8427e"`)
-}
-
-func (ht *HandlerTests) IfNoneMatch() {
-	called := false
-	handler, req := ht.h.Catch(func(req *gc.Request) gc.Response {
-		if called {
-			return gc.Respond(200, "fail2")
-		}
-		called = true
-		return gc.Respond(200, "res2")
-	}).Get("/cache")
-
-	out := httptest.NewRecorder()
-	handler.ServeHTTP(out, req)
-	req.Header.Set("If-None-Match", out.HeaderMap.Get("ETag"))
-	out = httptest.NewRecorder()
-	handler.ServeHTTP(out, req)
-	Expect(out.Code).To.Equal(304)
-	Expect(out.Body.String()).To.Equal("")
 }
 
 func (ht *HandlerTests) SaintMode() {
@@ -282,7 +261,7 @@ func newHelper() *HandlerHelper {
 	config.Stats()
 	config.Upstream("test").Address("http://localhost:9001")
 	config.Route("control").Get("/control").Upstream("test")
-	config.Route("cache").Get("/cache").Upstream("test").CacheTTL(time.Minute)
+	config.Route("cache").All("/cache").Upstream("test").CacheTTL(time.Minute)
 	config.Route("nocache").Get("/nocache").Upstream("test").CacheTTL(-1)
 	config.Route("noauth").Get("/noauth").Upstream("test")
 	config.Route("hydrate").Get("/hydrate").Upstream("test")

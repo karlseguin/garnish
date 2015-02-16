@@ -1,7 +1,7 @@
 package gc
 
 import (
-	"github.com/karlseguin/ccache"
+	"gopkg.in/karlseguin/ccache.v1"
 	"strconv"
 	"strings"
 	"sync"
@@ -42,7 +42,7 @@ type Cache struct {
 
 func NewCache(count int) *Cache {
 	return &Cache{
-		LayeredCache: ccache.Layered(ccache.Configure().MaxItems(uint64(count))),
+		LayeredCache: ccache.Layered(ccache.Configure().MaxSize(int64(count))),
 		downloads:    make(map[string]time.Time),
 	}
 }

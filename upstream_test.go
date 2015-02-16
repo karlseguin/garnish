@@ -4,8 +4,8 @@ import (
 	. "github.com/karlseguin/expect"
 	"github.com/karlseguin/expect/build"
 	"github.com/karlseguin/garnish/gc"
-	"github.com/karlseguin/nd"
-	"github.com/karlseguin/typed"
+	"gopkg.in/karlseguin/nd.v1"
+	"gopkg.in/karlseguin/typed.v1"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -24,7 +24,7 @@ func Test_Upstream(t *testing.T) {
 	Expectify(new(UpstreamTests), t)
 }
 
-func (_ *UpstreamTests) Request() {
+func (_ UpstreamTests) Request() {
 	handler := testHandler()
 	out := httptest.NewRecorder()
 	handler.ServeHTTP(out, build.Request().Path("/plain").Request)
@@ -32,7 +32,7 @@ func (_ *UpstreamTests) Request() {
 	Expect(out.Body.String()).To.Equal("hello world")
 }
 
-func (_ *UpstreamTests) DefaultHeaders() {
+func (_ UpstreamTests) DefaultHeaders() {
 	id := nd.LockGuid()
 	handler := testHandler()
 	out := httptest.NewRecorder()
@@ -46,7 +46,7 @@ func (_ *UpstreamTests) DefaultHeaders() {
 	Expect(headers.String("accept-encoding")).To.Equal("gzip")
 }
 
-func (_ *UpstreamTests) SpecificHeaders() {
+func (_ UpstreamTests) SpecificHeaders() {
 	handler := testHandler()
 	out := httptest.NewRecorder()
 	handler.ServeHTTP(out, build.Request().Host("openmymind.io").Path("/headers").Header("X-Spice", "must flow").Request)
@@ -56,7 +56,7 @@ func (_ *UpstreamTests) SpecificHeaders() {
 	Expect(headers.String("x-spice")).To.Equal("must flow")
 }
 
-func (_ *UpstreamTests) Tweaker() {
+func (_ UpstreamTests) Tweaker() {
 	handler := testHandler()
 	out := httptest.NewRecorder()
 	handler.ServeHTTP(out, build.Request().Path("/tweaked").Header("X-Spice", "must flow").Request)
@@ -66,7 +66,7 @@ func (_ *UpstreamTests) Tweaker() {
 	Expect(headers.String("x-tweaked")).To.Equal("true")
 }
 
-func (_ *UpstreamTests) Body() {
+func (_ UpstreamTests) Body() {
 	handler := testHandler()
 	out := httptest.NewRecorder()
 	handler.ServeHTTP(out, build.Request().Method("POST").Path("/body").Body("it's over 9000!!").Request)
@@ -74,7 +74,7 @@ func (_ *UpstreamTests) Body() {
 	Expect(out.Body.String()).To.Equal("it's over 9000!!")
 }
 
-func (_ *UpstreamTests) DrainedBody() {
+func (_ UpstreamTests) DrainedBody() {
 	handler := testHandler()
 	out := httptest.NewRecorder()
 	handler.ServeHTTP(out, build.Request().Method("POST").Path("/drain").Body("the spice must flow").Request)
@@ -82,7 +82,7 @@ func (_ *UpstreamTests) DrainedBody() {
 	Expect(out.Body.String()).To.Equal("the spice must flow")
 }
 
-func (_ *UpstreamTests) ForCache() {
+func (_ UpstreamTests) ForCache() {
 	handler := testHandler()
 	out := httptest.NewRecorder()
 	handler.ServeHTTP(out, build.Request().Path("/cached").Request)

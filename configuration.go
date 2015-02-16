@@ -1,12 +1,12 @@
 package garnish
 
 import (
-	"github.com/karlseguin/bytepool"
-	"github.com/karlseguin/dnscache"
 	"github.com/karlseguin/garnish/configurations"
 	"github.com/karlseguin/garnish/gc"
 	"github.com/karlseguin/garnish/middlewares"
-	"github.com/karlseguin/router"
+	"gopkg.in/karlseguin/bytepool.v3"
+	"gopkg.in/karlseguin/dnscache.v1"
+	"gopkg.in/karlseguin/router.v1"
 	"time"
 )
 

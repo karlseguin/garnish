@@ -27,15 +27,6 @@ func (h *Handler) reply(out http.ResponseWriter, res gc.Response, req *gc.Reques
 		res = gc.Fatal("nil response object")
 	}
 
-	etag := res.ETag()
-	if len(etag) > 0 && req != nil {
-		if nm := req.Header.Get("If-None-Match"); nm == etag {
-			res.Close()
-			res = gc.NotModifiedResponse
-		} else {
-			out.Header().Set("ETag", etag)
-		}
-	}
 	defer res.Close()
 	oh := out.Header()
 	status := res.Status()
@@ -45,9 +36,6 @@ func (h *Handler) reply(out http.ResponseWriter, res gc.Response, req *gc.Reques
 	}
 	if cl := res.ContentLength(); cl > -1 {
 		oh["Content-Length"] = []string{strconv.Itoa(cl)}
-	}
-	if etag := res.ETag(); len(etag) > 0 {
-		oh["ETag"] = []string{etag}
 	}
 
 	if req != nil {

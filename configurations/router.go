@@ -121,10 +121,10 @@ func (r *Route) Slow(max time.Duration) *Route {
 // Cache-Control header will be used (including not caching private).
 // A value < 0 disables the cache for this route
 func (r *Route) CacheTTL(ttl time.Duration) *Route {
-	if r.method != "GET" {
-		gc.Log.Warn("CacheTTL can only be specified for a GET", r.name)
-	} else {
+	if r.method == "GET" || r.method == "ALL" {
 		r.cacheTTL = ttl
+	} else {
+		gc.Log.Warn("CacheTTL can only be specified for a GET", r.name)
 	}
 	return r
 }
@@ -132,10 +132,10 @@ func (r *Route) CacheTTL(ttl time.Duration) *Route {
 // The function used to get the cache key for this route.
 // (overwrites the global Cache's lookup)
 func (r *Route) CacheKeyLookup(lookup gc.CacheKeyLookup) *Route {
-	if r.method != "GET" {
-		gc.Log.Warn("CacheKeyLookup can only be specified for a GET", r.name)
-	} else {
+	if r.method == "GET" || r.method == "ALL" {
 		r.cacheKeyLookup = lookup
+	} else {
+		gc.Log.Warn("CacheKeyLookup can only be specified for a GET", r.name)
 	}
 	return r
 }
@@ -156,7 +156,7 @@ func (r *Route) Build(runtime *gc.Runtime) *gc.Route {
 		ok = false
 	}
 
-	if r.method == "GET" {
+	if r.method == "GET" || r.method == "ALL" {
 		route.Cache = gc.NewRouteCache(r.cacheTTL, r.cacheKeyLookup)
 	}
 

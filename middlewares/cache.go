@@ -10,7 +10,7 @@ func Cache(req *gc.Request, next gc.Middleware) gc.Response {
 	cache := req.Runtime.Cache
 	config := req.Route.Cache
 
-	if req.Method == "PURGE" && cache.PurgeHandler != nil {
+	if req.Method == "PURGE" && cache.PurgeHandler != nil && config != nil {
 		if res := cache.PurgeHandler(req, config.KeyLookup, cache); res != nil {
 			return res
 		}

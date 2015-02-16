@@ -3,7 +3,7 @@ package gc
 import (
 	. "github.com/karlseguin/expect"
 	"github.com/karlseguin/expect/build"
-	"github.com/karlseguin/params"
+	"gopkg.in/karlseguin/params.v1"
 	"net/http"
 	"testing"
 	"time"
@@ -22,37 +22,37 @@ func Test_Cache(t *testing.T) {
 	Expectify(ct, t)
 }
 
-func (_ *CacheTests) RouteSpecificTTL() {
+func (_ CacheTests) RouteSpecificTTL() {
 	c := new(Cache)
 	ttl := c.ttl(&RouteCache{TTL: time.Minute}, Respond(200, "hello"))
 	Expect(ttl).To.Equal(time.Minute)
 }
 
-func (_ *CacheTests) TTLForPrivateOnOverride() {
+func (_ CacheTests) TTLForPrivateOnOverride() {
 	c := new(Cache)
 	ttl := c.ttl(&RouteCache{TTL: time.Second * 2}, RespondH(200, http.Header{"Cache-Control": []string{"private;max-age=10"}}, "hello"))
 	Expect(ttl).To.Equal(time.Second * 2)
 }
 
-func (_ *CacheTests) HeaderTTL() {
+func (_ CacheTests) HeaderTTL() {
 	c := new(Cache)
 	ttl := c.ttl(&RouteCache{}, RespondH(200, http.Header{"Cache-Control": []string{"public;max-age=20"}}, "hello"))
 	Expect(ttl).To.Equal(time.Second * 20)
 }
 
-func (_ *CacheTests) HeaderTTLOnError() {
+func (_ CacheTests) HeaderTTLOnError() {
 	c := new(Cache)
 	ttl := c.ttl(&RouteCache{TTL: time.Minute}, RespondH(404, http.Header{"Cache-Control": []string{"public;max-age=10"}}, "hello"))
 	Expect(ttl).To.Equal(time.Second * 10)
 }
 
-func (_ *CacheTests) NoTTLWhenPrivate() {
+func (_ CacheTests) NoTTLWhenPrivate() {
 	c := new(Cache)
 	ttl := c.ttl(&RouteCache{}, RespondH(200, http.Header{"Cache-Control": []string{"private;max-age=10"}}, "hello"))
 	Expect(ttl).To.Equal(int64(0))
 }
 
-func (_ *CacheTests) GraceSingleDownload() {
+func (_ CacheTests) GraceSingleDownload() {
 	c := NewCache(10)
 	c.downloads["pk"] = time.Now().Add(time.Minute)
 	c.Grace("p", "k", nil, nil)

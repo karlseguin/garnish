@@ -2,7 +2,7 @@ package gc
 
 import (
 	. "github.com/karlseguin/expect"
-	"github.com/karlseguin/typed"
+	"gopkg.in/karlseguin/typed.v1"
 	"os"
 	"testing"
 	"time"
@@ -14,7 +14,7 @@ func Test_Stats(t *testing.T) {
 	Expectify(new(StatsTests), t)
 }
 
-func (_ *StatsTests) CalculatesThePercentils() {
+func (_ StatsTests) CalculatesThePercentils() {
 	s := NewRouteStats(time.Minute)
 	for i := 1; i <= 20; i++ {
 		s.Hit(Respond(200, ""), time.Millisecond*time.Duration(i))
@@ -24,7 +24,7 @@ func (_ *StatsTests) CalculatesThePercentils() {
 	Expect(snapshot["95p"]).To.Equal(int64(19050))
 }
 
-func (_ *StatsTests) TracksSlows() {
+func (_ StatsTests) TracksSlows() {
 	s := NewRouteStats(time.Millisecond * 10)
 	for i := 1; i <= 20; i++ {
 		s.Hit(Respond(200, ""), time.Millisecond*time.Duration(i))
@@ -33,7 +33,7 @@ func (_ *StatsTests) TracksSlows() {
 	Expect(snapshot["slow"]).To.Equal(int64(10))
 }
 
-func (_ *StatsTests) TracksStatus() {
+func (_ StatsTests) TracksStatus() {
 	s := NewRouteStats(time.Millisecond * 10)
 	for i := 298; i < 503; i++ {
 		s.Hit(Respond(i, ""), time.Millisecond)
@@ -45,7 +45,7 @@ func (_ *StatsTests) TracksStatus() {
 	Expect(snapshot["5xx"]).To.Equal(int64(3))
 }
 
-func (_ *StatsTests) TracksCache() {
+func (_ StatsTests) TracksCache() {
 	s := NewRouteStats(time.Millisecond * 10)
 	for i := 298; i < 503; i++ {
 		r := Respond(i, "")
@@ -56,7 +56,7 @@ func (_ *StatsTests) TracksCache() {
 	Expect(snapshot["cached"]).To.Equal(int64(103))
 }
 
-func (_ *StatsTests) Resets() {
+func (_ StatsTests) Resets() {
 	s := NewRouteStats(time.Millisecond * 10)
 	for i := 298; i < 503; i++ {
 		s.Hit(Respond(i, ""), time.Millisecond)
@@ -72,7 +72,7 @@ func (_ *StatsTests) Resets() {
 	Expect(snapshot["75p"]).To.Equal(int64(0))
 }
 
-func (_ *StatsTests) Persists() {
+func (_ StatsTests) Persists() {
 	defer os.Remove("test_stats.json")
 	s := NewRouteStats(time.Millisecond * 350)
 	for i := 297; i < 504; i++ {

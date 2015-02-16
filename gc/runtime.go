@@ -1,9 +1,9 @@
 package gc
 
 import (
-	"github.com/karlseguin/bytepool"
-	"github.com/karlseguin/dnscache"
-	"github.com/karlseguin/router"
+	"gopkg.in/karlseguin/bytepool.v3"
+	"gopkg.in/karlseguin/dnscache.v1"
+	"gopkg.in/karlseguin/router.v1"
 )
 
 var UnauthorizedResponse = Empty(401)
