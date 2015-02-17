@@ -3,6 +3,7 @@ package gc
 import (
 	"io"
 	"net/http"
+	"time"
 )
 
 type HydrateLoader func(reference *ReferenceFragment) []byte
@@ -30,7 +31,7 @@ func (f *ReferenceFragment) Render(runtime *Runtime) []byte {
 
 type HydrateResponse struct {
 	status    int
-	cached    bool
+	expires   time.Time
 	header    http.Header
 	fragments []Fragment
 }
@@ -64,17 +65,25 @@ func (r *HydrateResponse) ContentLength() int {
 }
 
 func (r *HydrateResponse) Cached() bool {
-	return r.cached
+	return r.expires != zero
 }
 
-func (r *HydrateResponse) ToCacheable(detached bool) Response {
+func (r *HydrateResponse) Expires() time.Time {
+	return r.expires
+}
+
+func (r *HydrateResponse) Expire(at time.Time) {
+	r.expires = at
+}
+
+func (r *HydrateResponse) ToCacheable(detached bool, expires time.Time) CachedResponse {
 	if detached == false {
-		r.cached = true
+		r.expires = expires
 		return r
 	}
 
 	clone := &HydrateResponse{
-		cached:    true,
+		expires:   expires,
 		status:    r.status,
 		header:    make(http.Header, len(r.header)),
 		fragments: r.fragments,

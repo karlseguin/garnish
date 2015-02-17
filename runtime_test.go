@@ -4,6 +4,7 @@ import (
 	"fmt"
 	. "github.com/karlseguin/expect"
 	"github.com/karlseguin/expect/build"
+	"github.com/karlseguin/garnish/cache"
 	"github.com/karlseguin/garnish/gc"
 	"github.com/karlseguin/garnish/middlewares"
 	"gopkg.in/karlseguin/router.v1"
@@ -144,8 +145,8 @@ func (r *RuntimeTests) SaintMode() {
 	runtime.ServeHTTP(httptest.NewRecorder(), req)
 	out := httptest.NewRecorder()
 
-	item := runtime.Cache.Get("/cache", "")
-	item.Extend(time.Hour * -1)
+	item := runtime.Cache.Storage.Get("/cache", "")
+	item.Expire(time.Now().Add(time.Hour * -1))
 	runtime.ServeHTTP(out, req)
 	Expect(out.Body.String()).To.Equal("res3")
 }
@@ -249,9 +250,9 @@ func helper() *RuntimeHelper {
 	r.AddNamed("noauth", "GET", "/noauth", nil)
 	r.AddNamed("control", "GET", "/control", nil)
 
-	hydr := &middlewares.Hydrate{"X-Hydrate"}
+	hydr := &middlewares.Hydrate{Header: "X-Hydrate"}
 	auth := &middlewares.Auth{
-		func(req *gc.Request) gc.Response {
+		Handler: func(req *gc.Request) gc.Response {
 			if req.URL.Path == "/noauth" {
 				return gc.UnauthorizedResponse
 			}
@@ -267,7 +268,6 @@ func helper() *RuntimeHelper {
 	runtime := &gc.Runtime{
 		Router:   r,
 		Executor: e,
-		Cache:    gc.NewCache(10),
 		Routes: map[string]*gc.Route{
 			"cache": &gc.Route{
 				Stats: gc.NewRouteStats(time.Millisecond * 100),
@@ -292,7 +292,9 @@ func helper() *RuntimeHelper {
 		},
 	}
 
-	runtime.Cache.PurgeHandler = func(req *gc.Request, lookup gc.CacheKeyLookup, cache gc.Purgeable) gc.Response {
+	runtime.Cache = gc.NewCache()
+	runtime.Cache.Storage = cache.New(10)
+	runtime.Cache.PurgeHandler = func(req *gc.Request, lookup gc.CacheKeyLookup, cache gc.CacheStorage) gc.Response {
 		if cache.Delete(lookup(req)) == false {
 			return gc.PurgeMissResponse
 		}

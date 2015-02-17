@@ -25,7 +25,7 @@ func AuthHandler(req *gc.Request) gc.Response {
 	return nil
 }
 
-func PurgeHandler(req *gc.Request, lookup gc.CacheKeyLookup, cache gc.Purgeable) gc.Response {
+func PurgeHandler(req *gc.Request, lookup gc.CacheKeyLookup, cache gc.CacheStorage) gc.Response {
 	primary, secondary := lookup(req)
 	if cache.Delete(primary, secondary) {
 		return gc.PurgeHitResponse

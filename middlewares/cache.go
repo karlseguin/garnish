@@ -11,7 +11,7 @@ func Cache(req *gc.Request, next gc.Middleware) gc.Response {
 	config := req.Route.Cache
 
 	if req.Method == "PURGE" && cache.PurgeHandler != nil && config != nil {
-		if res := cache.PurgeHandler(req, config.KeyLookup, cache); res != nil {
+		if res := cache.PurgeHandler(req, config.KeyLookup, cache.Storage); res != nil {
 			return res
 		}
 		return next(req)
@@ -22,18 +22,18 @@ func Cache(req *gc.Request, next gc.Middleware) gc.Response {
 	}
 	primary, secondary := config.KeyLookup(req)
 
-	item := cache.Get(primary, secondary)
+	item := cache.Storage.Get(primary, secondary)
 	if item != nil {
 		now := time.Now()
 		expires := item.Expires()
 		if expires.After(now) {
 			req.Info("hit")
-			return item.Value().(gc.Response)
+			return item
 		}
 		if expires.Add(cache.GraceTTL).After(now) {
 			req.Info("grace")
 			cache.Grace(primary, secondary, req, next)
-			return item.Value().(gc.Response)
+			return item
 		}
 	}
 
@@ -44,8 +44,8 @@ func Cache(req *gc.Request, next gc.Middleware) gc.Response {
 			return res
 		}
 		req.Info("saint")
-		item.Extend(time.Second * 5)
-		return item.Value().(gc.Response)
+		item.Expire(time.Now().Add(time.Second * 5))
+		return item
 	}
 	cache.Set(primary, secondary, config, res, false)
 	return res

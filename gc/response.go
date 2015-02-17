@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io"
 	"net/http"
+	"time"
 )
 
 var (
@@ -30,7 +31,7 @@ type Response interface {
 	// When detached is true, it's expected that the original
 	// response will continue to be used. Detached = false is
 	// an optimization for grace mode which discards the original response
-	ToCacheable(detached bool) Response
+	ToCacheable(detached bool, ttl time.Time) CachedResponse
 
 	// Releases any resources associated with the response
 	Close()
@@ -74,10 +75,10 @@ func RespondH(status int, header http.Header, body interface{}) Response {
 // It's also used when the upstream didn't provide a Content-Length, or
 // whe the Content-Length was greater then the configured BytePool's capacity
 type NormalResponse struct {
-	body   []byte
-	status int
-	header http.Header
-	cached bool
+	body    []byte
+	status  int
+	header  http.Header
+	expires time.Time
 }
 
 func (r *NormalResponse) ContentLength() int {
@@ -98,17 +99,17 @@ func (r *NormalResponse) Header() http.Header {
 
 func (r *NormalResponse) Close() {}
 
-func (r *NormalResponse) ToCacheable(detached bool) Response {
+func (r *NormalResponse) ToCacheable(detached bool, expires time.Time) CachedResponse {
 	if detached == false {
-		r.cached = true
+		r.expires = expires
 		return r
 	}
 
 	clone := &NormalResponse{
-		body:   r.body,
-		status: r.status,
-		header: make(http.Header, len(r.header)),
-		cached: true,
+		body:    r.body,
+		status:  r.status,
+		expires: expires,
+		header:  make(http.Header, len(r.header)),
 	}
 	for k, v := range r.header {
 		clone.header[k] = v
@@ -117,7 +118,15 @@ func (r *NormalResponse) ToCacheable(detached bool) Response {
 }
 
 func (r *NormalResponse) Cached() bool {
-	return r.cached
+	return r.expires != zero
+}
+
+func (r *NormalResponse) Expires() time.Time {
+	return r.expires
+}
+
+func (r *NormalResponse) Expire(at time.Time) {
+	r.expires = at
 }
 
 // A response with an associated error string to log
@@ -184,14 +193,14 @@ func (r *StreamingResponse) Header() http.Header {
 	return r.header
 }
 
-func (r *StreamingResponse) ToCacheable(detached bool) Response {
+func (r *StreamingResponse) ToCacheable(detached bool, expires time.Time) CachedResponse {
 	if r.bytes == nil {
 		r.read()
 	}
 	clone := &NormalResponse{
-		body:   r.bytes,
-		status: r.status,
-		cached: true,
+		body:    r.bytes,
+		status:  r.status,
+		expires: expires,
 	}
 	if detached == false {
 		clone.header = r.header

@@ -1,6 +1,7 @@
 package configurations
 
 import (
+	"github.com/karlseguin/garnish/cache"
 	"github.com/karlseguin/garnish/gc"
 	"time"
 )
@@ -74,9 +75,10 @@ func (c *Cache) PurgeHandler(handler gc.PurgeHandler) *Cache {
 }
 
 func (c *Cache) Build(runtime *gc.Runtime) bool {
-	runtime.Cache = gc.NewCache(c.count)
+	runtime.Cache = gc.NewCache()
 	runtime.Cache.Saint = c.saint
 	runtime.Cache.GraceTTL = c.grace
+	runtime.Cache.Storage = cache.New(c.count)
 
 	if c.purgeHandler != nil {
 		runtime.Cache.PurgeHandler = c.purgeHandler

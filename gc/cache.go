@@ -1,7 +1,6 @@
 package gc
 
 import (
-	"gopkg.in/karlseguin/ccache.v1"
 	"strconv"
 	"strings"
 	"sync"
@@ -14,20 +13,28 @@ var (
 	NotModifiedResponse = Empty(304)
 
 	hitHeaderValue = []string{"hit"}
+	zero           time.Time
 )
+
+type CacheStorage interface {
+	Get(primary, secondary string) CachedResponse
+	Set(primary string, secondary string, response CachedResponse)
+	Delete(primary, secondary string) bool
+	DeleteAll(primary string) bool
+}
+
+type CachedResponse interface {
+	Response
+	Expire(at time.Time)
+	Expires() time.Time
+}
 
 // A function that generates cache keys from a request
 type CacheKeyLookup func(req *Request) (string, string)
 
 // A function that purges the cache
 // Returning a nil response means that the request will be forward onwards
-type PurgeHandler func(req *Request, lookup CacheKeyLookup, cache Purgeable) Response
-
-// An interface for deleting items
-type Purgeable interface {
-	Delete(primary, secondary string) bool
-	DeleteAll(primary string) bool
-}
+type PurgeHandler func(req *Request, lookup CacheKeyLookup, cache CacheStorage) Response
 
 func DefaultCacheKeyLookup(req *Request) (string, string) {
 	return req.URL.Path, req.URL.RawQuery
@@ -35,17 +42,16 @@ func DefaultCacheKeyLookup(req *Request) (string, string) {
 
 type Cache struct {
 	sync.Mutex
-	*ccache.LayeredCache
 	downloads    map[string]time.Time
+	Storage      CacheStorage
 	Saint        bool
 	GraceTTL     time.Duration
 	PurgeHandler PurgeHandler
 }
 
-func NewCache(count int) *Cache {
+func NewCache() *Cache {
 	return &Cache{
-		downloads:    make(map[string]time.Time),
-		LayeredCache: ccache.Layered(ccache.Configure().MaxSize(int64(count))),
+		downloads: make(map[string]time.Time),
 	}
 }
 
@@ -56,9 +62,9 @@ func (c *Cache) Set(primary string, secondary string, config *RouteCache, res Re
 	}
 
 	detach := grace == false
-	cacheable := res.ToCacheable(detach)
+	cacheable := res.ToCacheable(detach, time.Now().Add(ttl))
 	cacheable.Header()["X-Cache"] = hitHeaderValue
-	c.LayeredCache.Set(primary, secondary, cacheable, ttl)
+	c.Storage.Set(primary, secondary, cacheable)
 }
 
 func (c *Cache) ttl(config *RouteCache, res Response) time.Duration {
