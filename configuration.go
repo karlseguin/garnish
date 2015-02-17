@@ -151,7 +151,7 @@ func (c *Configuration) Build() *gc.Runtime {
 
 	if c.hydrate != nil {
 		if m := c.hydrate.Build(runtime); m != nil {
-			runtime.Executor = gc.WrapMiddleware("hdrt", m.Handler, runtime.Executor)
+			runtime.Executor = gc.WrapMiddleware("hdrt", m.Handle, runtime.Executor)
 		} else {
 			return nil
 		}

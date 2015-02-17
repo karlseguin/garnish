@@ -13,7 +13,7 @@ func Start(configuration *Configuration) {
 	}
 	s := http.Server{
 		Addr:         configuration.address,
-		Handler:      &Handler{runtime},
+		Handler:      runtime,
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
 	}

@@ -25,18 +25,16 @@ func Test_Upstream(t *testing.T) {
 }
 
 func (_ UpstreamTests) Request() {
-	handler := testHandler()
 	out := httptest.NewRecorder()
-	handler.ServeHTTP(out, build.Request().Path("/plain").Request)
+	testRuntime().ServeHTTP(out, build.Request().Path("/plain").Request)
 	Expect(out.Code).To.Equal(200)
 	Expect(out.Body.String()).To.Equal("hello world")
 }
 
 func (_ UpstreamTests) DefaultHeaders() {
 	id := nd.LockGuid()
-	handler := testHandler()
 	out := httptest.NewRecorder()
-	handler.ServeHTTP(out, build.Request().Host("openmymind.io").Path("/headers").Request)
+	testRuntime().ServeHTTP(out, build.Request().Host("openmymind.io").Path("/headers").Request)
 	Expect(out.Code).To.Equal(200)
 
 	headers, _ := typed.Json(out.Body.Bytes())
@@ -47,9 +45,8 @@ func (_ UpstreamTests) DefaultHeaders() {
 }
 
 func (_ UpstreamTests) SpecificHeaders() {
-	handler := testHandler()
 	out := httptest.NewRecorder()
-	handler.ServeHTTP(out, build.Request().Host("openmymind.io").Path("/headers").Header("X-Spice", "must flow").Request)
+	testRuntime().ServeHTTP(out, build.Request().Host("openmymind.io").Path("/headers").Header("X-Spice", "must flow").Request)
 	Expect(out.Code).To.Equal(200)
 
 	headers, _ := typed.Json(out.Body.Bytes())
@@ -57,9 +54,8 @@ func (_ UpstreamTests) SpecificHeaders() {
 }
 
 func (_ UpstreamTests) Tweaker() {
-	handler := testHandler()
 	out := httptest.NewRecorder()
-	handler.ServeHTTP(out, build.Request().Path("/tweaked").Header("X-Spice", "must flow").Request)
+	testRuntime().ServeHTTP(out, build.Request().Path("/tweaked").Header("X-Spice", "must flow").Request)
 	Expect(out.Code).To.Equal(200)
 
 	headers, _ := typed.Json(out.Body.Bytes())
@@ -67,30 +63,28 @@ func (_ UpstreamTests) Tweaker() {
 }
 
 func (_ UpstreamTests) Body() {
-	handler := testHandler()
 	out := httptest.NewRecorder()
-	handler.ServeHTTP(out, build.Request().Method("POST").Path("/body").Body("it's over 9000!!").Request)
+	testRuntime().ServeHTTP(out, build.Request().Method("POST").Path("/body").Body("it's over 9000!!").Request)
 	Expect(out.Code).To.Equal(200)
 	Expect(out.Body.String()).To.Equal("it's over 9000!!")
 }
 
 func (_ UpstreamTests) DrainedBody() {
-	handler := testHandler()
 	out := httptest.NewRecorder()
-	handler.ServeHTTP(out, build.Request().Method("POST").Path("/drain").Body("the spice must flow").Request)
+	testRuntime().ServeHTTP(out, build.Request().Method("POST").Path("/drain").Body("the spice must flow").Request)
 	Expect(out.Code).To.Equal(200)
 	Expect(out.Body.String()).To.Equal("the spice must flow")
 }
 
 func (_ UpstreamTests) ForCache() {
-	handler := testHandler()
+	runtime := testRuntime()
 	out := httptest.NewRecorder()
-	handler.ServeHTTP(out, build.Request().Path("/cached").Request)
+	runtime.ServeHTTP(out, build.Request().Path("/cached").Request)
 	Expect(out.Code).To.Equal(200)
 	Expect(out.Body.String()).To.Equal("will it cache?")
 
 	out = httptest.NewRecorder()
-	handler.ServeHTTP(out, build.Request().Path("/cached").Request)
+	runtime.ServeHTTP(out, build.Request().Path("/cached").Request)
 	Expect(out.Code).To.Equal(200)
 	Expect(out.Body.String()).To.Equal("will it cache?")
 }
@@ -103,7 +97,7 @@ func startServer() *os.Process {
 	return cmd.Process
 }
 
-func testHandler() *Handler {
+func testRuntime() *gc.Runtime {
 	config := Configure().DnsTTL(-1)
 	config.Cache()
 	config.Auth(func(req *gc.Request) gc.Response {
@@ -128,6 +122,5 @@ func testHandler() *Handler {
 	config.Route("body").Post("/body").Upstream("test")
 	config.Route("drain").Post("/drain").Upstream("drain")
 	config.Route("cached").Get("/cached").Upstream("test").CacheTTL(time.Minute)
-	runtime := config.Build()
-	return &Handler{runtime}
+	return config.Build()
 }

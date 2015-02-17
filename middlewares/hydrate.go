@@ -10,7 +10,7 @@ type Hydrate struct {
 	Header string
 }
 
-func (h *Hydrate) Handler(req *gc.Request, next gc.Middleware) gc.Response {
+func (h *Hydrate) Handle(req *gc.Request, next gc.Middleware) gc.Response {
 	res := next(req)
 	if res == nil {
 		return res

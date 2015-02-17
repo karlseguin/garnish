@@ -80,3 +80,43 @@ func (l *Logger) Verbose() {
 func (l *Logger) IsVerbose() bool {
 	return l.info
 }
+
+type FakeLogger struct {
+	Infos  []string
+	Warns  []string
+	Errors []string
+}
+
+func NewFakeLogger() *FakeLogger {
+	return &FakeLogger{}
+}
+
+func (f *FakeLogger) Info(message string) {
+	f.Infos = append(f.Infos, message)
+}
+
+func (f *FakeLogger) Infof(format string, v ...interface{}) {
+	f.Infos = append(f.Infos, fmt.Sprintf(format, v...))
+}
+
+func (f *FakeLogger) Warn(message string) {
+	f.Warns = append(f.Warns, message)
+}
+
+func (f *FakeLogger) Warnf(format string, v ...interface{}) {
+	f.Warns = append(f.Warns, fmt.Sprintf(format, v...))
+}
+
+func (f *FakeLogger) Error(message string) {
+	f.Errors = append(f.Errors, message)
+}
+
+func (f *FakeLogger) Errorf(format string, v ...interface{}) {
+	f.Errors = append(f.Errors, fmt.Sprintf(format, v...))
+}
+
+func (f *FakeLogger) Verbose() {}
+
+func (f *FakeLogger) IsVerbose() bool {
+	return false
+}
