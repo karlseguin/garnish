@@ -25,9 +25,18 @@ func (h *Hydrate) Handle(req *gc.Request, next gc.Middleware) gc.Response {
 }
 
 func (h *Hydrate) convert(req *gc.Request, res gc.Response, fieldName string) gc.Response {
-	body, position := loadBody(req.Runtime, res), 0
+	body := loadBody(req.Runtime, res)
+	fragments := ExtractFragments(body, req, fieldName)
+	if fragments == nil {
+		return res
+	}
+	return gc.NewHydraterResponse(res.Status(), res.Header(), fragments)
+}
+
+var ExtractFragments = func(body []byte, req *gc.Request, fieldName string) []gc.Fragment {
+	position := 0
 	needle := []byte("\"" + fieldName)
-	fragments := make([]gc.Fragment, 0, 10)
+	fragments := make([]gc.Fragment, 0, 20)
 	for {
 		index := bytes.Index(body, needle)
 		if index == -1 {
@@ -39,23 +48,23 @@ func (h *Hydrate) convert(req *gc.Request, res gc.Response, fieldName string) gc
 		start := bytes.IndexRune(body, '{')
 		if start == -1 {
 			req.Error("invalid hydration start")
-			return res
+			return nil
 		}
 		end := bytes.IndexRune(body, '}')
 		if end == -1 {
 			req.Error("invalid hydration end")
-			return res
+			return nil
 		}
 		end += 1
 		var ref map[string]interface{}
 		if err := json.Unmarshal(body[start:end], &ref); err != nil {
 			req.Errorf("invalid hydration payload: %v", err)
-			return res
+			return nil
 		}
 		fragments = append(fragments, gc.NewReferenceFragment(ref, end-start))
 		body = body[end+1:]
 	}
-	return gc.NewHydraterResponse(res.Status(), res.Header(), fragments)
+	return fragments
 }
 
 func loadBody(runtime *gc.Runtime, res gc.Response) []byte {
