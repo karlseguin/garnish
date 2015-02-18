@@ -26,7 +26,6 @@ type ReferenceFragment struct {
 
 func (f *ReferenceFragment) Render(runtime *Runtime) []byte {
 	return runtime.HydrateLoader(f)
-	return nil
 }
 
 type HydrateResponse struct {

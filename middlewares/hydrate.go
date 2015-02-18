@@ -20,6 +20,7 @@ func (h *Hydrate) Handle(req *gc.Request, next gc.Middleware) gc.Response {
 	if len(hydrateField) == 0 || res.Status() >= 300 {
 		return res
 	}
+	res.Header().Del(h.Header)
 	return h.convert(req, res, hydrateField)
 }
 
@@ -58,12 +59,11 @@ func (h *Hydrate) convert(req *gc.Request, res gc.Response, fieldName string) gc
 }
 
 func loadBody(runtime *gc.Runtime, res gc.Response) []byte {
-	var b []byte
-	if cl := res.ContentLength(); cl > 0 {
-		b = make([]byte, 0, cl)
-	} else {
-		b = make([]byte, 0, 32768)
+	l := res.ContentLength()
+	if l <= 0 {
+		l = 32768
 	}
+	b := make([]byte, 0, l)
 	buffer := bytes.NewBuffer(b)
 	res.Write(runtime, buffer)
 	return buffer.Bytes()
