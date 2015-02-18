@@ -17,8 +17,8 @@ func main() {
 	garnish.Start(config)
 }
 
-func HydrateLoader(reference *gc.ReferenceFragment) []byte {
-	return []byte(`{"id": "hyd-` + reference.Id + `"}`)
+func HydrateLoader(fragment gc.ReferenceFragment) []byte {
+	return []byte(`{"id": "hyd-` + fragment.String("id") + `"}`)
 }
 
 func AuthHandler(req *gc.Request) gc.Response {

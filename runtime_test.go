@@ -301,8 +301,8 @@ func helper() *RuntimeHelper {
 		return gc.PurgeHitResponse
 	}
 
-	runtime.HydrateLoader = func(reference *gc.ReferenceFragment) []byte {
-		return []byte(fmt.Sprintf(`{"i": %q, "p": %q}`, reference.Id, reference.T))
+	runtime.HydrateLoader = func(reference gc.ReferenceFragment) []byte {
+		return []byte(fmt.Sprintf(`{"i": %q, "p": %q}`, reference.String("id"), reference.String("type")))
 	}
 
 	return &RuntimeHelper{

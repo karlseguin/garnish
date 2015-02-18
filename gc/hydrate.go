@@ -1,12 +1,13 @@
 package gc
 
 import (
+	"gopkg.in/karlseguin/typed.v1"
 	"io"
 	"net/http"
 	"time"
 )
 
-type HydrateLoader func(reference *ReferenceFragment) []byte
+type HydrateLoader func(fragment ReferenceFragment) []byte
 
 type Fragment interface {
 	Render(runtime *Runtime) []byte
@@ -25,21 +26,17 @@ func (f LiteralFragment) Size() int {
 
 type ReferenceFragment struct {
 	size int
-	T    string
-	Id   string
-	Data map[string]string
+	typed.Typed
 }
 
-func NewReferenceFragment(data map[string]string, size int) *ReferenceFragment {
-	return &ReferenceFragment{
-		size: size + 100,
-		Id:   data["id"],
-		T:    data["type"],
-		Data: data,
+func NewReferenceFragment(data map[string]interface{}, size int) ReferenceFragment {
+	return ReferenceFragment{
+		size:  size + 100,
+		Typed: typed.Typed(data),
 	}
 }
 
-func (f *ReferenceFragment) Render(runtime *Runtime) []byte {
+func (f ReferenceFragment) Render(runtime *Runtime) []byte {
 	return runtime.HydrateLoader(f)
 }
 

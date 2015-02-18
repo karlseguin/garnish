@@ -47,7 +47,7 @@ func (h *Hydrate) convert(req *gc.Request, res gc.Response, fieldName string) gc
 			return res
 		}
 		end += 1
-		var ref map[string]string
+		var ref map[string]interface{}
 		if err := json.Unmarshal(body[start:end], &ref); err != nil {
 			req.Errorf("invalid hydration payload: %v", err)
 			return res
