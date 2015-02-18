@@ -58,7 +58,7 @@ func (c *Cache) Set(primary string, secondary string, response gc.CachedResponse
 		Primary:        primary,
 		Secondary:      secondary,
 		CachedResponse: response,
-		size:           response.ContentLength() + len(primary) + len(secondary) + 100*len(response.Header()) + 300,
+		size:           response.Size(),
 	}
 	existing := c.bucket(primary).set(primary, secondary, entry)
 	if existing != nil {

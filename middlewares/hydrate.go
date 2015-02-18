@@ -52,7 +52,7 @@ func (h *Hydrate) convert(req *gc.Request, res gc.Response, fieldName string) gc
 			req.Errorf("invalid hydration payload: %v", err)
 			return res
 		}
-		fragments = append(fragments, &gc.ReferenceFragment{Id: ref["id"], T: ref["type"], Data: ref})
+		fragments = append(fragments, gc.NewReferenceFragment(ref, end-start))
 		body = body[end+1:]
 	}
 	return gc.NewHydraterResponse(res.Status(), res.Header(), fragments)

@@ -25,6 +25,7 @@ type CacheStorage interface {
 
 type CachedResponse interface {
 	Response
+	Size() int
 	Expire(at time.Time)
 	Expires() time.Time
 }

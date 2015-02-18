@@ -85,6 +85,10 @@ func (r *NormalResponse) ContentLength() int {
 	return len(r.body)
 }
 
+func (r *NormalResponse) Size() int {
+	return len(r.body) + 300 + 200*len(r.header)
+}
+
 func (r *NormalResponse) Write(runtime *Runtime, w io.Writer) {
 	w.Write(r.body)
 }
