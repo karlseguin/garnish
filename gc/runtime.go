@@ -66,6 +66,8 @@ func (r *Runtime) reply(out http.ResponseWriter, res Response, req *Request) {
 			if fatal, ok := res.(*FatalResponse); ok {
 				req.Error(fatal.Err)
 			}
+		} else if req.hit {
+			oh["X-Cache"] = hitHeaderValue
 		}
 		req.Infof("%d", status)
 	}

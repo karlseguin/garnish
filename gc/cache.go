@@ -55,15 +55,13 @@ func NewCache() *Cache {
 	}
 }
 
-func (c *Cache) Set(primary string, secondary string, config *RouteCache, res Response, grace bool) {
+func (c *Cache) Set(primary string, secondary string, config *RouteCache, res Response) {
 	ttl := c.ttl(config, res)
 	if ttl == 0 {
 		return
 	}
 
-	detach := grace == false
-	cacheable := res.ToCacheable(detach, time.Now().Add(ttl))
-	cacheable.Header()["X-Cache"] = hitHeaderValue
+	cacheable := res.ToCacheable(time.Now().Add(ttl))
 	c.Storage.Set(primary, secondary, cacheable)
 }
 
@@ -121,7 +119,7 @@ func (c *Cache) grace(key string, primary string, secondary string, req *Request
 	if res.Status() >= 500 {
 		Log.Errorf("grace error for %q", req.URL)
 	} else {
-		c.Set(primary, secondary, req.Route.Cache, res, true)
+		c.Set(primary, secondary, req.Route.Cache, res)
 	}
 }
 

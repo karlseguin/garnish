@@ -75,20 +75,7 @@ func (r *HydrateResponse) Expire(at time.Time) {
 	r.expires = at
 }
 
-func (r *HydrateResponse) ToCacheable(detached bool, expires time.Time) CachedResponse {
-	if detached == false {
-		r.expires = expires
-		return r
-	}
-
-	clone := &HydrateResponse{
-		expires:   expires,
-		status:    r.status,
-		header:    make(http.Header, len(r.header)),
-		fragments: r.fragments,
-	}
-	for k, v := range r.header {
-		clone.header[k] = v
-	}
-	return clone
+func (r *HydrateResponse) ToCacheable(expires time.Time) CachedResponse {
+	r.expires = expires
+	return r
 }

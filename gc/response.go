@@ -31,7 +31,7 @@ type Response interface {
 	// When detached is true, it's expected that the original
 	// response will continue to be used. Detached = false is
 	// an optimization for grace mode which discards the original response
-	ToCacheable(detached bool, ttl time.Time) CachedResponse
+	ToCacheable(ttl time.Time) CachedResponse
 
 	// Releases any resources associated with the response
 	Close()
@@ -99,22 +99,9 @@ func (r *NormalResponse) Header() http.Header {
 
 func (r *NormalResponse) Close() {}
 
-func (r *NormalResponse) ToCacheable(detached bool, expires time.Time) CachedResponse {
-	if detached == false {
-		r.expires = expires
-		return r
-	}
-
-	clone := &NormalResponse{
-		body:    r.body,
-		status:  r.status,
-		expires: expires,
-		header:  make(http.Header, len(r.header)),
-	}
-	for k, v := range r.header {
-		clone.header[k] = v
-	}
-	return clone
+func (r *NormalResponse) ToCacheable(expires time.Time) CachedResponse {
+	r.expires = expires
+	return r
 }
 
 func (r *NormalResponse) Cached() bool {
@@ -193,24 +180,16 @@ func (r *StreamingResponse) Header() http.Header {
 	return r.header
 }
 
-func (r *StreamingResponse) ToCacheable(detached bool, expires time.Time) CachedResponse {
+func (r *StreamingResponse) ToCacheable(expires time.Time) CachedResponse {
 	if r.bytes == nil {
 		r.read()
 	}
-	clone := &NormalResponse{
+	return &NormalResponse{
 		body:    r.bytes,
+		header:  r.header,
 		status:  r.status,
 		expires: expires,
 	}
-	if detached == false {
-		clone.header = r.header
-	} else {
-		clone.header = make(http.Header, len(r.header))
-		for k, v := range r.header {
-			clone.header[k] = v
-		}
-	}
-	return clone
 }
 
 func (r *StreamingResponse) read() {

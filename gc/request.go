@@ -10,6 +10,7 @@ import (
 
 // Extends an *http.Request
 type Request struct {
+	hit    bool
 	scope  string
 	body   *bytepool.Bytes
 	params params.Params
@@ -92,6 +93,11 @@ func (r *Request) Close() {
 	if r.body != nil {
 		r.body.Close()
 	}
+}
+
+func (r *Request) Cached(reason string) {
+	r.hit = true
+	r.Info(reason)
 }
 
 // Context-aware info message (only displayed if the global configuration

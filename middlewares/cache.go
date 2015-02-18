@@ -27,12 +27,12 @@ func Cache(req *gc.Request, next gc.Middleware) gc.Response {
 		now := time.Now()
 		expires := item.Expires()
 		if expires.After(now) {
-			req.Info("hit")
+			req.Cached("hit")
 			return item
 		}
 		if expires.Add(cache.GraceTTL).After(now) {
-			req.Info("grace")
 			cache.Grace(primary, secondary, req, next)
+			req.Cached("grace")
 			return item
 		}
 	}
@@ -43,10 +43,10 @@ func Cache(req *gc.Request, next gc.Middleware) gc.Response {
 		if item == nil || cache.Saint == false {
 			return res
 		}
-		req.Info("saint")
 		item.Expire(time.Now().Add(time.Second * 5))
+		req.Cached("saint")
 		return item
 	}
-	cache.Set(primary, secondary, config, res, false)
+	cache.Set(primary, secondary, config, res)
 	return res
 }
