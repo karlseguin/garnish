@@ -12,8 +12,10 @@ import (
 type Request struct {
 	hit    bool
 	scope  string
-	body   *bytepool.Bytes
 	params params.Params
+
+	// the underlying bytepool for the body. Consumers should use the Body() method
+	B *bytepool.Bytes
 
 	// Every request has a unique id. This is forwarded to the upstreams in the X-Request-Id header
 	Id string
@@ -49,18 +51,18 @@ func (r *Request) Params(key string) string {
 	return s
 }
 
-// The request's body. This value is only available before the upstrea
+// The request's body. This value is only available before the upstream
 // is called (at which point it is drained)
 func (r *Request) Body() []byte {
-	if r.body == nil {
+	if r.B == nil {
 		if r.Request.Body == nil {
 			return nil
 		}
-		r.body = r.Runtime.BytePool.Checkout()
-		r.body.ReadFrom(r.Request.Body)
+		r.B = r.Runtime.BytePool.Checkout()
+		r.B.ReadFrom(r.Request.Body)
 		r.Request.Body.Close()
 	}
-	return r.body.Bytes()
+	return r.B.Bytes()
 }
 
 // For now we don't clone the body.
@@ -90,8 +92,8 @@ func (r *Request) Clone() *Request {
 // Used internally to release any resources associated with the request
 func (r *Request) Close() {
 	r.params.Release()
-	if r.body != nil {
-		r.body.Close()
+	if r.B != nil {
+		r.B.Close()
 	}
 }
 
