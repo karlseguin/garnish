@@ -101,6 +101,24 @@ config.Cache().Grace(time.Minute * 2)
 * `KeyLookup(gc.CacheKeyLookup)` - The function that determines the cache keys to use for this request. A default based on the request's URL + QueryString is used. (overwritable on a per-route basis)
 * `PurgeHandler(gc.PurgeHandler)` - The function to call on PURGE requests. No default is provided (it's good to authorize purge requests). If the handler returns a nil response, the request proceeds as normal (thus allowing you to purge the garnish cache and still send the request to the upstream). When a `PurgeHandler` is configured, a route is automatically added to handle any PURGE request.
 
+#### Hydration
+
+The Hydration middleware is disabled by default.
+
+Hydration is a form of SSI (Server Side Include) aimed at reducing duplication and latency issues which often come with using a service oriented architecture. The approach is detailed [here](http://openmymind.net/Practical-SOA-Hydration-Part-1/).
+
+```go
+config.Hydrate(func (fragment gc.ReferenceFragment) []byte {
+	return redis.Get(fragment.String("id"))
+}).Header("X-Hydrate")
+```
+
+To enable Hydration, a `gc.HydrateLoader` function must be provided. This function is responsible for taking the hydration meta data provided by the upstream and converting it to the actual object. In the above example, the payload is retrieved from Redis.
+
+The provided `gc.ReferenceFragment` exposes a [typed.Typed](https://github.com/karlseguin/typed) object. However, despite this potential flexibility, the current parser is severely limited. Upstreams should provide very basic meta data. Namely, no nested objects are currently supported and values cannot contain a `{}` (for real, teehee).
+
+* `Header(name string)` - The HTTP header the upstream will set to enable hydration against the response.
+
 #### Upstreams
 
 Configures your upstreams. Garnish requires at least 1 upstream to be defined:
