@@ -213,6 +213,16 @@ func (r *RuntimeTests) CachedHydrate() {
 	Expect(out.HeaderMap.Get("X-Cache")).To.Equal("hit")
 }
 
+func (r RuntimeTests) Dispatch() {
+	runtime, req := r.h.Catch(func(req *gc.Request) gc.Response {
+		return gc.Respond(200, "ok")
+	}).Get("/dispatch")
+
+	out := httptest.NewRecorder()
+	runtime.ServeHTTP(out, req)
+	Expect(out.HeaderMap.Get("Dispatch")).To.Equal("out")
+}
+
 func assertHydrate(out *httptest.ResponseRecorder) {
 	Expect(out.Code).To.Equal(200)
 	b, _ := typed.Json(out.Body.Bytes())
@@ -249,6 +259,7 @@ func helper() *RuntimeHelper {
 	r.AddNamed("nocache", "GET", "/nocache", nil)
 	r.AddNamed("noauth", "GET", "/noauth", nil)
 	r.AddNamed("control", "GET", "/control", nil)
+	r.AddNamed("dispatch", "GET", "/dispatch", nil)
 
 	hydr := &middlewares.Hydrate{Header: "X-Hydrate"}
 	auth := &middlewares.Auth{
@@ -261,6 +272,7 @@ func helper() *RuntimeHelper {
 	}
 
 	e := gc.WrapMiddleware("upst", middlewares.Upstream, nil)
+	e = gc.WrapMiddleware("dspt", middlewares.Dispatch, e)
 	e = gc.WrapMiddleware("hydr", hydr.Handle, e)
 	e = gc.WrapMiddleware("cach", middlewares.Cache, e)
 	e = gc.WrapMiddleware("auth", auth.Handle, e)
@@ -288,6 +300,15 @@ func helper() *RuntimeHelper {
 			"nocache": &gc.Route{
 				Stats: gc.NewRouteStats(time.Millisecond * 100),
 				Cache: gc.NewRouteCache(time.Duration(-1), nil),
+			},
+			"dispatch": &gc.Route{
+				Stats: gc.NewRouteStats(time.Millisecond * 100),
+				Cache: gc.NewRouteCache(time.Duration(-1), nil),
+				Handler: func(req *gc.Request, next gc.Middleware) gc.Response {
+					res := next(req)
+					res.Header().Set("Dispatch", "out")
+					return res
+				},
 			},
 		},
 	}

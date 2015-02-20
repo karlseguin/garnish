@@ -135,6 +135,7 @@ func (c *Configuration) Build() *gc.Runtime {
 		Router:   router.New(router.Configure()),
 		Executor: gc.WrapMiddleware("upst", middlewares.Upstream, nil),
 	}
+	runtime.Executor = gc.WrapMiddleware("dspt", middlewares.Dispatch, runtime.Executor)
 
 	if c.upstreams.Build(runtime) == false {
 		return nil

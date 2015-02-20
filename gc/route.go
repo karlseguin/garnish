@@ -10,6 +10,7 @@ type Route struct {
 	Upstream *Upstream
 	Stats    *RouteStats
 	Cache    *RouteCache
+	Handler  Handler
 }
 
 type RouteCache struct {

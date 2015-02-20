@@ -1,10 +1,10 @@
 package gc
 
-type MiddlewareHandler func(req *Request, next Middleware) Response
+type Handler func(req *Request, next Middleware) Response
 
 type Middleware func(req *Request) Response
 
-func WrapMiddleware(name string, m MiddlewareHandler, next Middleware) Middleware {
+func WrapMiddleware(name string, m Handler, next Middleware) Middleware {
 	return func(req *Request) Response {
 		old := req.scope
 		req.scope = name

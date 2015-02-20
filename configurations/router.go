@@ -44,6 +44,7 @@ type Route struct {
 	path           string
 	method         string
 	upstream       string
+	handler        gc.Handler
 	slow           time.Duration
 	cacheTTL       time.Duration
 	cacheKeyLookup gc.CacheKeyLookup
@@ -140,11 +141,18 @@ func (r *Route) CacheKeyLookup(lookup gc.CacheKeyLookup) *Route {
 	return r
 }
 
+// Specify the name of the upstream.
+func (r *Route) Handler(handler gc.Handler) *Route {
+	r.handler = handler
+	return r
+}
+
 func (r *Route) Build(runtime *gc.Runtime) *gc.Route {
 	ok := true
 
 	route := &gc.Route{
-		Name: r.name,
+		Name:    r.name,
+		Handler: r.handler,
 	}
 
 	if r.slow > -1 {

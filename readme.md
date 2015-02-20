@@ -159,10 +159,36 @@ All routes must have a unique name. Paths support parameters in the form of `:na
 - `Slow(t time.Duration)` - Any requests that take longer than `t` to process will be flagged as a slow request by the stats worker. Overwrite's the stat's slow value for this route.
 - `CacheTTL(ttl time.Duration)` - The amount of time to cache the response for. Values < 0 will cause the item to never be cached. If the value isn't set, the Cache-Control header received from the upstream will be used.
 - `CacheKeyLookup(gc.CacheKeyLookup)` - The function that generates the cache key to use. Overwrites the cache's lookup for this route.
+- `Handler(gc.Handler) gc.Reponse` - Provide a custom handler for this route (see handler section)
 
+##### Handers
+Each route can have a custom handler. This allows routes to be handled directly in-process, without going to an upstream. For example:
+
+```go
+func LoadUser(req *gc.Request, next gc.Middleware) gc.Response {
+  id := req.Params().Get("id")
+  if len(id) == 0 {
+    return gc.NotFoundResponse()
+  }
+  //todo handle
+}
+```
+
+By using the `next` argument, it's possible to use a handler AND an upstream:
+
+```go
+func DeleteUser(req *gc.Request, next gc.Middleware) gc.Response {
+  if isAuthorized(req) == false {
+    return gc.Respond(401, "not authorized")
+  }
+  res := next(req)
+  //can manipulate res
+  return res
+}
+```
+
+Because of when it executes (immediately before the upstream), the handler can return a response which takes full advantage of the other middlewares (stats, caching, hydration, authentication, ...)
 
 ## TODO
 - Upstream load balancing
 - TCP upstream
-- Hydration
-- Dispatcher
