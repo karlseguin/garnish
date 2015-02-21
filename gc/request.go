@@ -31,6 +31,9 @@ type Request struct {
 
 	// Garnish's runtime
 	Runtime *Runtime
+
+	// To be used by consumer as-needed, unused by Garnish itself.
+	Context interface{}
 }
 
 func NewRequest(req *http.Request, route *Route, params params.Params) *Request {
