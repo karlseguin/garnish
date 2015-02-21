@@ -100,14 +100,6 @@ func startServer() *os.Process {
 func testRuntime() *gc.Runtime {
 	config := Configure().DnsTTL(-1)
 	config.Cache()
-	config.Auth(func(req *gc.Request) gc.Response {
-		if req.URL.Path == "/drain" {
-			if len(req.Body()) == 0 {
-				panic("fail")
-			}
-		}
-		return nil
-	})
 	config.Upstream("test").Address("http://127.0.0.1:4005").KeepAlive(2).Headers("X-Spice")
 	config.Upstream("tweaked").Address("http://127.0.0.1:4005").KeepAlive(2).Tweaker(func(in *gc.Request, out *http.Request) {
 		out.Header.Set("X-Tweaked", "true")

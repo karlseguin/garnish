@@ -71,22 +71,6 @@ config.Stats().FileName("stats.json").Slow(time.Millisecond * 100)
 * `FileName(name string)` - the path to save the statistics to
 * `Slow(d time.Duration)` - the default value to consider a request as being slow. (overwritable on a per-route basis)
 
-#### Authentication
-
-The auth middleware is diabled by default. To enable it, provide the configuration with the `gc.AuthHandler` to use:
-
-```go
-config.Auth(authHandler)
-...
-func authHandler(req *gc.Request) gc.Response {
-    ...
-}
-```
-
-If the configured `AuthHandler` returns a response, that response is immediately returned returned to the client and no further processing is done. In other words, to allow the request to proceed, return `nil` from the handler.
-
-This middleware has no additional configuration.
-
 #### Cache
 
 The cache middleware is disabled by default.

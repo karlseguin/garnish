@@ -8,7 +8,6 @@ import (
 
 func main() {
 	config := garnish.Configure().Address("127.0.0.1:8080").Debug()
-	config.Auth(AuthHandler)
 	config.Hydrate(HydrateLoader)
 	config.Stats().FileName("stats.json").Slow(time.Millisecond * 100)
 	config.Cache().Grace(time.Minute).PurgeHandler(PurgeHandler)
@@ -19,13 +18,6 @@ func main() {
 
 func HydrateLoader(fragment gc.ReferenceFragment) []byte {
 	return []byte(`{"id": "hyd-` + fragment.String("id") + `"}`)
-}
-
-func AuthHandler(req *gc.Request) gc.Response {
-	if false {
-		return gc.UnauthorizedResponse
-	}
-	return nil
 }
 
 func PurgeHandler(req *gc.Request, lookup gc.CacheKeyLookup, cache gc.CacheStorage) gc.Response {
