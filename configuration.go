@@ -10,6 +10,15 @@ import (
 	"time"
 )
 
+type MiddlewarePosition int
+
+const (
+	BEFORE_STATS MiddlewarePosition = iota
+	BEFORE_CACHE
+	BEFORE_HYDRATE
+	BEFORE_DISPATCH
+)
+
 // Configuration
 type Configuration struct {
 	address   string
@@ -20,6 +29,10 @@ type Configuration struct {
 	hydrate   *configurations.Hydrate
 	bytePool  poolConfiguration
 	dnsTTL    time.Duration
+	before    map[MiddlewarePosition]struct {
+		name    string
+		handler gc.Handler
+	}
 }
 
 type poolConfiguration struct {
@@ -33,6 +46,10 @@ func Configure() *Configuration {
 		address:  ":8080",
 		dnsTTL:   time.Minute,
 		bytePool: poolConfiguration{65536, 64},
+		before: make(map[MiddlewarePosition]struct {
+			name    string
+			handler gc.Handler
+		}),
 	}
 }
 
@@ -70,6 +87,17 @@ func (c *Configuration) BytePool(capacity, count uint32) *Configuration {
 // [1 minute]
 func (c *Configuration) DnsTTL(ttl time.Duration) *Configuration {
 	c.dnsTTL = ttl
+	return c
+}
+
+func (c *Configuration) Insert(position MiddlewarePosition, name string, handler gc.Handler) *Configuration {
+	c.before[position] = struct {
+		name    string
+		handler gc.Handler
+	}{
+		name,
+		handler,
+	}
 	return c
 }
 
@@ -128,7 +156,6 @@ func (c *Configuration) Build() *gc.Runtime {
 		Router:   router.New(router.Configure()),
 		Executor: gc.WrapMiddleware("upst", middlewares.Upstream, nil),
 	}
-	runtime.Executor = gc.WrapMiddleware("dspt", middlewares.Dispatch, runtime.Executor)
 
 	if c.upstreams.Build(runtime) == false {
 		return nil
@@ -143,12 +170,20 @@ func (c *Configuration) Build() *gc.Runtime {
 		return nil
 	}
 
+	runtime.Executor = gc.WrapMiddleware("dspt", middlewares.Dispatch, runtime.Executor)
+	if h, ok := c.before[BEFORE_DISPATCH]; ok {
+		runtime.Executor = gc.WrapMiddleware(h.name, h.handler, runtime.Executor)
+	}
+
 	if c.hydrate != nil {
 		if m := c.hydrate.Build(runtime); m != nil {
 			runtime.Executor = gc.WrapMiddleware("hdrt", m.Handle, runtime.Executor)
 		} else {
 			return nil
 		}
+	}
+	if h, ok := c.before[BEFORE_HYDRATE]; ok {
+		runtime.Executor = gc.WrapMiddleware(h.name, h.handler, runtime.Executor)
 	}
 
 	if c.cache != nil {
@@ -157,12 +192,18 @@ func (c *Configuration) Build() *gc.Runtime {
 		}
 		runtime.Executor = gc.WrapMiddleware("cach", middlewares.Cache, runtime.Executor)
 	}
+	if h, ok := c.before[BEFORE_CACHE]; ok {
+		runtime.Executor = gc.WrapMiddleware(h.name, h.handler, runtime.Executor)
+	}
 
 	if c.stats != nil {
 		if c.stats.Build(runtime) == false {
 			return nil
 		}
 		runtime.Executor = gc.WrapMiddleware("stat", middlewares.Stats, runtime.Executor)
+	}
+	if h, ok := c.before[BEFORE_STATS]; ok {
+		runtime.Executor = gc.WrapMiddleware(h.name, h.handler, runtime.Executor)
 	}
 
 	runtime.BytePool = bytepool.New(c.bytePool.capacity, c.bytePool.count)

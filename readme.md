@@ -173,6 +173,27 @@ func DeleteUser(req *gc.Request, next gc.Middleware) gc.Response {
 
 Because of when it executes (immediately before the upstream), the handler can return a response which takes full advantage of the other middlewares (stats, caching, hydration, authentication, ...)
 
+#### Custom Middleware
+You can inject your own middle handler:
+
+```go
+config.Insert(gc.BEFORE_STATS, "auth", authHandler)
+
+func authHandler(req *gc.Request, next gc.Middleware) gc.Response{
+  if .... {
+    return gc.Respond(401, "not authorized")
+  }
+  return next(req)
+}
+```
+
+Middlewares can be inserted:
+
+* `BEFORE_STATS`
+* `BEFORE_CACHE`
+* `BEFORE_HYDRATE`
+* `BEFORE_DISPATCH`
+
 ## TODO
 - Upstream load balancing
 - TCP upstream
