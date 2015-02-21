@@ -106,6 +106,7 @@ func (c *Cache) Grace(primary string, secondary string, req *Request, next Middl
 
 func (c *Cache) grace(key string, primary string, secondary string, req *Request, next Middleware) {
 	defer func() {
+		req.Close()
 		c.Lock()
 		delete(c.downloads, key)
 		c.Unlock()
