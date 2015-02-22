@@ -175,14 +175,6 @@ func (r *RuntimeTests) Purge() {
 	Expect(out.Code).To.Equal(200)
 }
 
-func (r *RuntimeTests) Authentication() {
-	runtime, req := r.h.Get("/noauth")
-	out := httptest.NewRecorder()
-	runtime.ServeHTTP(out, req)
-	Expect(out.Body.String()).To.Equal("")
-	Expect(out.Code).To.Equal(401)
-}
-
 func (r *RuntimeTests) Hydrate() {
 	runtime, req := r.h.Catch(func(req *gc.Request) gc.Response {
 		return gc.RespondH(200, http.Header{"X-Hydrate": []string{"!ref"}}, hydrateBody)
@@ -257,25 +249,15 @@ func helper() *RuntimeHelper {
 	r.AddNamed("cache", "PURGE", "/cache", nil)
 	r.AddNamed("hcache", "GET", "/hcache", nil)
 	r.AddNamed("nocache", "GET", "/nocache", nil)
-	r.AddNamed("noauth", "GET", "/noauth", nil)
 	r.AddNamed("control", "GET", "/control", nil)
 	r.AddNamed("dispatch", "GET", "/dispatch", nil)
 
 	hydr := &middlewares.Hydrate{Header: "X-Hydrate"}
-	auth := &middlewares.Auth{
-		Handler: func(req *gc.Request) gc.Response {
-			if req.URL.Path == "/noauth" {
-				return gc.UnauthorizedResponse
-			}
-			return nil
-		},
-	}
 
 	e := gc.WrapMiddleware("upst", middlewares.Upstream, nil)
 	e = gc.WrapMiddleware("dspt", middlewares.Dispatch, e)
 	e = gc.WrapMiddleware("hydr", hydr.Handle, e)
 	e = gc.WrapMiddleware("cach", middlewares.Cache, e)
-	e = gc.WrapMiddleware("auth", auth.Handle, e)
 	e = gc.WrapMiddleware("stat", middlewares.Stats, e)
 	runtime := &gc.Runtime{
 		Router:   r,
