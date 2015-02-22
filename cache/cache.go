@@ -80,14 +80,14 @@ func (c *Cache) DeleteAll(primary string) bool {
 	return c.bucket(primary).deleteAll(primary)
 }
 
-func (c *Cache) Save(path string, count int) {
+func (c *Cache) Save(path string, count int) error {
 	p := persist{
 		path:  path,
 		count: count,
-		done:  make(chan struct{}),
+		done:  make(chan error),
 	}
 	c.persist <- p
-	<-p.done
+	return <-p.done
 }
 
 func (c *Cache) bucket(key string) *bucket {
@@ -113,12 +113,14 @@ func (c *Cache) worker() {
 				c.size -= entry.size
 			}
 		case p := <-c.persist:
-			entries := make([]*Entry, p.count)
+			entries := make([]*PersistedEntry, p.count)
 			entry := c.list.head.next
-			for i := 0; i < p.count && entry != c.list.tail; i++ {
-				entries[i] = entry
+			i := 0
+			for ; i < p.count && entry != c.list.tail; i++ {
+				entries[i] = &PersistedEntry{entry.Primary, entry.Secondary, entry.CachedResponse}
 				entry = entry.next
 			}
+			entries = entries[:i]
 			go p.persist(entries)
 		}
 	}
@@ -143,7 +145,7 @@ func (c *Cache) gc() {
 type persist struct {
 	count int
 	path  string
-	done  chan struct{}
+	done  chan error
 }
 
 type PersistedEntry struct {
@@ -152,12 +154,11 @@ type PersistedEntry struct {
 	Response  gc.CachedResponse
 }
 
-func (p persist) persist(entries []*Entry) {
-	defer func() { p.done <- struct{}{} }()
-
+func (p persist) persist(entries []*PersistedEntry) {
+	var err error
+	defer func() { p.done <- err }()
 	file, err := os.Create(p.path)
 	if err != nil {
-		log.Println("cache file open", err)
 		return
 	}
 	defer func() {
@@ -166,14 +167,10 @@ func (p persist) persist(entries []*Entry) {
 		}
 	}()
 
+	println(len(entries))
 	encoder := gob.NewEncoder(file)
-	for _, entry := range entries {
-		pe := PersistedEntry{entry.Primary, entry.Secondary, entry.CachedResponse}
-		if err := encoder.Encode(pe); err != nil {
-			log.Println("cache encoding", err)
-		}
+	if err := encoder.Encode(entries); err != nil {
+		return
 	}
-	if err := file.Sync(); err != nil {
-		log.Println("cache file sync", err)
-	}
+	err = file.Sync()
 }

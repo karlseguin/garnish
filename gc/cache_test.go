@@ -126,3 +126,7 @@ func (s *FakeStorage) DeleteAll(primary string) bool {
 	}
 	return false
 }
+
+func (s *FakeStorage) Save(path string, count int) error {
+	return nil
+}

@@ -1,6 +1,7 @@
 package gc
 
 import (
+	"encoding/gob"
 	"strconv"
 	"strings"
 	"sync"
@@ -21,9 +22,12 @@ type CacheStorage interface {
 	Set(primary string, secondary string, response CachedResponse)
 	Delete(primary, secondary string) bool
 	DeleteAll(primary string) bool
+	Save(path string, count int) error
 }
 
 type CachedResponse interface {
+	gob.GobEncoder
+	gob.GobDecoder
 	Response
 	Size() int
 	Expire(at time.Time)
@@ -134,4 +138,8 @@ func (c *Cache) reserveDownload(key string) bool {
 	}
 	c.downloads[key] = now.Add(time.Second * 30)
 	return true
+}
+
+func (c *Cache) Save(path string, count int) error {
+	return c.Storage.Save(path, count)
 }

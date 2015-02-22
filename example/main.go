@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/karlseguin/garnish"
 	"github.com/karlseguin/garnish/gc"
 	"time"
@@ -17,7 +18,9 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	garnish.Start(runtime)
+	go garnish.Start(runtime)
+	time.Sleep(time.Second * 10)
+	fmt.Println(runtime.Cache.Save("cache.save", 10))
 }
 
 func HydrateLoader(fragment gc.ReferenceFragment) []byte {

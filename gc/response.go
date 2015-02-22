@@ -120,6 +120,14 @@ func (r *NormalResponse) Expire(at time.Time) {
 	r.expires = at
 }
 
+func (r *NormalResponse) GobEncode() ([]byte, error) {
+	return nil, nil
+}
+
+func (r *NormalResponse) GobDecode(data []byte) error {
+	return nil
+}
+
 // A response with an associated error string to log
 type FatalResponse struct {
 	Response

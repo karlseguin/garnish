@@ -104,3 +104,11 @@ func (r *HydrateResponse) ToCacheable(expires time.Time) CachedResponse {
 	}
 	return r
 }
+
+func (r *HydrateResponse) GobEncode() ([]byte, error) {
+	return nil, nil
+}
+
+func (r *HydrateResponse) GobDecode(data []byte) error {
+	return nil
+}
