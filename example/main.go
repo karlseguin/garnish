@@ -13,7 +13,11 @@ func main() {
 	config.Cache().Grace(time.Minute).PurgeHandler(PurgeHandler)
 	config.Upstream("test").Address("http://localhost:3000").KeepAlive(8)
 	config.Route("users").Get("/v1/users/").Upstream("test").CacheTTL(time.Minute)
-	garnish.Start(config)
+	runtime, err := config.Build()
+	if err != nil {
+		panic(err)
+	}
+	garnish.Start(runtime)
 }
 
 func HydrateLoader(fragment gc.ReferenceFragment) []byte {

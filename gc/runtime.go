@@ -16,6 +16,7 @@ type AuthHandler func(req *Request) Response
 // All the data needed to serve requests
 // Built automatically when the garnish.Start() is called
 type Runtime struct {
+	Address       string
 	Executor      Middleware
 	Upstreams     map[string]*Upstream
 	Routes        map[string]*Route

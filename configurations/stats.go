@@ -36,7 +36,7 @@ func (s *Stats) Slow(slow time.Duration) *Stats {
 
 // In normal usage, there's no need to call this method.
 // Builds the stats middleware into the runtime
-func (s *Stats) Build(runtime *gc.Runtime) bool {
+func (s *Stats) Build(runtime *gc.Runtime) error {
 	for _, route := range runtime.Routes {
 		if route.Stats == nil {
 			route.Stats = gc.NewRouteStats(s.slow)
@@ -45,5 +45,5 @@ func (s *Stats) Build(runtime *gc.Runtime) bool {
 	sw := gc.NewStatsWorker(runtime, s.fileName)
 	runtime.StatsWorker = sw
 	go sw.Run()
-	return true
+	return nil
 }

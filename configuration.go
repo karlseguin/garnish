@@ -1,6 +1,7 @@
 package garnish
 
 import (
+	"errors"
 	"github.com/karlseguin/garnish/configurations"
 	"github.com/karlseguin/garnish/gc"
 	"github.com/karlseguin/garnish/middlewares"
@@ -141,33 +142,30 @@ func (c *Configuration) Route(name string) *configurations.Route {
 	return c.router.Add(name)
 }
 
-// In normal usage, there's no need to call this method.
-// Builds a *gc.Runtime based on the configuration. Returns nil on error
-// and prints those errors to *gc.Logger
-func (c *Configuration) Build() *gc.Runtime {
-	logger := gc.Log
+// Build a runtime object from the configuration, which can then be
+// used to start garnish
+func (c *Configuration) Build() (*gc.Runtime, error) {
 	if c.upstreams == nil {
-		logger.Error("Atleast one upstream must be configured")
-		return nil
+		return nil, errors.New("Atleast one upstream must be configured")
 	}
 
 	runtime := &gc.Runtime{
+		Address:  c.address,
 		Resolver: dnscache.New(c.dnsTTL),
 		Router:   router.New(router.Configure()),
 		Executor: gc.WrapMiddleware("upst", middlewares.Upstream, nil),
 	}
 
-	if c.upstreams.Build(runtime) == false {
-		return nil
+	if err := c.upstreams.Build(runtime); err != nil {
+		return nil, err
 	}
 
 	if c.router == nil {
-		logger.Error("Atleast one route must be configured")
-		return nil
+		return nil, errors.New("Atleast one route must be configured")
 	}
 
-	if c.router.Build(runtime) == false {
-		return nil
+	if err := c.router.Build(runtime); err != nil {
+		return nil, err
 	}
 
 	runtime.Executor = gc.WrapMiddleware("dspt", middlewares.Dispatch, runtime.Executor)
@@ -176,19 +174,19 @@ func (c *Configuration) Build() *gc.Runtime {
 	}
 
 	if c.hydrate != nil {
-		if m := c.hydrate.Build(runtime); m != nil {
-			runtime.Executor = gc.WrapMiddleware("hdrt", m.Handle, runtime.Executor)
-		} else {
-			return nil
+		m, err := c.hydrate.Build(runtime)
+		if err != nil {
+			return nil, err
 		}
+		runtime.Executor = gc.WrapMiddleware("hdrt", m.Handle, runtime.Executor)
 	}
 	if h, ok := c.before[BEFORE_HYDRATE]; ok {
 		runtime.Executor = gc.WrapMiddleware(h.name, h.handler, runtime.Executor)
 	}
 
 	if c.cache != nil {
-		if c.cache.Build(runtime) == false {
-			return nil
+		if err := c.cache.Build(runtime); err != nil {
+			return nil, err
 		}
 		runtime.Executor = gc.WrapMiddleware("cach", middlewares.Cache, runtime.Executor)
 	}
@@ -197,8 +195,8 @@ func (c *Configuration) Build() *gc.Runtime {
 	}
 
 	if c.stats != nil {
-		if c.stats.Build(runtime) == false {
-			return nil
+		if err := c.stats.Build(runtime); err != nil {
+			return nil, err
 		}
 		runtime.Executor = gc.WrapMiddleware("stat", middlewares.Stats, runtime.Executor)
 	}
@@ -208,5 +206,5 @@ func (c *Configuration) Build() *gc.Runtime {
 
 	runtime.BytePool = bytepool.New(c.bytePool.capacity, c.bytePool.count)
 	runtime.RegisterStats("bytepool", runtime.BytePool.Stats)
-	return runtime
+	return runtime, nil
 }

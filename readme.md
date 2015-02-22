@@ -19,12 +19,21 @@ You begin this process by creating a configuration object:
 config := garnish.Configure()
 ```
 
-You'll do four things with the configuration:
+You'll then:
 
 1. Configure global settings
 2. Configure / enable middlewares
 3. Configure specific routes
-4. Run Garnish
+
+Finally, you can start garnish:
+
+```go
+runtime, err := config.Build()
+if err != nil {
+  panic(err)
+}
+garnish.Start(runtime)
+```
 
 You can see `example/main.go` for a basic example.
 

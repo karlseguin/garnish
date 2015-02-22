@@ -114,5 +114,9 @@ func testRuntime() *gc.Runtime {
 	config.Route("body").Post("/body").Upstream("test")
 	config.Route("drain").Post("/drain").Upstream("drain")
 	config.Route("cached").Get("/cached").Upstream("test").CacheTTL(time.Minute)
-	return config.Build()
+	r, err := config.Build()
+	if err != nil {
+		panic(err)
+	}
+	return r
 }

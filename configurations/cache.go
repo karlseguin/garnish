@@ -74,7 +74,7 @@ func (c *Cache) PurgeHandler(handler gc.PurgeHandler) *Cache {
 	return c
 }
 
-func (c *Cache) Build(runtime *gc.Runtime) bool {
+func (c *Cache) Build(runtime *gc.Runtime) error {
 	runtime.Cache = gc.NewCache()
 	runtime.Cache.Saint = c.saint
 	runtime.Cache.GraceTTL = c.grace
@@ -94,5 +94,5 @@ func (c *Cache) Build(runtime *gc.Runtime) bool {
 			route.Cache.KeyLookup = c.lookup
 		}
 	}
-	return true
+	return nil
 }

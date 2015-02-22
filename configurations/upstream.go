@@ -1,6 +1,7 @@
 package configurations
 
 import (
+	"fmt"
 	"github.com/karlseguin/garnish/gc"
 	"net"
 	"net/http"
@@ -36,18 +37,17 @@ func (u *Upstreams) Add(name string) *Upstream {
 	return one
 }
 
-func (u *Upstreams) Build(runtime *gc.Runtime) bool {
-	ok := true
+func (u *Upstreams) Build(runtime *gc.Runtime) error {
 	upstreams := make(map[string]*gc.Upstream, len(u.upstreams))
 	for name, one := range u.upstreams {
-		if upstream := one.Build(runtime); upstream != nil {
-			upstreams[name] = upstream
-		} else {
-			ok = false
+		upstream, err := one.Build(runtime)
+		if err != nil {
+			return err
 		}
+		upstreams[name] = upstream
 	}
 	runtime.Upstreams = upstreams
-	return ok
+	return nil
 }
 
 type Upstream struct {
@@ -94,10 +94,9 @@ func (u *Upstream) Tweaker(tweaker gc.RequestTweaker) *Upstream {
 	return u
 }
 
-func (u *Upstream) Build(runtime *gc.Runtime) *gc.Upstream {
+func (u *Upstream) Build(runtime *gc.Runtime) (*gc.Upstream, error) {
 	if len(u.address) < 8 {
-		gc.Log.Errorf("Upstream %s has an invalid address: %q", u.name, u.address)
-		return nil
+		return nil, fmt.Errorf("Upstream %s has an invalid address: %q", u.name, u.address)
 	}
 	var domain string
 	if u.address[:7] == "http://" {
@@ -106,8 +105,7 @@ func (u *Upstream) Build(runtime *gc.Runtime) *gc.Upstream {
 		domain = u.address[8:]
 	}
 	if u.address[:6] != "unix:/" && len(domain) == 0 {
-		gc.Log.Errorf("Upstream %s's address should begin with unix:/, http:// or https://", u.name)
-		return nil
+		return nil, fmt.Errorf("Upstream %s's address should begin with unix:/, http:// or https://", u.name)
 	}
 	upstream := &gc.Upstream{
 		Name:    u.name,
@@ -141,5 +139,5 @@ func (u *Upstream) Build(runtime *gc.Runtime) *gc.Upstream {
 			return net.Dial(network, ip+address[separator:])
 		}
 	}
-	return upstream
+	return upstream, nil
 }

@@ -1,6 +1,7 @@
 package configurations
 
 import (
+	"fmt"
 	"github.com/karlseguin/garnish/gc"
 	"time"
 )
@@ -24,19 +25,18 @@ func (r *Router) Add(name string) *Route {
 	return route
 }
 
-func (r *Router) Build(runtime *gc.Runtime) bool {
-	ok := true
+func (r *Router) Build(runtime *gc.Runtime) error {
 
 	routes := make(map[string]*gc.Route, len(r.routes))
 	for name, route := range r.routes {
-		if r := route.Build(runtime); r != nil {
-			routes[name] = r
-		} else {
-			ok = false
+		r, err := route.Build(runtime)
+		if err != nil {
+			return err
 		}
+		routes[name] = r
 	}
 	runtime.Routes = routes
-	return ok
+	return nil
 }
 
 type Route struct {
@@ -147,9 +147,7 @@ func (r *Route) Handler(handler gc.Handler) *Route {
 	return r
 }
 
-func (r *Route) Build(runtime *gc.Runtime) *gc.Route {
-	ok := true
-
+func (r *Route) Build(runtime *gc.Runtime) (*gc.Route, error) {
 	route := &gc.Route{
 		Name:    r.name,
 		Handler: r.handler,
@@ -160,25 +158,18 @@ func (r *Route) Build(runtime *gc.Runtime) *gc.Route {
 	}
 
 	if len(r.method) == 0 {
-		gc.Log.Errorf("Route %q doesn't have a method+path", r.name)
-		ok = false
+		return nil, fmt.Errorf("Route %q doesn't have a method+path", r.name)
 	}
 
 	if r.method == "GET" || r.method == "ALL" {
 		route.Cache = gc.NewRouteCache(r.cacheTTL, r.cacheKeyLookup)
 	}
 
-	if upstream, exists := runtime.Upstreams[r.upstream]; exists == false {
-		gc.Log.Errorf("Route %q has an unknown upstream %q", r.name, r.upstream)
-		ok = false
-	} else {
-		route.Upstream = upstream
+	upstream, exists := runtime.Upstreams[r.upstream]
+	if exists == false {
+		return nil, fmt.Errorf("Route %q has an unknown upstream %q", r.name, r.upstream)
 	}
-
-	if ok == false {
-		return nil
-	}
-
+	route.Upstream = upstream
 	runtime.Router.AddNamed(r.name, r.method, r.path, nil)
-	return route
+	return route, nil
 }

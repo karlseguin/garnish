@@ -25,9 +25,9 @@ func (h *Hydrate) Header(name string) *Hydrate {
 	return h
 }
 
-func (h *Hydrate) Build(runtime *gc.Runtime) *middlewares.Hydrate {
+func (h *Hydrate) Build(runtime *gc.Runtime) (*middlewares.Hydrate, error) {
 	runtime.HydrateLoader = h.loader
 	return &middlewares.Hydrate{
 		Header: h.header,
-	}
+	}, nil
 }

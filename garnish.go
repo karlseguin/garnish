@@ -6,17 +6,13 @@ import (
 	"time"
 )
 
-func Start(configuration *Configuration) {
-	runtime := configuration.Build()
-	if runtime == nil {
-		return
-	}
+func Start(runtime *gc.Runtime) {
 	s := http.Server{
-		Addr:         configuration.address,
+		Addr:         runtime.Address,
 		Handler:      runtime,
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
 	}
-	gc.Log.Infof("listening on %s", configuration.address)
+	gc.Log.Infof("listening on %s", runtime.Address)
 	panic(s.ListenAndServe())
 }
