@@ -1,8 +1,11 @@
 package cache
 
 import (
+	"encoding/gob"
 	"github.com/karlseguin/garnish/gc"
 	"hash/fnv"
+	"log"
+	"os"
 )
 
 const (
@@ -24,6 +27,7 @@ type Cache struct {
 	maxSize     int
 	size        int
 	buckets     []*bucket
+	persist     chan persist
 	deletables  chan *Entry
 	promotables chan *Entry
 }
@@ -33,6 +37,7 @@ func New(maxSize int) *Cache {
 		maxSize:     maxSize,
 		list:        NewList(),
 		buckets:     make([]*bucket, BUCKETS),
+		persist:     make(chan persist),
 		deletables:  make(chan *Entry, 1024),
 		promotables: make(chan *Entry, 1024),
 	}
@@ -75,6 +80,16 @@ func (c *Cache) DeleteAll(primary string) bool {
 	return c.bucket(primary).deleteAll(primary)
 }
 
+func (c *Cache) Save(path string, count int) {
+	p := persist{
+		path:  path,
+		count: count,
+		done:  make(chan struct{}),
+	}
+	c.persist <- p
+	<-p.done
+}
+
 func (c *Cache) bucket(key string) *bucket {
 	h := fnv.New32a()
 	h.Write([]byte(key))
@@ -97,6 +112,14 @@ func (c *Cache) worker() {
 				c.list.Remove(entry)
 				c.size -= entry.size
 			}
+		case p := <-c.persist:
+			entries := make([]*Entry, p.count)
+			entry := c.list.head.next
+			for i := 0; i < p.count && entry != c.list.tail; i++ {
+				entries[i] = entry
+				entry = entry.next
+			}
+			go p.persist(entries)
 		}
 	}
 }
@@ -114,5 +137,43 @@ func (c *Cache) gc() {
 		c.bucket(primary).delete(primary, entry.Secondary)
 		c.list.Remove(entry)
 		c.size -= entry.size
+	}
+}
+
+type persist struct {
+	count int
+	path  string
+	done  chan struct{}
+}
+
+type PersistedEntry struct {
+	Primary   string
+	Secondary string
+	Response  gc.CachedResponse
+}
+
+func (p persist) persist(entries []*Entry) {
+	defer func() { p.done <- struct{}{} }()
+
+	file, err := os.Create(p.path)
+	if err != nil {
+		log.Println("cache file open", err)
+		return
+	}
+	defer func() {
+		if err := file.Close(); err != nil {
+			log.Println("cache file close", err)
+		}
+	}()
+
+	encoder := gob.NewEncoder(file)
+	for _, entry := range entries {
+		pe := PersistedEntry{entry.Primary, entry.Secondary, entry.CachedResponse}
+		if err := encoder.Encode(pe); err != nil {
+			log.Println("cache encoding", err)
+		}
+	}
+	if err := file.Sync(); err != nil {
+		log.Println("cache file sync", err)
 	}
 }
