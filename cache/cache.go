@@ -1,11 +1,8 @@
 package cache
 
 import (
-	"encoding/gob"
 	"github.com/karlseguin/garnish/gc"
 	"hash/fnv"
-	"log"
-	"os"
 )
 
 const (
@@ -90,6 +87,15 @@ func (c *Cache) Save(path string, count int) error {
 	return <-p.done
 }
 
+func (c *Cache) Load(path string) error {
+	entries, err := loadFromFile(path)
+	if err != nil {
+		return err
+	}
+	println(len(entries))
+	return nil
+}
+
 func (c *Cache) bucket(key string) *bucket {
 	h := fnv.New32a()
 	h.Write([]byte(key))
@@ -113,11 +119,11 @@ func (c *Cache) worker() {
 				c.size -= entry.size
 			}
 		case p := <-c.persist:
-			entries := make([]*PersistedEntry, p.count)
+			entries := make([]*Entry, p.count)
 			entry := c.list.head.next
 			i := 0
 			for ; i < p.count && entry != c.list.tail; i++ {
-				entries[i] = &PersistedEntry{entry.Primary, entry.Secondary, entry.CachedResponse}
+				entries[i] = entry
 				entry = entry.next
 			}
 			entries = entries[:i]
@@ -140,37 +146,4 @@ func (c *Cache) gc() {
 		c.list.Remove(entry)
 		c.size -= entry.size
 	}
-}
-
-type persist struct {
-	count int
-	path  string
-	done  chan error
-}
-
-type PersistedEntry struct {
-	Primary   string
-	Secondary string
-	Response  gc.CachedResponse
-}
-
-func (p persist) persist(entries []*PersistedEntry) {
-	var err error
-	defer func() { p.done <- err }()
-	file, err := os.Create(p.path)
-	if err != nil {
-		return
-	}
-	defer func() {
-		if err := file.Close(); err != nil {
-			log.Println("cache file close", err)
-		}
-	}()
-
-	println(len(entries))
-	encoder := gob.NewEncoder(file)
-	if err := encoder.Encode(entries); err != nil {
-		return
-	}
-	err = file.Sync()
 }

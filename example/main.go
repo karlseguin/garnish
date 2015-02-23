@@ -15,9 +15,11 @@ func main() {
 	config.Upstream("test").Address("http://localhost:3000").KeepAlive(8)
 	config.Route("users").Get("/v1/users/").Upstream("test").CacheTTL(time.Minute)
 	runtime, err := config.Build()
+	// fmt.Println(runtime.Cache.Load("cache.save"))
 	if err != nil {
 		panic(err)
 	}
+	// garnish.Start(runtime)
 	go garnish.Start(runtime)
 	time.Sleep(time.Second * 10)
 	fmt.Println(runtime.Cache.Save("cache.save", 10))
