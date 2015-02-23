@@ -17,6 +17,7 @@ func Upstream(req *gc.Request, next gc.Middleware) gc.Response {
 		return Catch(req)
 	}
 	req.Infof("%s | %d | %d", req.URL, r.StatusCode, r.ContentLength)
+	r.Header.Del("Connection")
 	return gc.Streaming(r.StatusCode, r.Header, r.ContentLength, r.Body)
 }
 
