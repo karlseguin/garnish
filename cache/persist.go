@@ -131,7 +131,7 @@ type Deserializer struct {
 func newDeserializer(reader io.Reader) *Deserializer {
 	return &Deserializer{
 		reader:  reader,
-		scratch: make([]byte, 32708),
+		scratch: make([]byte, 36864),
 	}
 }
 
