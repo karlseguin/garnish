@@ -1,8 +1,6 @@
 package gc
 
 import (
-	"bytes"
-	"encoding/binary"
 	"gopkg.in/karlseguin/typed.v1"
 	"io"
 	"net/http"
@@ -107,9 +105,9 @@ func (r *HydrateResponse) ToCacheable(expires time.Time) CachedResponse {
 	return r
 }
 
-func (r *HydrateResponse) Serialize(buffer *bytes.Buffer) error {
-	binary.Write(buffer, endianness, r.status)
-	serializeHeader(buffer, r.header)
+func (r *HydrateResponse) Serialize(serializer Serializer) error {
+	serializer.WriteInt(r.status)
+	serializeHeader(serializer, r.header)
 	// binary.Write(buffer, endianness, len(r.body))
 	// buffer.Write(r.body)
 	return nil

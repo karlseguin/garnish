@@ -1,7 +1,6 @@
 package gc
 
 import (
-	"bytes"
 	"strconv"
 	"strings"
 	"sync"
@@ -17,6 +16,13 @@ var (
 	zero           time.Time
 )
 
+type Serializer interface {
+	Write(b []byte)
+	WriteInt(i int)
+	WriteByte(b byte)
+	WriteString(s string)
+}
+
 type CacheStorage interface {
 	Get(primary, secondary string) CachedResponse
 	Set(primary string, secondary string, response CachedResponse)
@@ -31,7 +37,7 @@ type CachedResponse interface {
 	Size() int
 	Expire(at time.Time)
 	Expires() time.Time
-	Serialize(*bytes.Buffer) error
+	Serialize(serializer Serializer) error
 }
 
 // A function that generates cache keys from a request

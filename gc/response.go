@@ -2,7 +2,6 @@ package gc
 
 import (
 	"bytes"
-	"encoding/binary"
 	"io"
 	"net/http"
 	"time"
@@ -11,7 +10,6 @@ import (
 var (
 	// The response to send when the route isn't found
 	NotFoundResponse = Empty(404)
-	endianness       = binary.LittleEndian
 )
 
 // An http response
@@ -122,11 +120,10 @@ func (r *NormalResponse) Expire(at time.Time) {
 	r.expires = at
 }
 
-func (r *NormalResponse) Serialize(buffer *bytes.Buffer) error {
-	binary.Write(buffer, endianness, r.status)
-	serializeHeader(buffer, r.header)
-	binary.Write(buffer, endianness, len(r.body))
-	buffer.Write(r.body)
+func (r *NormalResponse) Serialize(serializer Serializer) error {
+	serializer.WriteInt(r.status)
+	serializeHeader(serializer, r.header)
+	serializer.Write(r.body)
 	return nil
 }
 
@@ -230,12 +227,13 @@ func (r *StreamingResponse) Cached() bool {
 	return false
 }
 
-func serializeHeader(buffer *bytes.Buffer, header http.Header) {
-	binary.Write(buffer, endianness, len(header))
+func serializeHeader(serializer Serializer, header http.Header) {
+	serializer.WriteInt(len(header))
 	for k, v := range header {
-		binary.Write(buffer, endianness, len(k))
-		buffer.WriteString(k)
-		binary.Write(buffer, endianness, len(v[0]))
-		buffer.WriteString(v[0])
+		if k == "Date" || k == "Connection" {
+			continue
+		}
+		serializer.WriteString(k)
+		serializer.WriteString(v[0])
 	}
 }

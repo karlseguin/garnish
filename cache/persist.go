@@ -9,10 +9,6 @@ import (
 	"os"
 )
 
-var (
-	endianness = binary.LittleEndian
-)
-
 type persist struct {
 	count int
 	path  string
@@ -36,24 +32,28 @@ func (p persist) persist(entries []*Entry) {
 		}
 	}()
 
-	buffer := new(bytes.Buffer)
-	binary.Write(file, endianness, len(entries))
+	serializer := newSerializer()
+	serializer.WriteInt(len(entries))
+	if _, err = file.Write(serializer.Bytes()); err != nil {
+		return
+	}
 	for _, entry := range entries {
-		buffer.Reset()
+		serializer.Reset()
 		switch entry.CachedResponse.(type) {
 		case *gc.NormalResponse:
-			buffer.WriteByte(1)
+			serializer.WriteByte(1)
 		case *gc.HydrateResponse:
-			buffer.WriteByte(2)
+			serializer.WriteByte(2)
 		default:
 			err = errors.New("unknown response type")
 			return
 		}
-		if err = entry.Serialize(buffer); err != nil {
+		if err = entry.Serialize(serializer); err != nil {
 			return
 		}
-		binary.Write(file, endianness, buffer.Len())
-		if _, err = buffer.WriteTo(file); err != nil {
+		serializer.WriteString(entry.Primary)
+		serializer.WriteString(entry.Secondary)
+		if _, err = file.Write(serializer.Bytes()); err != nil {
 			return
 		}
 	}
@@ -75,4 +75,35 @@ func loadFromFile(path string) ([]*Entry, error) {
 	//
 	// }
 	// return entries, nil
+}
+
+type Serializer struct {
+	scratch []byte
+	*bytes.Buffer
+}
+
+func newSerializer() *Serializer {
+	return &Serializer{
+		scratch: make([]byte, 4),
+		Buffer:  new(bytes.Buffer),
+	}
+}
+
+func (s *Serializer) WriteByte(b byte) {
+	s.Buffer.WriteByte(b)
+}
+
+func (s *Serializer) WriteInt(i int) {
+	s.Buffer.Grow(4)
+	binary.BigEndian.PutUint32(s.scratch, uint32(i))
+	s.Buffer.Write(s.scratch)
+}
+
+func (s *Serializer) Write(b []byte) {
+	s.WriteInt(len(b))
+	s.Buffer.Write(b)
+}
+
+func (s *Serializer) WriteString(str string) {
+	s.Write([]byte(str))
 }
