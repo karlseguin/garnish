@@ -23,6 +23,13 @@ type Serializer interface {
 	WriteString(s string)
 }
 
+type Deserializer interface {
+	ReadInt() int
+	ReadByte() byte
+	ReadBytes() []byte
+	ReadString() string
+}
+
 type CacheStorage interface {
 	Get(primary, secondary string) CachedResponse
 	Set(primary string, secondary string, response CachedResponse)
@@ -38,6 +45,7 @@ type CachedResponse interface {
 	Expire(at time.Time)
 	Expires() time.Time
 	Serialize(serializer Serializer) error
+	Deserialize(deserializer Deserializer) error
 }
 
 // A function that generates cache keys from a request

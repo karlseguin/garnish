@@ -112,3 +112,7 @@ func (r *HydrateResponse) Serialize(serializer Serializer) error {
 	// buffer.Write(r.body)
 	return nil
 }
+
+func (r *HydrateResponse) Deserialize(deserializer Deserializer) error {
+	return nil
+}

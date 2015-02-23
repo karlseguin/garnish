@@ -3,6 +3,8 @@ package cache
 import (
 	"github.com/karlseguin/garnish/gc"
 	"hash/fnv"
+	"math/rand"
+	"time"
 )
 
 const (
@@ -62,7 +64,11 @@ func (c *Cache) Set(primary string, secondary string, response gc.CachedResponse
 		CachedResponse: response,
 		size:           response.Size(),
 	}
-	existing := c.bucket(primary).set(primary, secondary, entry)
+	c.set(entry)
+}
+
+func (c *Cache) set(entry *Entry) {
+	existing := c.bucket(entry.Primary).set(entry.Primary, entry.Secondary, entry)
 	if existing != nil {
 		c.deletables <- existing
 	}
@@ -92,7 +98,11 @@ func (c *Cache) Load(path string) error {
 	if err != nil {
 		return err
 	}
-	println(len(entries))
+	expires := time.Now().Add(time.Second * 60)
+	for _, entry := range entries {
+		entry.Expire(expires.Add(time.Duration(rand.Intn(120)) * time.Second))
+		c.set(entry)
+	}
 	return nil
 }
 

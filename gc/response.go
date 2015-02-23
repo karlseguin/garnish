@@ -127,6 +127,13 @@ func (r *NormalResponse) Serialize(serializer Serializer) error {
 	return nil
 }
 
+func (r *NormalResponse) Deserialize(deserializer Deserializer) error {
+	r.status = deserializer.ReadInt()
+	r.header = deserializerHeader(deserializer)
+	r.body = deserializer.ReadBytes()
+	return nil
+}
+
 // A response with an associated error string to log
 type FatalResponse struct {
 	Response
@@ -230,10 +237,17 @@ func (r *StreamingResponse) Cached() bool {
 func serializeHeader(serializer Serializer, header http.Header) {
 	serializer.WriteInt(len(header))
 	for k, v := range header {
-		if k == "Date" || k == "Connection" {
-			continue
-		}
 		serializer.WriteString(k)
 		serializer.WriteString(v[0])
 	}
+}
+
+func deserializerHeader(deserializer Deserializer) http.Header {
+	l := deserializer.ReadInt()
+	header := make(http.Header, l)
+	for i := 0; i < l; i++ {
+		k, v := deserializer.ReadString(), deserializer.ReadString()
+		header.Set(k, v)
+	}
+	return header
 }
