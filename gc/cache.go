@@ -27,6 +27,7 @@ type Deserializer interface {
 	ReadInt() int
 	ReadByte() byte
 	ReadBytes() []byte
+	CloneBytes() []byte
 	ReadString() string
 }
 

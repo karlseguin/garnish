@@ -148,6 +148,13 @@ func (d *Deserializer) ReadBytes() []byte {
 	return d.ReadN(d.ReadInt())
 }
 
+func (d *Deserializer) CloneBytes() []byte {
+	b := d.ReadN(d.ReadInt())
+	c := make([]byte, len(b))
+	copy(c, b)
+	return c
+}
+
 func (d *Deserializer) ReadByte() byte {
 	return d.ReadN(1)[0]
 }

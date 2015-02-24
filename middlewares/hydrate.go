@@ -2,7 +2,6 @@ package middlewares
 
 import (
 	"bytes"
-	"encoding/json"
 	"github.com/karlseguin/garnish/gc"
 )
 
@@ -56,12 +55,12 @@ var ExtractFragments = func(body []byte, req *gc.Request, fieldName string) []gc
 			return nil
 		}
 		end += 1
-		var ref map[string]interface{}
-		if err := json.Unmarshal(body[start:end], &ref); err != nil {
+		fragment, err := gc.NewReferenceFragment(body[start:end])
+		if err != nil {
 			req.Errorf("invalid hydration payload: %v", err)
 			return nil
 		}
-		fragments = append(fragments, gc.NewReferenceFragment(ref, end-start))
+		fragments = append(fragments, fragment)
 		body = body[end+1:]
 	}
 	return fragments
