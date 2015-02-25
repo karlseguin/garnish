@@ -203,6 +203,29 @@ Middlewares can be inserted:
 * `BEFORE_HYDRATE`
 * `BEFORE_DISPATCH`
 
+## Cache Persistence
+The default cache implementation is an in-memory LRU cache. This means that a restart wipes the cache resulting in a traffic spike to upstreams servers. Garnish can help mitigate this problem by letting you snapshot a part of the cache on shutdown (and restoring from this snapshot on startup). This snapshot is an approximation: Garnish continues to serve requests while snapshotting and thus its possible for an entry to be updated after being persisted to disk.
+
+To reduce the impact of this possible inconsistency, items restored to the cache on startup are cached for a brief period of time (1 to 2 minutes). In other words, the goal of cache persistence isn't to be fully transparent during a restart, but rather to reduce the impact of a restart by spreading out the load.
+
+To persist the cache (likely triggered by a signal), you use:
+
+```go
+if err := runtime.Cache.Save("cache.save", 10000, time.Second*10); err != nil {
+  log.Println("cache save", err)
+}
+```
+
+The above will save the 10 000 most recently used entries. It'll ignore any entry that expire within the next 10 seconds.
+
+On startup, the cache can be restored via:
+
+```go
+if err := runtime.Cache.Load("cache.save")); err != nil {
+  log.Println("cache load", err)
+}
+```
+
 ## TODO
 - Upstream load balancing
 - TCP upstream
