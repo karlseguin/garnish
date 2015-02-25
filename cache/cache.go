@@ -83,11 +83,12 @@ func (c *Cache) DeleteAll(primary string) bool {
 	return c.bucket(primary).deleteAll(primary)
 }
 
-func (c *Cache) Save(path string, count int) error {
+func (c *Cache) Save(path string, count int, cutoff time.Duration) error {
 	p := persist{
-		path:  path,
-		count: count,
-		done:  make(chan error),
+		path:   path,
+		count:  count,
+		cutoff: cutoff,
+		done:   make(chan error),
 	}
 	c.persist <- p
 	return <-p.done
@@ -129,11 +130,15 @@ func (c *Cache) worker() {
 				c.size -= entry.size
 			}
 		case p := <-c.persist:
+			i := 0
+			cutoff := time.Now().Add(p.cutoff)
 			entries := make([]*Entry, p.count)
 			entry := c.list.head.next
-			i := 0
-			for ; i < p.count && entry != c.list.tail; i++ {
-				entries[i] = entry
+			for i < p.count && entry != c.list.tail {
+				if entry.Expires().After(cutoff) {
+					entries[i] = entry
+					i++
+				}
 				entry = entry.next
 			}
 			entries = entries[:i]

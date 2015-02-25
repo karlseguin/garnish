@@ -8,12 +8,14 @@ import (
 	"io"
 	"log"
 	"os"
+	"time"
 )
 
 type persist struct {
-	count int
-	path  string
-	done  chan error
+	count  int
+	path   string
+	cutoff time.Duration
+	done   chan error
 }
 
 func (p persist) persist(entries []*Entry) {

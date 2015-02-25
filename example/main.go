@@ -19,9 +19,9 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	garnish.Start(runtime)
-	// time.Sleep(time.Second * 10)
-	// fmt.Println(runtime.Cache.Save("cache.save", 10))
+	go garnish.Start(runtime)
+	time.Sleep(time.Second * 10)
+	fmt.Println(runtime.Cache.Save("cache.save", 10, time.Second*10))
 }
 
 func HydrateLoader(fragment gc.ReferenceFragment) []byte {

@@ -36,7 +36,7 @@ type CacheStorage interface {
 	Set(primary string, secondary string, response CachedResponse)
 	Delete(primary, secondary string) bool
 	DeleteAll(primary string) bool
-	Save(path string, count int) error
+	Save(path string, count int, cutoff time.Duration) error
 	Load(path string) error
 }
 
@@ -155,8 +155,8 @@ func (c *Cache) reserveDownload(key string) bool {
 	return true
 }
 
-func (c *Cache) Save(path string, count int) error {
-	return c.Storage.Save(path, count)
+func (c *Cache) Save(path string, count int, cutoff time.Duration) error {
+	return c.Storage.Save(path, count, cutoff)
 }
 
 func (c *Cache) Load(path string) error {
