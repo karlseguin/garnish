@@ -109,7 +109,6 @@ func (u *Upstream) Build(runtime *gc.Runtime) (*gc.Upstream, error) {
 	}
 	upstream := &gc.Upstream{
 		Name:    u.name,
-		Address: u.address,
 		Headers: u.headers,
 		Tweaker: u.tweaker,
 	}
@@ -122,7 +121,12 @@ func (u *Upstream) Build(runtime *gc.Runtime) (*gc.Upstream, error) {
 		MaxIdleConnsPerHost: u.keepalive,
 		DisableKeepAlives:   u.keepalive == 0,
 	}
-	upstream.Transport = transport
+	upstream.Transports = []*gc.Transport{
+		&gc.Transport{
+			Address:   u.address,
+			Transport: transport,
+		},
+	}
 	if u.address[:6] == "unix:/" {
 		transport.Dial = func(network, address string) (net.Conn, error) {
 			//strip out the :80 which Go adds

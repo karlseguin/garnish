@@ -22,16 +22,24 @@ func Upstream(req *gc.Request, next gc.Middleware) gc.Response {
 }
 
 func roundTrip(req *gc.Request) (*http.Response, error) {
-	if upstream := req.Route.Upstream; upstream != nil {
-		return upstream.Transport.RoundTrip(createRequest(req, upstream))
+	upstream := req.Route.Upstream
+	if upstream == nil {
+		//log?
+		return nil, nil
 	}
-	return nil, nil
+
+	transport := upstream.Transport()
+	if transport == nil {
+		//log?
+		return nil, nil
+	}
+	return transport.RoundTrip(createRequest(req, transport, upstream))
 }
 
-func createRequest(in *gc.Request, upstream *gc.Upstream) *http.Request {
-	targetUrl, err := url.Parse(upstream.Address + in.URL.RequestURI())
+func createRequest(in *gc.Request, transport *gc.Transport, upstream *gc.Upstream) *http.Request {
+	targetUrl, err := url.Parse(transport.Address + in.URL.RequestURI())
 	if err != nil {
-		in.Errorf("upstream url %s %v", upstream.Address+in.URL.RequestURI(), err)
+		in.Errorf("upstream url %s %v", transport.Address+in.URL.RequestURI(), err)
 		targetUrl = in.URL
 	}
 	out := &http.Request{
