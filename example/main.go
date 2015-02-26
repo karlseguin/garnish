@@ -11,7 +11,9 @@ func main() {
 	config.Hydrate(HydrateLoader)
 	config.Stats().FileName("stats.json").Slow(time.Millisecond * 100)
 	config.Cache().Grace(time.Minute).PurgeHandler(PurgeHandler)
+
 	config.Upstream("test").Address("http://localhost:3000").KeepAlive(8)
+
 	config.Route("users").Get("/v1/users").Upstream("test").CacheTTL(time.Minute)
 	runtime, err := config.Build()
 	if err != nil {

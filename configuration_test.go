@@ -19,12 +19,12 @@ func (_ ConfigurationTests) FailedBuildWithoutUpstream() {
 	Expect(err.Error()).To.Contain("Atleast one upstream must be configured")
 }
 
-func (_ ConfigurationTests) FailedBuildWithMissingUpstreamAddress() {
+func (_ ConfigurationTests) FailedBuildWithMissingTransport() {
 	c := Configure().DnsTTL(-1)
 	c.Upstream("test")
 	r, err := c.Build()
 	Expect(r).To.Equal(nil)
-	Expect(err.Error()).To.Contain(`Upstream test has an invalid address: ""`)
+	Expect(err.Error()).To.Contain(`Upstream test doesn't have a configured transport`)
 }
 
 func (_ ConfigurationTests) FailedBuildWithInvalidUpstreamAddress() {
