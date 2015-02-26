@@ -127,7 +127,7 @@ func (s *FakeStorage) DeleteAll(primary string) bool {
 	return false
 }
 
-func (s *FakeStorage) Save(path string, count int) error {
+func (s *FakeStorage) Save(path string, count int, cutoff time.Duration) error {
 	return nil
 }
 
