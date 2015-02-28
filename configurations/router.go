@@ -165,11 +165,13 @@ func (r *Route) Build(runtime *gc.Runtime) (*gc.Route, error) {
 		route.Cache = gc.NewRouteCache(r.cacheTTL, r.cacheKeyLookup)
 	}
 
-	upstream, exists := runtime.Upstreams[r.upstream]
-	if exists == false {
-		return nil, fmt.Errorf("Route %q has an unknown upstream %q", r.name, r.upstream)
+	if len(r.upstream) > 0 {
+		upstream, exists := runtime.Upstreams[r.upstream]
+		if exists == false {
+			return nil, fmt.Errorf("Route %q has an unknown upstream %q", r.name, r.upstream)
+		}
+		route.Upstream = upstream
 	}
-	route.Upstream = upstream
 	runtime.Router.AddNamed(r.name, r.method, r.path, nil)
 	return route, nil
 }

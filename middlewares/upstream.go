@@ -24,7 +24,6 @@ func Upstream(req *gc.Request, next gc.Middleware) gc.Response {
 func roundTrip(req *gc.Request) (*http.Response, error) {
 	upstream := req.Route.Upstream
 	if upstream == nil {
-		//log?
 		return nil, nil
 	}
 

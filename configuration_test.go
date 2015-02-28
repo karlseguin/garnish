@@ -12,13 +12,6 @@ func Test_Configuration(t *testing.T) {
 	Expectify(new(ConfigurationTests), t)
 }
 
-func (_ ConfigurationTests) FailedBuildWithoutUpstream() {
-	c := Configure().DnsTTL(-1)
-	r, err := c.Build()
-	Expect(r).To.Equal(nil)
-	Expect(err.Error()).To.Contain("Atleast one upstream must be configured")
-}
-
 func (_ ConfigurationTests) FailedBuildWithMissingTransport() {
 	c := Configure().DnsTTL(-1)
 	c.Upstream("test")

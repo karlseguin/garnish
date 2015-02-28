@@ -38,6 +38,11 @@ func (u *Upstreams) Add(name string) *Upstream {
 }
 
 func (u *Upstreams) Build(runtime *gc.Runtime) error {
+	if u == nil {
+		runtime.Upstreams = make(map[string]*gc.Upstream, 0)
+		return nil
+	}
+
 	upstreams := make(map[string]*gc.Upstream, len(u.upstreams))
 	for name, one := range u.upstreams {
 		upstream, err := one.Build(runtime)

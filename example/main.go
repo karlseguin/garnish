@@ -13,8 +13,10 @@ func main() {
 	config.Cache().Grace(time.Minute).PurgeHandler(PurgeHandler)
 
 	config.Upstream("test").Address("http://localhost:3000").KeepAlive(8)
-
 	config.Route("users").Get("/v1/users").Upstream("test").CacheTTL(time.Minute)
+	config.Route("ping").Get("/v1/ping").Handler(func(reg *gc.Request, next gc.Middleware) gc.Response {
+		return gc.Respond(200, "ok")
+	})
 	runtime, err := config.Build()
 	if err != nil {
 		panic(err)

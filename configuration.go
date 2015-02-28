@@ -145,10 +145,6 @@ func (c *Configuration) Route(name string) *configurations.Route {
 // Build a runtime object from the configuration, which can then be
 // used to start garnish
 func (c *Configuration) Build() (*gc.Runtime, error) {
-	if c.upstreams == nil {
-		return nil, errors.New("Atleast one upstream must be configured")
-	}
-
 	runtime := &gc.Runtime{
 		Address:  c.address,
 		Resolver: dnscache.New(c.dnsTTL),
