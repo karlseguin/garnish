@@ -1,8 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"github.com/karlseguin/garnish"
 	"github.com/karlseguin/garnish/gc"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 )
 
@@ -21,7 +25,16 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	garnish.Start(runtime)
+	if err := runtime.Cache.Load("cache.save"); err != nil {
+		fmt.Println("failed to restore cache", err)
+	}
+	go garnish.Start(runtime)
+	s := make(chan os.Signal, 1)
+	signal.Notify(s, syscall.SIGQUIT)
+	<-s
+	if err := runtime.Cache.Save("cache.save", 5000, time.Second*10); err != nil {
+		fmt.Println("failed to save cache", err)
+	}
 }
 
 func HydrateLoader(fragment gc.ReferenceFragment) []byte {
