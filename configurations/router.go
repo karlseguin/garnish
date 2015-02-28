@@ -141,7 +141,7 @@ func (r *Route) CacheKeyLookup(lookup gc.CacheKeyLookup) *Route {
 	return r
 }
 
-// Specify the name of the upstream.
+// Specify the handler function
 func (r *Route) Handler(handler gc.Handler) *Route {
 	r.handler = handler
 	return r

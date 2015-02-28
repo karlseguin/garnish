@@ -2,7 +2,6 @@ package cache
 
 import (
 	"bytes"
-	"encoding/binary"
 	"errors"
 	"github.com/karlseguin/garnish/gc"
 	"io"
@@ -95,14 +94,12 @@ func loadFromFile(path string) ([]*Entry, error) {
 }
 
 type Serializer struct {
-	scratch []byte
 	*bytes.Buffer
 }
 
 func newSerializer() *Serializer {
 	return &Serializer{
-		scratch: make([]byte, 4),
-		Buffer:  new(bytes.Buffer),
+		Buffer: new(bytes.Buffer),
 	}
 }
 
@@ -110,10 +107,11 @@ func (s *Serializer) WriteByte(b byte) {
 	s.Buffer.WriteByte(b)
 }
 
-func (s *Serializer) WriteInt(i int) {
-	s.Buffer.Grow(4)
-	binary.BigEndian.PutUint32(s.scratch, uint32(i))
-	s.Buffer.Write(s.scratch)
+func (s *Serializer) WriteInt(value int) {
+	s.WriteByte(byte(value & 0xFF))
+	s.WriteByte(byte(value >> 8))
+	s.WriteByte(byte(value >> 16))
+	s.WriteByte(byte(value >> 24))
 }
 
 func (s *Serializer) Write(b []byte) {
@@ -139,7 +137,11 @@ func newDeserializer(reader io.Reader) *Deserializer {
 
 func (d *Deserializer) ReadInt() int {
 	d.reader.Read(d.scratch[:4])
-	return int(binary.BigEndian.Uint32(d.scratch))
+	value := int(d.scratch[0])
+	value += int(d.scratch[1]) << 8
+	value += int(d.scratch[2]) << 16
+	value += int(d.scratch[3]) << 24
+	return value
 }
 
 func (d *Deserializer) ReadString() string {
