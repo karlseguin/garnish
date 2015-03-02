@@ -76,11 +76,11 @@ func (c *Cache) set(entry *Entry) {
 }
 
 func (c *Cache) Delete(primary string, secondary string) bool {
-	return c.bucket(primary).delete(primary, secondary)
+	return c.bucket(primary).delete(primary, secondary, c.deletables)
 }
 
 func (c *Cache) DeleteAll(primary string) bool {
-	return c.bucket(primary).deleteAll(primary)
+	return c.bucket(primary).deleteAll(primary, c.deletables)
 }
 
 func (c *Cache) Save(path string, count int, cutoff time.Duration) error {
@@ -157,7 +157,7 @@ func (c *Cache) gc() {
 		if len(primary) == 0 {
 			return
 		}
-		c.bucket(primary).delete(primary, entry.Secondary)
+		c.bucket(primary).delete(primary, entry.Secondary, nil)
 		c.list.Remove(entry)
 		c.size -= entry.size
 	}

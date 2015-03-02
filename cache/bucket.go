@@ -33,22 +33,28 @@ func (b *bucket) set(primary string, secondary string, entry *Entry) *Entry {
 	return nil
 }
 
-func (b *bucket) delete(primary string, secondary string) bool {
+func (b *bucket) delete(primary string, secondary string, deletables chan *Entry) bool {
 	defer b.Unlock()
 	b.Lock()
 	if group, ok := b.lookup[primary]; ok {
-		if _, ok := group[secondary]; ok {
+		if entity, ok := group[secondary]; ok {
 			delete(group, secondary)
+			if deletables != nil {
+				deletables <- entity
+			}
 			return true
 		}
 	}
 	return false
 }
 
-func (b *bucket) deleteAll(primary string) bool {
+func (b *bucket) deleteAll(primary string, deletables chan *Entry) bool {
 	defer b.Unlock()
 	b.Lock()
-	if _, ok := b.lookup[primary]; ok {
+	if group, ok := b.lookup[primary]; ok {
+		for _, entity := range group {
+			deletables <- entity
+		}
 		delete(b.lookup, primary)
 		return true
 	}

@@ -24,16 +24,20 @@ func (_ BucketTests) GetHit() {
 
 func (_ BucketTests) Delete() {
 	bucket := testBucket()
-	bucket.delete("power", "level")
+	c := make(chan *Entry, 2)
+	bucket.delete("power", "level", c)
 	Expect(bucket.get("power", "level")).To.Equal(nil)
-	// assertEntry(bucket, "power", "rating", "high")
+	Expect((<-c).Secondary).To.Equal("level")
 }
 
 func (_ BucketTests) DeleteAll() {
 	bucket := testBucket()
-	bucket.deleteAll("power")
+	c := make(chan *Entry, 3)
+	bucket.deleteAll("power", c)
 	Expect(bucket.get("power", "level")).To.Equal(nil)
 	Expect(bucket.get("power", "rating")).To.Equal(nil)
+	Expect((<-c).Secondary).To.Equal("level")
+	Expect((<-c).Secondary).To.Equal("rating")
 }
 
 func (_ BucketTests) SetsANewBucketItem() {
