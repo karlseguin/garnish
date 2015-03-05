@@ -1,0 +1,9 @@
+debug = true
+address = "127.0.0.1:8080"
+[[upstreams]]
+name = "test"
+dns = 60
+headers = ["Authorization","Date"]
+  [[upstreams.transports]]
+  address = "http://127.0.0.1:3000"
+  keepalive = 32

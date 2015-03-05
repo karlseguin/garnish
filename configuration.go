@@ -2,12 +2,15 @@ package garnish
 
 import (
 	"errors"
+	"fmt"
+	"github.com/BurntSushi/toml"
 	"github.com/karlseguin/garnish/configurations"
 	"github.com/karlseguin/garnish/gc"
 	"github.com/karlseguin/garnish/middlewares"
 	"gopkg.in/karlseguin/bytepool.v3"
 	"gopkg.in/karlseguin/dnscache.v1"
 	"gopkg.in/karlseguin/router.v1"
+	"gopkg.in/karlseguin/typed.v1"
 	"time"
 )
 
@@ -203,4 +206,40 @@ func (c *Configuration) Build() (*gc.Runtime, error) {
 	runtime.BytePool = bytepool.New(c.bytePool.capacity, c.bytePool.count)
 	runtime.RegisterStats("bytepool", runtime.BytePool.Stats)
 	return runtime, nil
+}
+
+// Loads configuration from a toml file
+func LoadConfig(path string) (*Configuration, error) {
+	var t typed.Typed
+	if _, err := toml.DecodeFile(path, &t); err != nil {
+		return nil, err
+	}
+
+	config := Configure()
+	if a, ok := t.StringIf("address"); ok {
+		config.Address(a)
+	}
+	if t.BoolOr("debug", false) {
+		config.Debug()
+	}
+
+	for _, ut := range t.Objects("upstreams") {
+		upstream := config.Upstream(ut.String("name"))
+		if n, ok := ut.IntIf("dns"); ok {
+			upstream.DnsCache(time.Second * time.Duration(n))
+		}
+		if h, ok := ut.StringsIf("headers"); ok {
+			upstream.Headers(h...)
+		}
+		for _, tt := range ut.Objects("transports") {
+			transport := upstream.Address(tt.String("address"))
+			if n, ok := tt.IntIf("keepalive"); ok {
+				transport.KeepAlive(uint32(n))
+			}
+		}
+	}
+
+	fmt.Println(t)
+
+	return config, nil
 }
