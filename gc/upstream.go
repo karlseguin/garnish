@@ -3,6 +3,7 @@ package gc
 import (
 	"math/rand"
 	"net/http"
+	"sync"
 )
 
 // The User Agent to send to the upstream
@@ -12,6 +13,7 @@ var DefaultUserAgent = []string{""}
 type RequestTweaker func(in *Request, out *http.Request)
 
 type Upstream struct {
+	sync.RWMutex
 	Name       string
 	Transports []*Transport
 	Headers    []string
@@ -19,6 +21,8 @@ type Upstream struct {
 }
 
 func (u *Upstream) Transport() *Transport {
+	defer u.RUnlock()
+	u.RLock()
 	l := len(u.Transports)
 	if l == 1 {
 		return u.Transports[0]
