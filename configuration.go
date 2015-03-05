@@ -32,6 +32,7 @@ type Configuration struct {
 	hydrate   *configurations.Hydrate
 	bytePool  poolConfiguration
 	dnsTTL    time.Duration
+	tweaker   gc.RequestTweaker
 	before    map[MiddlewarePosition]struct {
 		name    string
 		handler gc.Handler
@@ -90,6 +91,14 @@ func (c *Configuration) BytePool(capacity, count uint32) *Configuration {
 // [1 minute]
 func (c *Configuration) DnsTTL(ttl time.Duration) *Configuration {
 	c.dnsTTL = ttl
+	return c
+}
+
+// The default function that is used to tweak the http.Request sent to the upstream
+// Overwritable on a per-upstream basis
+// [nul]
+func (c *Configuration) Tweaker(tweaker gc.RequestTweaker) *Configuration {
+	c.tweaker = tweaker
 	return c
 }
 
@@ -154,7 +163,7 @@ func (c *Configuration) Build() (*gc.Runtime, error) {
 		Executor: gc.WrapMiddleware("upst", middlewares.Upstream, nil),
 	}
 
-	if err := c.upstreams.Build(runtime); err != nil {
+	if err := c.upstreams.Build(runtime, c.tweaker); err != nil {
 		return nil, err
 	}
 

@@ -37,7 +37,7 @@ func (u *Upstreams) Add(name string) *Upstream {
 	return one
 }
 
-func (u *Upstreams) Build(runtime *gc.Runtime) error {
+func (u *Upstreams) Build(runtime *gc.Runtime, tweaker gc.RequestTweaker) error {
 	if u == nil {
 		runtime.Upstreams = make(map[string]gc.Upstream, 0)
 		return nil
@@ -45,7 +45,7 @@ func (u *Upstreams) Build(runtime *gc.Runtime) error {
 
 	upstreams := make(map[string]gc.Upstream, len(u.upstreams))
 	for name, one := range u.upstreams {
-		upstream, err := one.Build(runtime)
+		upstream, err := one.Build(runtime, tweaker)
 		if err != nil {
 			return err
 		}
@@ -107,7 +107,7 @@ func (t *Transport) KeepAlive(count uint32) *Transport {
 	return t
 }
 
-func (u *Upstream) Build(runtime *gc.Runtime) (gc.Upstream, error) {
+func (u *Upstream) Build(runtime *gc.Runtime, tweaker gc.RequestTweaker) (gc.Upstream, error) {
 	l := len(u.transports)
 	if l == 0 {
 		return nil, fmt.Errorf("Upstream %s doesn't have a configured transport", u.name)
@@ -160,5 +160,9 @@ func (u *Upstream) Build(runtime *gc.Runtime) (gc.Upstream, error) {
 		}
 	}
 
-	return gc.CreateUpstream(u.headers, u.tweaker, transports)
+	if u.tweaker != nil {
+		tweaker = u.tweaker
+	}
+
+	return gc.CreateUpstream(u.headers, tweaker, transports)
 }
