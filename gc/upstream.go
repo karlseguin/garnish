@@ -1,6 +1,7 @@
 package gc
 
 import (
+	"math/rand"
 	"net/http"
 )
 
@@ -18,12 +19,11 @@ type Upstream struct {
 }
 
 func (u *Upstream) Transport() *Transport {
-	return u.Transports[0]
+	index := rand.Intn(len(u.Transports))
+	return u.Transports[index]
 }
 
 type Transport struct {
-	weight   int
-	fallback bool
 	*http.Transport
 	Address string
 }
