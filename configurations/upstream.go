@@ -37,7 +37,7 @@ func (u *Upstreams) Add(name string) *Upstream {
 	return one
 }
 
-func (u *Upstreams) Build(runtime *gc.Runtime, tweaker gc.RequestTweaker) error {
+func (u *Upstreams) Build(runtime *gc.Runtime, defaultTweaker gc.RequestTweaker) error {
 	if u == nil {
 		runtime.Upstreams = make(map[string]gc.Upstream, 0)
 		return nil
@@ -45,6 +45,17 @@ func (u *Upstreams) Build(runtime *gc.Runtime, tweaker gc.RequestTweaker) error 
 
 	upstreams := make(map[string]gc.Upstream, len(u.upstreams))
 	for name, one := range u.upstreams {
+		tweaker := defaultTweaker
+		if len(one.tweakerRef) != 0 {
+			ref, ok := u.upstreams[one.tweakerRef]
+			if ok == false {
+				return fmt.Errorf("upstream %s's tweaker referenced %s, a non-existent upstream", name, one.tweakerRef)
+			}
+			if ref.tweaker == nil {
+				return fmt.Errorf("upstream %s's tweaker referenced %s, which does not have a tweaker", name, one.tweakerRef)
+			}
+			tweaker = ref.tweaker
+		}
 		upstream, err := one.Build(runtime, tweaker)
 		if err != nil {
 			return err
@@ -60,6 +71,7 @@ type Upstream struct {
 	transports  []*Transport
 	dnsDuration time.Duration
 	headers     []string
+	tweakerRef  string
 	tweaker     gc.RequestTweaker
 }
 
@@ -86,6 +98,14 @@ func (u *Upstream) Headers(headers ...string) *Upstream {
 // Custom callback to modify the request (out) that will get sent to the upstream
 func (u *Upstream) Tweaker(tweaker gc.RequestTweaker) *Upstream {
 	u.tweaker = tweaker
+	return u
+}
+
+// Allows the upstream to reference another upstream's tweaker (based on that
+// upstream's name). Used by the file-based configuration; when configured
+// programmatically, Tweaker should be used.
+func (u *Upstream) TweakerRef(upstream string) *Upstream {
+	u.tweakerRef = upstream
 	return u
 }
 

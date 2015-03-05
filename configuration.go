@@ -239,6 +239,9 @@ func LoadConfig(path string) (*Configuration, error) {
 		if h, ok := ut.StringsIf("headers"); ok {
 			upstream.Headers(h...)
 		}
+		if t, ok := ut.StringIf("tweaker"); ok {
+			upstream.TweakerRef(t)
+		}
 		for _, tt := range ut.Objects("transports") {
 			transport := upstream.Address(tt.String("address"))
 			if n, ok := tt.IntIf("keepalive"); ok {
