@@ -19,8 +19,11 @@ type Upstream struct {
 }
 
 func (u *Upstream) Transport() *Transport {
-	index := rand.Intn(len(u.Transports))
-	return u.Transports[index]
+	l := len(u.Transports)
+	if l == 1 {
+		return u.Transports[0]
+	}
+	return u.Transports[rand.Intn(l)]
 }
 
 type Transport struct {
