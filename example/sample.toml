@@ -7,3 +7,11 @@ headers = ["Authorization","Date"]
   [[upstreams.transports]]
   address = "http://127.0.0.1:3000"
   keepalive = 32
+
+[[routes]]
+name = "users"
+method = "GET"
+path = "/v1/users"
+upstream = "test"
+slow = 500
+cache = 300

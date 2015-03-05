@@ -2,7 +2,6 @@ package garnish
 
 import (
 	"errors"
-	"fmt"
 	"github.com/BurntSushi/toml"
 	"github.com/karlseguin/garnish/configurations"
 	"github.com/karlseguin/garnish/gc"
@@ -239,7 +238,18 @@ func LoadConfig(path string) (*Configuration, error) {
 		}
 	}
 
-	fmt.Println(t)
-
+	for _, rt := range t.Objects("routes") {
+		route := config.Route(rt.String("name"))
+		route.Method(rt.String("method"), rt.String("path"))
+		if u, ok := rt.StringIf("upstream"); ok {
+			route.Upstream(u)
+		}
+		if s, ok := rt.IntIf("slow"); ok {
+			route.Slow(time.Millisecond * time.Duration(s))
+		}
+		if c, ok := rt.IntIf("cache"); ok {
+			route.CacheTTL(time.Second * time.Duration(c))
+		}
+	}
 	return config, nil
 }

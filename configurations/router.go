@@ -104,6 +104,12 @@ func (r *Route) Options(path string) *Route {
 	return r
 }
 
+// Register a route for the requested method + path
+func (r *Route) Method(method string, path string) *Route {
+	r.method, r.path = method, path
+	return r
+}
+
 // Register a route for all methods. Can be overwritten on a per-method basis
 // by registering the method-specific route BEFORE specifying the All variant.
 func (r *Route) All(path string) *Route {

@@ -25,6 +25,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	config.Cache().Grace(time.Minute).PurgeHandler(PurgeHandler)
 	runtime, err := config.Build()
 	if err != nil {
 		panic(err)
