@@ -18,7 +18,7 @@ type AuthHandler func(req *Request) Response
 type Runtime struct {
 	Address       string
 	Executor      Middleware
-	Upstreams     map[string]*Upstream
+	Upstreams     map[string]Upstream
 	Routes        map[string]*Route
 	Router        *router.Router
 	BytePool      *bytepool.Pool

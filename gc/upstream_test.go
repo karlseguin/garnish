@@ -13,8 +13,8 @@ func Test_Upstream(t *testing.T) {
 
 // *shrug*
 func (_ UpstreamTests) RandomlyPicksATransport() {
-	u := &Upstream{
-		Transports: []*Transport{&Transport{Address: "a"}, &Transport{Address: "b"}},
+	u := &MultiTransportUpstream{
+		transports: []*Transport{&Transport{Address: "a"}, &Transport{Address: "b"}},
 	}
 
 	hits := map[string]int{"a": 0, "b": 0}

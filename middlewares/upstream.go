@@ -35,7 +35,7 @@ func roundTrip(req *gc.Request) (*http.Response, error) {
 	return transport.RoundTrip(createRequest(req, transport, upstream))
 }
 
-func createRequest(in *gc.Request, transport *gc.Transport, upstream *gc.Upstream) *http.Request {
+func createRequest(in *gc.Request, transport *gc.Transport, upstream gc.Upstream) *http.Request {
 	targetUrl, err := url.Parse(transport.Address + in.URL.RequestURI())
 	if err != nil {
 		in.Errorf("upstream url %s %v", transport.Address+in.URL.RequestURI(), err)
@@ -60,7 +60,7 @@ func createRequest(in *gc.Request, transport *gc.Transport, upstream *gc.Upstrea
 		out.Body = in.Request.Body
 	}
 
-	for _, k := range upstream.Headers {
+	for _, k := range upstream.Headers() {
 		value := in.Header[k]
 		if len(value) > 0 {
 			out.Header[k] = value
@@ -74,8 +74,8 @@ func createRequest(in *gc.Request, transport *gc.Transport, upstream *gc.Upstrea
 		out.Header.Set("X-Forwarded-For", clientIP)
 	}
 
-	if upstream.Tweaker != nil {
-		upstream.Tweaker(in, out)
+	if tweaker := upstream.Tweaker(); tweaker != nil {
+		tweaker(in, out)
 	}
 	return out
 }

@@ -7,7 +7,7 @@ import (
 type Route struct {
 	Name     string
 	Method   string
-	Upstream *Upstream
+	Upstream Upstream
 	Stats    *RouteStats
 	Cache    *RouteCache
 	Handler  Handler

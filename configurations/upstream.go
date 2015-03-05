@@ -39,11 +39,11 @@ func (u *Upstreams) Add(name string) *Upstream {
 
 func (u *Upstreams) Build(runtime *gc.Runtime) error {
 	if u == nil {
-		runtime.Upstreams = make(map[string]*gc.Upstream, 0)
+		runtime.Upstreams = make(map[string]gc.Upstream, 0)
 		return nil
 	}
 
-	upstreams := make(map[string]*gc.Upstream, len(u.upstreams))
+	upstreams := make(map[string]gc.Upstream, len(u.upstreams))
 	for name, one := range u.upstreams {
 		upstream, err := one.Build(runtime)
 		if err != nil {
@@ -107,18 +107,13 @@ func (t *Transport) KeepAlive(count uint32) *Transport {
 	return t
 }
 
-func (u *Upstream) Build(runtime *gc.Runtime) (*gc.Upstream, error) {
+func (u *Upstream) Build(runtime *gc.Runtime) (gc.Upstream, error) {
 	l := len(u.transports)
 	if l == 0 {
 		return nil, fmt.Errorf("Upstream %s doesn't have a configured transport", u.name)
 	}
-	upstream := &gc.Upstream{
-		Name:       u.name,
-		Headers:    u.headers,
-		Tweaker:    u.tweaker,
-		Transports: make([]*gc.Transport, l),
-	}
 
+	transports := make([]*gc.Transport, l)
 	for i := 0; i < l; i++ {
 		t := u.transports[i]
 		if len(t.address) < 8 {
@@ -159,10 +154,11 @@ func (u *Upstream) Build(runtime *gc.Runtime) (*gc.Upstream, error) {
 			runtime.Resolver.TTL(domain, u.dnsDuration)
 		}
 
-		upstream.Transports[i] = &gc.Transport{
+		transports[i] = &gc.Transport{
 			Transport: transport,
 			Address:   t.address,
 		}
 	}
-	return upstream, nil
+
+	return gc.CreateUpstream(u.headers, u.tweaker, transports)
 }

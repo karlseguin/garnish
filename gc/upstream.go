@@ -12,22 +12,39 @@ var DefaultUserAgent = []string{""}
 // Tweaks request `out` before sending it to the upstream
 type RequestTweaker func(in *Request, out *http.Request)
 
-type Upstream struct {
-	sync.RWMutex
-	Name       string
-	Transports []*Transport
-	Headers    []string
-	Tweaker    RequestTweaker
+type Upstream interface {
+	Headers() []string
+	Transport() *Transport
+	Tweaker() RequestTweaker
 }
 
-func (u *Upstream) Transport() *Transport {
+func CreateUpstream(headers []string, tweaker RequestTweaker, transports []*Transport) (Upstream, error) {
+	return &MultiTransportUpstream{
+		headers:    headers,
+		tweaker:    tweaker,
+		transports: transports,
+	}, nil
+}
+
+type MultiTransportUpstream struct {
+	sync.RWMutex
+	transports []*Transport
+	headers    []string
+	tweaker    RequestTweaker
+}
+
+func (u *MultiTransportUpstream) Headers() []string {
+	return u.headers
+}
+
+func (u *MultiTransportUpstream) Tweaker() RequestTweaker {
+	return u.tweaker
+}
+
+func (u *MultiTransportUpstream) Transport() *Transport {
 	defer u.RUnlock()
 	u.RLock()
-	l := len(u.Transports)
-	if l == 1 {
-		return u.Transports[0]
-	}
-	return u.Transports[rand.Intn(l)]
+	return u.transports[rand.Intn(len(u.transports))]
 }
 
 type Transport struct {
