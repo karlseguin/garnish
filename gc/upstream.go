@@ -19,11 +19,39 @@ type Upstream interface {
 }
 
 func CreateUpstream(headers []string, tweaker RequestTweaker, transports []*Transport) (Upstream, error) {
-	return &MultiTransportUpstream{
-		headers:    headers,
-		tweaker:    tweaker,
-		transports: transports,
-	}, nil
+	var upstream Upstream
+	if len(transports) == 1 {
+		upstream = &SingleTransportUpstream{
+			headers:   headers,
+			tweaker:   tweaker,
+			transport: transports[0],
+		}
+	} else {
+		upstream = &MultiTransportUpstream{
+			headers:    headers,
+			tweaker:    tweaker,
+			transports: transports,
+		}
+	}
+	return upstream, nil
+}
+
+type SingleTransportUpstream struct {
+	transport *Transport
+	headers   []string
+	tweaker   RequestTweaker
+}
+
+func (u *SingleTransportUpstream) Headers() []string {
+	return u.headers
+}
+
+func (u *SingleTransportUpstream) Tweaker() RequestTweaker {
+	return u.tweaker
+}
+
+func (u *SingleTransportUpstream) Transport() *Transport {
+	return u.transport
 }
 
 type MultiTransportUpstream struct {
