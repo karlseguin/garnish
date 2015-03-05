@@ -262,6 +262,9 @@ func LoadConfig(path string) (*Configuration, error) {
 		if c, ok := rt.IntIf("cache"); ok {
 			route.CacheTTL(time.Second * time.Duration(c))
 		}
+		if kl, ok := rt.StringIf("keylookup"); ok {
+			route.CacheKeyLookupRef(kl)
+		}
 	}
 	return config, nil
 }

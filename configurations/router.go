@@ -26,9 +26,18 @@ func (r *Router) Add(name string) *Route {
 }
 
 func (r *Router) Build(runtime *gc.Runtime) error {
-
 	routes := make(map[string]*gc.Route, len(r.routes))
 	for name, route := range r.routes {
+		if len(route.cacheKeyLookupRef) > 0 {
+			ref, ok := r.routes[route.cacheKeyLookupRef]
+			if ok == false {
+				return fmt.Errorf("route %s's keylookup referenced %s, a non-existent route", name, route.cacheKeyLookupRef)
+			}
+			if ref.cacheKeyLookup == nil {
+				return fmt.Errorf("route %s's keylookup referenced %s, which does not have a cacheKeyLookup", name, route.cacheKeyLookupRef)
+			}
+			route.cacheKeyLookup = ref.cacheKeyLookup
+		}
 		r, err := route.Build(runtime)
 		if err != nil {
 			return err
@@ -40,14 +49,15 @@ func (r *Router) Build(runtime *gc.Runtime) error {
 }
 
 type Route struct {
-	name           string
-	path           string
-	method         string
-	upstream       string
-	handler        gc.Handler
-	slow           time.Duration
-	cacheTTL       time.Duration
-	cacheKeyLookup gc.CacheKeyLookup
+	name              string
+	path              string
+	method            string
+	upstream          string
+	handler           gc.Handler
+	slow              time.Duration
+	cacheTTL          time.Duration
+	cacheKeyLookup    gc.CacheKeyLookup
+	cacheKeyLookupRef string
 }
 
 // Specify the name of the upstream.
@@ -144,6 +154,14 @@ func (r *Route) CacheKeyLookup(lookup gc.CacheKeyLookup) *Route {
 	} else {
 		gc.Log.Warnf("CacheKeyLookup can only be specified for a GET", r.name)
 	}
+	return r
+}
+
+// Allows the route to reference another route's CacheKeyLookup (based on that
+// route's name). Used by the file-based configuration; when configured
+// programmatically, CacheKeyLookup should be used.
+func (r *Route) CacheKeyLookupRef(route string) *Route {
+	r.cacheKeyLookupRef = route
 	return r
 }
 
