@@ -11,7 +11,6 @@ import (
 )
 
 func main() {
-
 	runtime, err := loadRuntime()
 	if err != nil {
 		panic(err)
@@ -59,8 +58,6 @@ func loadRuntime() (*gc.Runtime, error) {
 	config.Route("ping").Get("/v1/ping").Handler(func(reg *gc.Request, next gc.Middleware) gc.Response {
 		return gc.Respond(200, "ok")
 	})
-
-	config.Cache().Grace(time.Minute).PurgeHandler(PurgeHandler)
 	return config.Build()
 }
 
