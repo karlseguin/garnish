@@ -229,7 +229,14 @@ if err := runtime.Cache.Load("cache.save")); err != nil {
 ## File Based Configuration
 Rather than initiating a new configuration object via the `Configure()` function, the `LoadConfig(path string) (*Configuration, error)` function can be used. `LoadConfig` expects the path to a TOML file, a sample of which is provided in `example/sample.toml`.
 
-The configuration file supplements, but does not replace, the main configuration mechanism. Specifically, the goal of the configuration file is to allow the addition of upstreams and routes without having to restart the server (which isn't possible until hot-reload is implemented). Configuration which is expected to be more static, such as the cache or stats tracking, cannot be configured via the file.
+The configuration file supplements, but does not replace, the main configuration mechanism. Specifically, the goal of the configuration file is to allow the addition of upstreams and routes without having to restart the server. Configuration which is expected to be more static, such as the cache or stats tracking, cannot be configured via the file.
+
+## Hot Reload
+The `Reload(runtime)` function can be used to change the configuration of a running Garnish server. Reloading is thread-safe and guarantees that requests will see a consistent configuration (running requests will see their existing configuration, while new request will run on the new configuration). Hot reloading is meant to be paired with the file-based configuration in order to add or modify routes and upstreams without downtime.
+
+`Reload` takes a new runtime instance. Its up to you to decide when/how to get a new configuration, but it'll probably be signal driven. The example app illustrates this.
+
+Currently, changes to the listening address/port are ignored.
 
 ## TODO
 - Upstream load balancing

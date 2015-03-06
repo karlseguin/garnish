@@ -11,9 +11,44 @@ import (
 )
 
 func main() {
-	config, err := garnish.LoadConfig("sample.toml")
+
+	runtime, err := loadRuntime()
 	if err != nil {
 		panic(err)
+	}
+	if err := runtime.Cache.Load("cache.save"); err != nil {
+		fmt.Println("failed to restore cache", err)
+	}
+
+	go garnish.Start(runtime)
+
+	go func() {
+		sigusr2 := make(chan os.Signal, 1)
+		signal.Notify(sigusr2, syscall.SIGUSR2)
+		for {
+			<-sigusr2
+			runtime, err := loadRuntime()
+			if err != nil {
+				fmt.Println("invalid configuration, did not reload.", err)
+			} else {
+				garnish.Reload(runtime)
+				fmt.Println("reloaded")
+			}
+		}
+	}()
+
+	sigquit := make(chan os.Signal, 1)
+	signal.Notify(sigquit, syscall.SIGQUIT)
+	<-sigquit
+	if err := runtime.Cache.Save("cache.save", 5000, time.Second*10); err != nil {
+		fmt.Println("failed to save cache", err)
+	}
+}
+
+func loadRuntime() (*gc.Runtime, error) {
+	config, err := garnish.LoadConfig("sample.toml")
+	if err != nil {
+		return nil, err
 	}
 	config.Hydrate(HydrateLoader)
 	config.Stats().FileName("stats.json").Slow(time.Millisecond * 100)
@@ -26,20 +61,7 @@ func main() {
 	})
 
 	config.Cache().Grace(time.Minute).PurgeHandler(PurgeHandler)
-	runtime, err := config.Build()
-	if err != nil {
-		panic(err)
-	}
-	if err := runtime.Cache.Load("cache.save"); err != nil {
-		fmt.Println("failed to restore cache", err)
-	}
-	go garnish.Start(runtime)
-	s := make(chan os.Signal, 1)
-	signal.Notify(s, syscall.SIGQUIT)
-	<-s
-	if err := runtime.Cache.Save("cache.save", 5000, time.Second*10); err != nil {
-		fmt.Println("failed to save cache", err)
-	}
+	return config.Build()
 }
 
 func HydrateLoader(fragment gc.ReferenceFragment) []byte {
