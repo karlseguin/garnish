@@ -2,7 +2,7 @@ debug = true
 address = "127.0.0.1:8080"
 [[upstreams]]
 name = "books"
-dns = 60
+dns = 60  #seconds
 headers = ["Authorization","Date"]
   [[upstreams.transports]]
   address = "http://127.0.0.1:3004"
@@ -12,5 +12,5 @@ name = "books"
 method = "GET"
 path = "/v1/books"
 upstream = "books"
-slow = 500
-cache = 300
+slow = 500 #milliseconds
+cache = 300 #seconds

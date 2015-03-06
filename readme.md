@@ -226,6 +226,11 @@ if err := runtime.Cache.Load("cache.save")); err != nil {
 }
 ```
 
+## File Based Configuration
+Rather than initiating a new configuration object via the `Configure()` function, the `LoadConfig(path string) (*Configuration, error)` function can be used. `LoadConfig` expects the path to a TOML file, a sample of which is provided in `example/sample.toml`.
+
+The configuration file supplements, but does not replace, the main configuration mechanism. Specifically, the goal of the configuration file is to allow the addition of upstreams and routes without having to restart the server (which isn't possible until hot-reload is implemented). Configuration which is expected to be more static, such as the cache or stats tracking, cannot be configured via the file.
+
 ## TODO
 - Upstream load balancing
 - TCP upstream
