@@ -115,7 +115,7 @@ func (c *Configuration) Insert(position MiddlewarePosition, name string, handler
 
 // Enable and configure the stats middleware
 func (c *Configuration) Stats() *configurations.Stats {
-	if c.router == nil {
+	if c.stats == nil {
 		c.stats = configurations.NewStats()
 	}
 	return c.stats

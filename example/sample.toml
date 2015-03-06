@@ -1,18 +1,16 @@
 debug = true
 address = "127.0.0.1:8080"
 [[upstreams]]
-name = "test"
+name = "books"
 dns = 60
-tweaker = "other"
 headers = ["Authorization","Date"]
   [[upstreams.transports]]
-  address = "http://127.0.0.1:3000"
+  address = "http://127.0.0.1:3004"
   keepalive = 32
-
 [[routes]]
-name = "users"
+name = "books"
 method = "GET"
-path = "/v1/users"
-upstream = "test"
+path = "/v1/books"
+upstream = "books"
 slow = 500
 cache = 300
