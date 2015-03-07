@@ -7,11 +7,6 @@ import (
 	"time"
 )
 
-var (
-	// The response to send when the route isn't found
-	NotFoundResponse = Empty(404)
-)
-
 // An http response
 type Response interface {
 	// The response's content length
@@ -53,6 +48,15 @@ func Empty(status int) Response {
 // Will generate a generic Fatal (500) response for other types
 func Respond(status int, body interface{}) Response {
 	return RespondH(status, make(http.Header), body)
+}
+
+// Builds a response with the given status code and body
+// The body can be a string, []byte, or io.ReadCloser.
+// Will generate a generic Fatal (500) response for other types
+// A Json response is the same as a normal response, except that the
+// content-type is set to application/json
+func Json(status int, body interface{}) Response {
+	return RespondH(status, http.Header{"Content-Type": []string{"application/json"}}, body)
 }
 
 // Builds a response with the given status code, headers and body

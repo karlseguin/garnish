@@ -17,6 +17,7 @@ type AuthHandler func(req *Request) Response
 // Built automatically when the garnish.Start() is called
 type Runtime struct {
 	Address       string
+	NotFound      Response
 	Executor      Middleware
 	Upstreams     map[string]Upstream
 	Routes        map[string]*Route
@@ -38,7 +39,7 @@ func (r *Runtime) ServeHTTP(out http.ResponseWriter, request *http.Request) {
 	req := r.route(request)
 	if req == nil {
 		Log.Infof("404 %s", request.URL)
-		r.reply(out, NotFoundResponse, nil)
+		r.reply(out, r.NotFound, nil)
 		return
 	}
 	req.Infof("%s", req.URL)
