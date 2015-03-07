@@ -53,6 +53,7 @@ func loadRuntime() (*gc.Runtime, error) {
 	config.Stats().FileName("stats.json").Slow(time.Millisecond * 100)
 	config.Cache().Grace(time.Minute).PurgeHandler(PurgeHandler)
 	config.NotFound(gc.Json(404, `{"error":"not found", "code":404}`))
+	config.Fatal(gc.Json(500, `{"error":"server error", "code":500}`))
 
 	config.Upstream("users").Address("http://localhost:3000").KeepAlive(8)
 	config.Route("users").Get("/v1/users").Upstream("users").CacheTTL(time.Minute)

@@ -16,17 +16,18 @@ type AuthHandler func(req *Request) Response
 // All the data needed to serve requests
 // Built automatically when the garnish.Start() is called
 type Runtime struct {
-	Address       string
-	NotFound      Response
-	Executor      Middleware
-	Upstreams     map[string]Upstream
-	Routes        map[string]*Route
-	Router        *router.Router
-	BytePool      *bytepool.Pool
-	StatsWorker   *StatsWorker
-	Cache         *Cache
-	Resolver      *dnscache.Resolver
-	HydrateLoader HydrateLoader
+	Address          string
+	NotFoundResponse Response
+	FatalResponse    Response
+	Executor         Middleware
+	Upstreams        map[string]Upstream
+	Routes           map[string]*Route
+	Router           *router.Router
+	BytePool         *bytepool.Pool
+	StatsWorker      *StatsWorker
+	Cache            *Cache
+	Resolver         *dnscache.Resolver
+	HydrateLoader    HydrateLoader
 }
 
 func (r *Runtime) RegisterStats(name string, reporter Reporter) {
@@ -39,7 +40,7 @@ func (r *Runtime) ServeHTTP(out http.ResponseWriter, request *http.Request) {
 	req := r.route(request)
 	if req == nil {
 		Log.Infof("404 %s", request.URL)
-		r.reply(out, r.NotFound, nil)
+		r.reply(out, r.NotFoundResponse, nil)
 		return
 	}
 	req.Infof("%s", req.URL)
@@ -49,7 +50,8 @@ func (r *Runtime) ServeHTTP(out http.ResponseWriter, request *http.Request) {
 
 func (r *Runtime) reply(out http.ResponseWriter, res Response, req *Request) {
 	if res == nil {
-		res = Fatal("nil response object")
+		Log.Error("nil response")
+		res = r.FatalResponse
 	}
 
 	defer res.Close()
@@ -64,11 +66,7 @@ func (r *Runtime) reply(out http.ResponseWriter, res Response, req *Request) {
 	}
 
 	if req != nil {
-		if status >= 500 {
-			if fatal, ok := res.(*FatalResponse); ok {
-				req.Error(fatal.Err)
-			}
-		} else if req.hit {
+		if req.hit {
 			oh["X-Cache"] = hitHeaderValue
 		}
 		req.Infof("%d", status)

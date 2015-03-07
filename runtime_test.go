@@ -50,8 +50,6 @@ func (r *RuntimeTests) NilResponse() {
 	runtime.ServeHTTP(out, req)
 	Expect(out.Code).To.Equal(500)
 	Expect(out.HeaderMap.Get("Content-Length")).To.Equal("0")
-	errors := gc.Log.(*gc.FakeLogger).Errors
-	Expect(errors[len(errors)-1]).To.Contain(`nil response object`)
 }
 
 func (r *RuntimeTests) OkStats() {
@@ -260,8 +258,10 @@ func helper() *RuntimeHelper {
 	e = gc.WrapMiddleware("cach", middlewares.Cache, e)
 	e = gc.WrapMiddleware("stat", middlewares.Stats, e)
 	runtime := &gc.Runtime{
-		Router:   r,
-		Executor: e,
+		Router:           r,
+		Executor:         e,
+		FatalResponse:    gc.Empty(500),
+		NotFoundResponse: gc.Empty(404),
 		Routes: map[string]*gc.Route{
 			"cache": &gc.Route{
 				Stats: gc.NewRouteStats(time.Millisecond * 100),

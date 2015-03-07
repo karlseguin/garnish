@@ -11,7 +11,7 @@ import (
 func Upstream(req *gc.Request, next gc.Middleware) gc.Response {
 	r, err := roundTrip(req)
 	if err != nil {
-		return gc.FatalErr(err)
+		return req.FatalResponseErr("upstream roundtrip", err)
 	}
 	if r == nil {
 		return Catch(req)

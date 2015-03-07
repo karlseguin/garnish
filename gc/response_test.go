@@ -17,10 +17,3 @@ func (_ ResponseTests) Empty() {
 	Expect(string(res.(*NormalResponse).body)).To.Equal("")
 	Expect(len(res.Header())).To.Equal(0)
 }
-
-func (_ ResponseTests) Fatal() {
-	res := Fatal("a message")
-	Expect(res.Status()).To.Equal(500)
-	Expect(len(res.Header())).To.Equal(0)
-	Expect(res.(*FatalResponse).Err).ToEqual("a message")
-}

@@ -128,3 +128,13 @@ func (r *Request) Info(message string) {
 func (r *Request) Error(message string) {
 	Log.Error(r.Id + " | " + r.scope + " | " + message)
 }
+
+func (r *Request) FatalResponse(message string) Response {
+	r.Error(message)
+	return r.Runtime.FatalResponse
+}
+
+func (r *Request) FatalResponseErr(message string, err error) Response {
+	r.Errorf("%s: %s", message, err)
+	return r.Runtime.FatalResponse
+}

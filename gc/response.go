@@ -7,6 +7,10 @@ import (
 	"time"
 )
 
+var (
+	InvalidTypeResponse = Empty(500)
+)
+
 // An http response
 type Response interface {
 	// The response's content length
@@ -71,7 +75,8 @@ func RespondH(status int, header http.Header, body interface{}) Response {
 	case io.ReadCloser:
 		return &StreamingResponse{body: b, status: status, header: header}
 	default:
-		return Fatal("invalid body type")
+		Log.Error("invalid response body type")
+		return InvalidTypeResponse
 	}
 }
 
@@ -136,27 +141,6 @@ func (r *NormalResponse) Deserialize(deserializer Deserializer) error {
 	r.header = deserializerHeader(deserializer)
 	r.body = deserializer.ReadBytes()
 	return nil
-}
-
-// A response with an associated error string to log
-type FatalResponse struct {
-	Response
-	Err string
-}
-
-// Generate a response with a 500 error code
-// message will be logged to the logger
-func Fatal(message string) Response {
-	return &FatalResponse{
-		Err:      message,
-		Response: Empty(500),
-	}
-}
-
-// Generate a response with a 500 error code
-// err will be logged to the logger
-func FatalErr(err error) Response {
-	return Fatal(err.Error())
 }
 
 // A standard response. This response is used by the cache.

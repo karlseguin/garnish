@@ -50,6 +50,7 @@ Other settings you likely won't have to change:
 * `BytePool(capacity, size uint32)` - A byte pool used whenever your upstreams reply with a Content-Length less than `capacity`. Bytes required will be `capacity * size`.
 * `DnsTTL(ttl time.Duration)` - The default TTL to cache dns lookups for. Can be overwritten on a per-upstream basis.
 * `NotFound(response gc.Response)` - The response to return for a 404
+* `Fatal(response gc.Response)` - The response to return for a 500
 
 ### Middleware
 

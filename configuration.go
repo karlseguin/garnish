@@ -26,6 +26,7 @@ const (
 type Configuration struct {
 	address   string
 	notFound  gc.Response
+	fatal     gc.Response
 	stats     *configurations.Stats
 	router    *configurations.Router
 	upstreams *configurations.Upstreams
@@ -49,6 +50,7 @@ type poolConfiguration struct {
 func Configure() *Configuration {
 	return &Configuration{
 		address:  ":8080",
+		fatal:    gc.Empty(500),
 		notFound: gc.Empty(404),
 		dnsTTL:   time.Minute,
 		bytePool: poolConfiguration{65536, 64},
@@ -111,6 +113,13 @@ func (c *Configuration) NotFound(response gc.Response) *Configuration {
 	return c
 }
 
+// The response to return for a 500
+// [gc.Empty(500)]
+func (c *Configuration) Fatal(response gc.Response) *Configuration {
+	c.fatal = response
+	return c
+}
+
 func (c *Configuration) Insert(position MiddlewarePosition, name string, handler gc.Handler) *Configuration {
 	c.before[position] = struct {
 		name    string
@@ -166,11 +175,12 @@ func (c *Configuration) Route(name string) *configurations.Route {
 // used to start garnish
 func (c *Configuration) Build() (*gc.Runtime, error) {
 	runtime := &gc.Runtime{
-		Address:  c.address,
-		NotFound: c.notFound,
-		Resolver: dnscache.New(c.dnsTTL),
-		Router:   router.New(router.Configure()),
-		Executor: gc.WrapMiddleware("upst", middlewares.Upstream, nil),
+		Address:          c.address,
+		NotFoundResponse: c.notFound,
+		FatalResponse:    c.fatal,
+		Resolver:         dnscache.New(c.dnsTTL),
+		Router:           router.New(router.Configure()),
+		Executor:         gc.WrapMiddleware("upst", middlewares.Upstream, nil),
 	}
 
 	if err := c.upstreams.Build(runtime, c.tweaker); err != nil {

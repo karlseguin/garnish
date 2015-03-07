@@ -5,5 +5,5 @@ import (
 )
 
 var Catch = func(req *gc.Request) gc.Response {
-	return req.Runtime.NotFound
+	return req.Runtime.NotFoundResponse
 }
