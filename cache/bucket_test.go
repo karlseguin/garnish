@@ -36,8 +36,11 @@ func (_ BucketTests) DeleteAll() {
 	bucket.deleteAll("power", c)
 	Expect(bucket.get("power", "level")).To.Equal(nil)
 	Expect(bucket.get("power", "rating")).To.Equal(nil)
-	Expect((<-c).Secondary).To.Equal("level")
-	Expect((<-c).Secondary).To.Equal("rating")
+	deleted := make(map[string]struct{})
+	deleted[(<-c).Secondary] = struct{}{}
+	deleted[(<-c).Secondary] = struct{}{}
+	Expect(deleted).To.Contain("level")
+	Expect(deleted).To.Contain("rating")
 }
 
 func (_ BucketTests) SetsANewBucketItem() {

@@ -218,11 +218,18 @@ func (c *Configuration) Build() (*gc.Runtime, error) {
 
 // Loads configuration from a toml file
 func LoadConfig(path string) (*Configuration, error) {
-	var t typed.Typed
-	if _, err := toml.DecodeFile(path, &t); err != nil {
+	var m map[string]interface{}
+	if _, err := toml.DecodeFile(path, &m); err != nil {
 		return nil, err
 	}
+	return LoadConfigMap(m)
+}
 
+func LoadConfigMap(m map[string]interface{}) (*Configuration, error) {
+	return LoadConfigTyped(typed.Typed(m))
+}
+
+func LoadConfigTyped(t typed.Typed) (*Configuration, error) {
 	config := Configure()
 	if a, ok := t.StringIf("address"); ok {
 		config.Address(a)
