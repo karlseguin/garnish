@@ -165,7 +165,7 @@ func (u *Upstream) Build(runtime *gc.Runtime, tweaker gc.RequestTweaker) (gc.Ups
 		} else {
 			transport.Dial = func(network, address string) (net.Conn, error) {
 				host, port, _ := net.SplitHostPort(address)
-				ip, _ := runtime.Resolver.FetchOneString(host)
+				ip, _ := runtime.Resolver.FetchOneV4String(host)
 				return net.Dial(network, net.JoinHostPort(ip, port))
 			}
 		}
