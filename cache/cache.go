@@ -31,8 +31,7 @@ type Cache struct {
 	promotables chan *Entry
 }
 
-func New(maxSize int) *Cache {
-	println(maxSize)
+func New(maxSize int) *Cache {)
 	c := &Cache{
 		maxSize:     maxSize,
 		list:        NewList(),
