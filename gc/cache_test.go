@@ -134,3 +134,13 @@ func (s *FakeStorage) Save(path string, count int, cutoff time.Duration) error {
 func (s *FakeStorage) Load(path string) error {
 	return nil
 }
+
+func (s *FakeStorage) SetSize(size int) {
+}
+
+func (s *FakeStorage) GetSize() int {
+	return 0
+}
+
+func (s *FakeStorage) Stop() {
+}
