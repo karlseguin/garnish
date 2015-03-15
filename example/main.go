@@ -6,7 +6,6 @@ import (
 	"github.com/karlseguin/garnish/gc"
 	"os"
 	"os/signal"
-	rr "runtime"
 	"syscall"
 	"time"
 )
@@ -33,7 +32,6 @@ func main() {
 			} else {
 				garnish.Reload(runtime)
 				fmt.Println("reloaded")
-				fmt.Println(rr.NumGoroutine())
 			}
 		}
 	}()
