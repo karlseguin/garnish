@@ -32,5 +32,6 @@ func Start(runtime *gc.Runtime) {
 }
 
 func Reload(runtime *gc.Runtime) {
+	garnish.Load().(*gc.Runtime).ReplaceWith(runtime)
 	garnish.Store(runtime)
 }

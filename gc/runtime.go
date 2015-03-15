@@ -88,3 +88,10 @@ func (r *Runtime) route(req *http.Request) *Request {
 	request.Runtime = r
 	return request
 }
+
+func (o *Runtime) ReplaceWith(n *Runtime) {
+	if o.StatsWorker != nil {
+		o.StatsWorker.Stop()
+	}
+	o.Resolver.Stop()
+}

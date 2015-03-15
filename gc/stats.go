@@ -151,6 +151,7 @@ type StatsWorker struct {
 	rt        map[string]int64
 	stats     map[string]interface{}
 	reporters map[string]Reporter
+	stop      chan struct{}
 }
 
 func NewStatsWorker(runtime *Runtime, fileName string) *StatsWorker {
@@ -166,6 +167,7 @@ func NewStatsWorker(runtime *Runtime, fileName string) *StatsWorker {
 			"runtime": rt,
 			"other":   nil,
 		},
+		stop:      make(chan struct{}),
 		reporters: make(map[string]Reporter),
 	}
 }
@@ -173,9 +175,17 @@ func NewStatsWorker(runtime *Runtime, fileName string) *StatsWorker {
 // Run the worker
 func (w *StatsWorker) Run() {
 	for {
-		time.Sleep(time.Minute)
-		w.work()
+		select {
+		case <-w.stop:
+			return
+		case <-time.After(time.Minute):
+			w.work()
+		}
 	}
+}
+
+func (w *StatsWorker) Stop() {
+	w.stop <- struct{}{}
 }
 
 func (w *StatsWorker) register(name string, reporter Reporter) {
