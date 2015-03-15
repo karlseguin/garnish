@@ -7,7 +7,7 @@ import (
 )
 
 type Cache struct {
-	count        int
+	maxSize      int
 	grace        time.Duration
 	saint        bool
 	lookup       gc.CacheKeyLookup
@@ -16,17 +16,17 @@ type Cache struct {
 
 func NewCache() *Cache {
 	return &Cache{
-		count:  5000,
-		grace:  time.Minute,
-		lookup: gc.DefaultCacheKeyLookup,
-		saint:  true,
+		maxSize: 104857600,
+		grace:   time.Minute,
+		lookup:  gc.DefaultCacheKeyLookup,
+		saint:   true,
 	}
 }
 
-// The maximum number of items to cache
-// [5000]
-func (c *Cache) Count(count int) *Cache {
-	c.count = count
+// The maximum size, in bytes, to cache
+// [104857600] (100MB)
+func (c *Cache) MaxSize(size int) *Cache {
+	c.maxSize = size
 	return c
 }
 
@@ -78,7 +78,7 @@ func (c *Cache) Build(runtime *gc.Runtime) error {
 	runtime.Cache = gc.NewCache()
 	runtime.Cache.Saint = c.saint
 	runtime.Cache.GraceTTL = c.grace
-	runtime.Cache.Storage = cache.New(c.count)
+	runtime.Cache.Storage = cache.New(c.maxSize)
 
 	if c.purgeHandler != nil {
 		runtime.Cache.PurgeHandler = c.purgeHandler

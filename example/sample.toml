@@ -1,5 +1,9 @@
 debug = true
 address = "127.0.0.1:8080"
+
+[cache]
+size = 5000
+
 [[upstreams]]
 name = "books"
 dns = 60  #seconds
@@ -7,6 +11,7 @@ headers = ["Authorization","Date"]
   [[upstreams.transports]]
   address = "http://127.0.0.1:3004"
   keepalive = 32
+
 [[routes]]
 name = "books"
 method = "GET"
