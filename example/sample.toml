@@ -2,7 +2,7 @@ debug = true
 address = "127.0.0.1:8080"
 
 [cache]
-size = 5000
+size = 104857600
 
 [[upstreams]]
 name = "books"

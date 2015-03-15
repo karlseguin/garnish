@@ -32,6 +32,7 @@ type Cache struct {
 }
 
 func New(maxSize int) *Cache {
+	println(maxSize)
 	c := &Cache{
 		maxSize:     maxSize,
 		list:        NewList(),

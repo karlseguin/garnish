@@ -293,5 +293,12 @@ func LoadConfigTyped(t typed.Typed) (*Configuration, error) {
 			route.CacheKeyLookupRef(kl)
 		}
 	}
+
+	if ct, ok := t.ObjectIf("cache"); ok {
+		cache := config.Cache()
+		if s, ok := ct.IntIf("size"); ok {
+			cache.MaxSize(s)
+		}
+	}
 	return config, nil
 }
