@@ -38,6 +38,9 @@ type CacheStorage interface {
 	DeleteAll(primary string) bool
 	Save(path string, count int, cutoff time.Duration) error
 	Load(path string) error
+	SetSize(size int)
+	GetSize() int
+	Stop()
 }
 
 type CachedResponse interface {

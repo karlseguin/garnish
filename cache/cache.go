@@ -29,6 +29,8 @@ type Cache struct {
 	persist     chan persist
 	deletables  chan *Entry
 	promotables chan *Entry
+	newSize     chan int
+	stop        chan struct{}
 }
 
 func New(maxSize int) *Cache {
@@ -39,6 +41,8 @@ func New(maxSize int) *Cache {
 		persist:     make(chan persist),
 		deletables:  make(chan *Entry, 1024),
 		promotables: make(chan *Entry, 1024),
+		newSize:     make(chan int),
+		stop:        make(chan struct{}),
 	}
 	for i := 0; i < BUCKETS; i++ {
 		c.buckets[i] = &bucket{lookup: make(map[string]map[string]*Entry)}
@@ -107,6 +111,18 @@ func (c *Cache) Load(path string) error {
 	return nil
 }
 
+func (c *Cache) Stop() {
+	c.stop <- struct{}{}
+}
+
+func (c *Cache) SetSize(s int) {
+	c.newSize <- s
+}
+
+func (c *Cache) GetSize() int {
+	return c.maxSize
+}
+
 func (c *Cache) bucket(key string) *bucket {
 	h := fnv.New32a()
 	h.Write([]byte(key))
@@ -116,6 +132,10 @@ func (c *Cache) bucket(key string) *bucket {
 func (c *Cache) worker() {
 	for {
 		select {
+		case <-c.stop:
+			return
+		case s := <-c.newSize:
+			c.maxSize = s
 		case entry := <-c.promotables:
 			if entry.prev == nil { //new item
 				c.size += entry.size

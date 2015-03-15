@@ -9,7 +9,7 @@ name = "books"
 dns = 60  #seconds
 headers = ["Authorization","Date"]
   [[upstreams.transports]]
-  address = "http://127.0.0.1:3004"
+  address = "http://127.0.0.1:6002"
   keepalive = 32
 
 [[routes]]

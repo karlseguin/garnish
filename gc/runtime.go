@@ -94,4 +94,7 @@ func (o *Runtime) ReplaceWith(n *Runtime) {
 		o.StatsWorker.Stop()
 	}
 	o.Resolver.Stop()
+	o.Cache.Storage.SetSize(n.Cache.Storage.GetSize())
+	n.Cache.Storage.Stop()
+	n.Cache.Storage = o.Cache.Storage
 }
