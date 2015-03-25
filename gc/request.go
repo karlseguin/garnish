@@ -3,16 +3,20 @@ package gc
 import (
 	"gopkg.in/karlseguin/bytepool.v3"
 	"gopkg.in/karlseguin/nd.v1"
-	"gopkg.in/karlseguin/params.v1"
+	"gopkg.in/karlseguin/params.v2"
 	"net/http"
 	"time"
+)
+
+var (
+	EmptyParams = params.New(0)
 )
 
 // Extends an *http.Request
 type Request struct {
 	hit    bool
 	scope  string
-	params params.Params
+	params *params.Params
 
 	// the underlying bytepool for the body. Consumers should use the Body() method
 	B *bytepool.Bytes
@@ -36,7 +40,7 @@ type Request struct {
 	Context interface{}
 }
 
-func NewRequest(req *http.Request, route *Route, params params.Params) *Request {
+func NewRequest(req *http.Request, route *Route, params *params.Params) *Request {
 	return &Request{
 		scope:   "root",
 		Request: req,
@@ -81,7 +85,7 @@ func (r *Request) Clone() *Request {
 		Runtime: r.Runtime,
 	}
 	if r.params.Len() == 0 {
-		clone.params = params.Empty
+		clone.params = EmptyParams
 	} else {
 		params := clone.Runtime.Router.ParamPool.Checkout()
 		r.params.Each(func(key, value string) {

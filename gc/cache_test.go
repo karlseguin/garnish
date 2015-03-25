@@ -3,7 +3,7 @@ package gc
 import (
 	. "github.com/karlseguin/expect"
 	"github.com/karlseguin/expect/build"
-	"gopkg.in/karlseguin/params.v1"
+	"gopkg.in/karlseguin/params.v2"
 	"net/http"
 	"testing"
 	"time"
@@ -18,7 +18,7 @@ func Test_Cache(t *testing.T) {
 	ct := &CacheTests{
 		request: NewRequest(build.Request().Request, route, nil),
 	}
-	ct.request.params = params.Empty
+	ct.request.params = params.New(0)
 	Expectify(ct, t)
 }
 
