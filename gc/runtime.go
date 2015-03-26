@@ -8,7 +8,10 @@ import (
 	"strconv"
 )
 
-var UnauthorizedResponse = Empty(401)
+var (
+	UnauthorizedResponse = Empty(401)
+	fakeRequest          = &Request{Id: "fake"}
+)
 
 // Authorization / authentication handler
 type AuthHandler func(req *Request) Response
@@ -40,7 +43,7 @@ func (r *Runtime) ServeHTTP(out http.ResponseWriter, request *http.Request) {
 	req := r.route(request)
 	if req == nil {
 		Log.Infof("404 %s", request.URL)
-		r.reply(out, r.NotFoundResponse, nil)
+		r.reply(out, r.NotFoundResponse, fakeRequest)
 		return
 	}
 	req.Infof("%s", req.URL)
@@ -65,12 +68,10 @@ func (r *Runtime) reply(out http.ResponseWriter, res Response, req *Request) {
 		oh["Content-Length"] = []string{strconv.Itoa(cl)}
 	}
 
-	if req != nil {
-		if req.hit {
-			oh["X-Cache"] = hitHeaderValue
-		}
-		req.Infof("%d", status)
+	if req.hit {
+		oh["X-Cache"] = hitHeaderValue
 	}
+	req.Infof("%d", status)
 	out.WriteHeader(status)
 	res.Write(r, out)
 }
