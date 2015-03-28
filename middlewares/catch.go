@@ -1,9 +1,9 @@
 package middlewares
 
 import (
-	"gopkg.in/karlseguin/garnish.v1/gc"
+	"gopkg.in/karlseguin/garnish.v1"
 )
 
-var Catch = func(req *gc.Request) gc.Response {
+var Catch = func(req *garnish.Request) garnish.Response {
 	return req.Runtime.NotFoundResponse
 }

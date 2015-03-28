@@ -1,81 +1,188 @@
 package gc
 
 import (
-	"math/rand"
+	"fmt"
+	"gopkg.in/karlseguin/garnish.v1"
+	"net"
 	"net/http"
-	"sync"
+	"strings"
+	"time"
 )
 
-// The User Agent to send to the upstream
-var DefaultUserAgent = []string{""}
+// The default headers to forward to the upstream
+var DefaultHeaders = []string{"Content-Length"}
 
-// Tweaks request `out` before sending it to the upstream
-type RequestTweaker func(in *Request, out *http.Request)
-
-type Upstream interface {
-	Headers() []string
-	Transport() *Transport
-	Tweaker() RequestTweaker
+type Upstreams struct {
+	upstreams map[string]*Upstream
 }
 
-func CreateUpstream(headers []string, tweaker RequestTweaker, transports []*Transport) (Upstream, error) {
-	var upstream Upstream
-	if len(transports) == 1 {
-		upstream = &SingleTransportUpstream{
-			headers:   headers,
-			tweaker:   tweaker,
-			transport: transports[0],
-		}
-	} else {
-		upstream = &MultiTransportUpstream{
-			headers:    headers,
-			tweaker:    tweaker,
-			transports: transports,
-		}
+func NewUpstreams() *Upstreams {
+	return &Upstreams{
+		upstreams: make(map[string]*Upstream),
 	}
-	return upstream, nil
 }
 
-type SingleTransportUpstream struct {
-	transport *Transport
-	headers   []string
-	tweaker   RequestTweaker
+// Used internally
+func (u *Upstreams) Add(name string) *Upstream {
+	if _, exists := u.upstreams[name]; exists {
+		garnish.Log.Warnf("Upstream %q already defined. Overwriting.", name)
+	}
+	one := &Upstream{
+		name:        name,
+		dnsDuration: time.Minute,
+		headers:     DefaultHeaders,
+		transports:  make([]*Transport, 0, 2),
+	}
+	u.upstreams[name] = one
+	return one
 }
 
-func (u *SingleTransportUpstream) Headers() []string {
-	return u.headers
+func (u *Upstreams) Build(runtime *garnish.Runtime, defaultTweaker garnish.RequestTweaker) error {
+	if u == nil {
+		runtime.Upstreams = make(map[string]garnish.Upstream, 0)
+		return nil
+	}
+
+	upstreams := make(map[string]garnish.Upstream, len(u.upstreams))
+	for name, one := range u.upstreams {
+		tweaker := defaultTweaker
+		if len(one.tweakerRef) != 0 {
+			ref, ok := u.upstreams[one.tweakerRef]
+			if ok == false {
+				return fmt.Errorf("upstream %s's tweaker referenced %s, a non-existent upstream", name, one.tweakerRef)
+			}
+			if ref.tweaker == nil {
+				return fmt.Errorf("upstream %s's tweaker referenced %s, which does not have a tweaker", name, one.tweakerRef)
+			}
+			tweaker = ref.tweaker
+		}
+		upstream, err := one.Build(runtime, tweaker)
+		if err != nil {
+			return err
+		}
+		upstreams[name] = upstream
+	}
+	runtime.Upstreams = upstreams
+	return nil
 }
 
-func (u *SingleTransportUpstream) Tweaker() RequestTweaker {
-	return u.tweaker
-}
-
-func (u *SingleTransportUpstream) Transport() *Transport {
-	return u.transport
-}
-
-type MultiTransportUpstream struct {
-	sync.RWMutex
-	transports []*Transport
-	headers    []string
-	tweaker    RequestTweaker
-}
-
-func (u *MultiTransportUpstream) Headers() []string {
-	return u.headers
-}
-
-func (u *MultiTransportUpstream) Tweaker() RequestTweaker {
-	return u.tweaker
-}
-
-func (u *MultiTransportUpstream) Transport() *Transport {
-	defer u.RUnlock()
-	u.RLock()
-	return u.transports[rand.Intn(len(u.transports))]
+type Upstream struct {
+	name        string
+	transports  []*Transport
+	dnsDuration time.Duration
+	headers     []string
+	tweakerRef  string
+	tweaker     garnish.RequestTweaker
 }
 
 type Transport struct {
-	*http.Transport
-	Address string
+	address   string
+	keepalive int
+}
+
+// the duration to cache the upstream's dns lookup. Set to 0 to prevent
+// garnish from caching this value (even a few seconds can help)
+// [1 minute]
+func (u *Upstream) DnsCache(duration time.Duration) *Upstream {
+	u.dnsDuration = duration
+	return u
+}
+
+// The headers to copy from the incoming request to the outgoing request
+// [Content-Length]
+func (u *Upstream) Headers(headers ...string) *Upstream {
+	u.headers = headers
+	return u
+}
+
+// Custom callback to modify the request (out) that will get sent to the upstream
+func (u *Upstream) Tweaker(tweaker garnish.RequestTweaker) *Upstream {
+	u.tweaker = tweaker
+	return u
+}
+
+// Allows the upstream to reference another upstream's tweaker (based on that
+// upstream's name). Used by the file-based configuration; when configured
+// programmatically, Tweaker should be used.
+func (u *Upstream) TweakerRef(upstream string) *Upstream {
+	u.tweakerRef = upstream
+	return u
+}
+
+// the address to connect to. Should begin with unix:/  http://  or https://
+// [""]
+func (u *Upstream) Address(address string) *Transport {
+	transport := &Transport{
+		address:   address,
+		keepalive: 16,
+	}
+	u.transports = append(u.transports, transport)
+	return transport
+}
+
+// the number of connections to keep alive. Set to 0 to disable
+// [16]
+func (t *Transport) KeepAlive(count uint32) *Transport {
+	t.keepalive = int(count)
+	return t
+}
+
+func (u *Upstream) Build(runtime *garnish.Runtime, tweaker garnish.RequestTweaker) (garnish.Upstream, error) {
+	l := len(u.transports)
+	if l == 0 {
+		return nil, fmt.Errorf("Upstream %s doesn't have a configured transport", u.name)
+	}
+
+	transports := make([]*garnish.Transport, l)
+	for i := 0; i < l; i++ {
+		t := u.transports[i]
+		if len(t.address) < 8 {
+			return nil, fmt.Errorf("Upstream %s has an invalid address: %q", u.name, t.address)
+		}
+		var domain string
+		if t.address[:7] == "http://" {
+			domain = t.address[7:]
+		} else if t.address[:8] == "https://" {
+			domain = t.address[8:]
+		}
+		if t.address[:6] != "unix:/" && len(domain) == 0 {
+			return nil, fmt.Errorf("Upstream %s's address should begin with unix:/, http:// or https://", u.name)
+		}
+
+		transport := &http.Transport{
+			MaxIdleConnsPerHost: t.keepalive,
+			DisableKeepAlives:   t.keepalive == 0,
+		}
+		if t.address[:6] == "unix:/" {
+			transport.Dial = func(network, address string) (net.Conn, error) {
+				//strip out the :80 which Go adds
+				return net.Dial("unix", address[:len(address)-3])
+			}
+		} else if strings.Contains(t.address, "localhost") {
+			transport.Dial = func(network, address string) (net.Conn, error) {
+				return net.Dial(network, address)
+			}
+		} else {
+			transport.Dial = func(network, address string) (net.Conn, error) {
+				host, port, _ := net.SplitHostPort(address)
+				ip, _ := runtime.Resolver.FetchOneV4String(host)
+				return net.Dial(network, net.JoinHostPort(ip, port))
+			}
+		}
+
+		if u.dnsDuration > 0 && len(domain) > 0 {
+			runtime.Resolver.TTL(domain, u.dnsDuration)
+		}
+
+		transports[i] = &garnish.Transport{
+			Transport: transport,
+			Address:   t.address,
+		}
+	}
+
+	if u.tweaker != nil {
+		tweaker = u.tweaker
+	}
+
+	return garnish.CreateUpstream(u.headers, tweaker, transports)
 }

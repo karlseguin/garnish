@@ -1,14 +1,14 @@
 package middlewares
 
 import (
-	"gopkg.in/karlseguin/garnish.v1/gc"
+	"gopkg.in/karlseguin/garnish.v1"
 	"net"
 	"net/http"
 	"net/url"
 	"strings"
 )
 
-func Upstream(req *gc.Request, next gc.Middleware) gc.Response {
+func Upstream(req *garnish.Request, next garnish.Middleware) garnish.Response {
 	r, err := roundTrip(req)
 	if err != nil {
 		return req.FatalResponseErr("upstream roundtrip", err)
@@ -18,10 +18,10 @@ func Upstream(req *gc.Request, next gc.Middleware) gc.Response {
 	}
 	req.Infof("%s | %d | %d", req.URL, r.StatusCode, r.ContentLength)
 	r.Header.Del("Connection")
-	return gc.Streaming(r.StatusCode, r.Header, r.ContentLength, r.Body)
+	return garnish.Streaming(r.StatusCode, r.Header, r.ContentLength, r.Body)
 }
 
-func roundTrip(req *gc.Request) (*http.Response, error) {
+func roundTrip(req *garnish.Request) (*http.Response, error) {
 	upstream := req.Route.Upstream
 	if upstream == nil {
 		return nil, nil
@@ -35,7 +35,7 @@ func roundTrip(req *gc.Request) (*http.Response, error) {
 	return transport.RoundTrip(createRequest(req, transport, upstream))
 }
 
-func createRequest(in *gc.Request, transport *gc.Transport, upstream gc.Upstream) *http.Request {
+func createRequest(in *garnish.Request, transport *garnish.Transport, upstream garnish.Upstream) *http.Request {
 	targetUrl, err := url.Parse(transport.Address + in.URL.RequestURI())
 	if err != nil {
 		in.Errorf("upstream url %s %v", transport.Address+in.URL.RequestURI(), err)
@@ -50,7 +50,7 @@ func createRequest(in *gc.Request, transport *gc.Transport, upstream gc.Upstream
 		Host:          in.Host,
 		Method:        in.Method,
 		ContentLength: in.ContentLength,
-		Header:        http.Header{"X-Request-Id": []string{in.Id}, "User-Agent": gc.DefaultUserAgent},
+		Header:        http.Header{"X-Request-Id": []string{in.Id}, "User-Agent": garnish.DefaultUserAgent},
 	}
 
 	if in.B != nil {

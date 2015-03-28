@@ -1,167 +1,98 @@
 package gc
 
 import (
-	"strconv"
-	"strings"
-	"sync"
+	"gopkg.in/karlseguin/garnish.v1"
+	"gopkg.in/karlseguin/garnish.v1/cache"
 	"time"
 )
 
-var (
-	PurgeHitResponse    = Empty(200)
-	PurgeMissResponse   = Empty(204)
-	NotModifiedResponse = Empty(304)
-
-	hitHeaderValue = []string{"hit"}
-	zero           time.Time
-)
-
-type Serializer interface {
-	Write(b []byte)
-	WriteInt(i int)
-	WriteByte(b byte)
-	WriteString(s string)
-}
-
-type Deserializer interface {
-	ReadInt() int
-	ReadByte() byte
-	ReadBytes() []byte
-	CloneBytes() []byte
-	ReadString() string
-}
-
-type CacheStorage interface {
-	Get(primary, secondary string) CachedResponse
-	Set(primary string, secondary string, response CachedResponse)
-	Delete(primary, secondary string) bool
-	DeleteAll(primary string) bool
-	Save(path string, count int, cutoff time.Duration) error
-	Load(path string) error
-	SetSize(size int)
-	GetSize() int
-	Stop()
-}
-
-type CachedResponse interface {
-	Response
-	Size() int
-	Expire(at time.Time)
-	Expires() time.Time
-	Serialize(serializer Serializer) error
-	Deserialize(deserializer Deserializer) error
-}
-
-// A function that generates cache keys from a request
-type CacheKeyLookup func(req *Request) (string, string)
-
-// A function that purges the cache
-// Returning a nil response means that the request will be forward onwards
-type PurgeHandler func(req *Request, lookup CacheKeyLookup, cache CacheStorage) Response
-
-func DefaultCacheKeyLookup(req *Request) (string, string) {
-	return req.URL.Path, req.URL.RawQuery
-}
-
 type Cache struct {
-	sync.Mutex
-	downloads    map[string]time.Time
-	Storage      CacheStorage
-	Saint        bool
-	GraceTTL     time.Duration
-	PurgeHandler PurgeHandler
+	maxSize      int
+	grace        time.Duration
+	saint        bool
+	lookup       garnish.CacheKeyLookup
+	purgeHandler garnish.PurgeHandler
 }
 
 func NewCache() *Cache {
 	return &Cache{
-		downloads: make(map[string]time.Time),
+		maxSize: 104857600,
+		grace:   time.Minute,
+		lookup:  garnish.DefaultCacheKeyLookup,
+		saint:   true,
 	}
 }
 
-func (c *Cache) Set(primary string, secondary string, config *RouteCache, res Response) {
-	ttl := c.ttl(config, res)
-	if ttl == 0 {
-		return
-	}
-
-	cacheable := res.ToCacheable(time.Now().Add(ttl))
-	c.Storage.Set(primary, secondary, cacheable)
+// The maximum size, in bytes, to cache
+// [104857600] (100MB)
+func (c *Cache) MaxSize(size int) *Cache {
+	c.maxSize = size
+	return c
 }
 
-func (c *Cache) ttl(config *RouteCache, res Response) time.Duration {
-	status := res.Status()
-	if status >= 200 && status <= 400 && config.TTL > 0 {
-		return config.TTL
-	}
+// If a request is expired but within the grace window, the expired version
+// will be returned. In a background job, the cache will be refreshed.
+// Grace is effective at eliminating the thundering heard problem
+// [1 minute]
+func (c *Cache) Grace(window time.Duration) *Cache {
+	c.grace = window
+	return c
+}
 
-	cc := res.Header()["Cache-Control"]
-	if len(cc) == 0 {
-		return 0
-	}
+// Disable saint mode
+// With saint mode, if the upstream returns a 5xx error and a cached
+// response is available, the cached response will be returned
+// regardless of how far expired it is.
+// [saint is enabled by default]
+func (c *Cache) NoSaint() *Cache {
+	c.saint = false
+	return c
+}
 
-	for _, value := range cc {
-		if strings.Contains(value, "private") {
-			break
+// The function used to generate the primary and secondary cache keys
+// This defaults use the URL for the primary key and the QueryString
+// for the secondary key
+// Having a separate primary and secondary cache key allows us to purge
+// a group of values. For example:
+// primary: /v1/users/32
+// secondary: "ext=json"   and   "ext=xml"
+// We can purge all variations associated with /v1/users/32
+func (c *Cache) KeyLookup(lookup garnish.CacheKeyLookup) *Cache {
+	c.lookup = lookup
+	return c
+}
+
+// The function which will handle purge requests
+// No default is provided since some level of custom authorization should be done
+// If the handler returns a response, the middleware chain is stopped and the
+// specified response is returned.
+// If the handler does not return a response, the chain continues.
+// This makes it possible to purge the garnish cache while allowing the purge
+// request to be sent to the upstream
+func (c *Cache) PurgeHandler(handler garnish.PurgeHandler) *Cache {
+	c.purgeHandler = handler
+	return c
+}
+
+func (c *Cache) Build(runtime *garnish.Runtime) error {
+	runtime.Cache = garnish.NewCache()
+	runtime.Cache.Saint = c.saint
+	runtime.Cache.GraceTTL = c.grace
+	runtime.Cache.Storage = cache.New(c.maxSize)
+
+	if c.purgeHandler != nil {
+		runtime.Cache.PurgeHandler = c.purgeHandler
+		runtime.Router.AddNamed("_gc_purge_all", "PURGE", "/*", nil)
+		runtime.Routes["_gc_purge_all"] = &garnish.Route{
+			Stats: garnish.NewRouteStats(time.Millisecond * 500),
+			Cache: garnish.NewRouteCache(-1, c.lookup),
 		}
-		if index := strings.Index(value, "max-age="); index > -1 {
-			if seconds, err := strconv.Atoi(value[index+8:]); err == nil {
-				return time.Second * time.Duration(seconds)
-			} else {
-				Log.Warnf("invalid cache control header %q", value)
-				break
-			}
+	}
+
+	for _, route := range runtime.Routes {
+		if route.Cache != nil && route.Cache.KeyLookup == nil {
+			route.Cache.KeyLookup = c.lookup
 		}
 	}
-	return 0
-}
-
-// A clone is critical since the original request is likely to be closed
-// before we're finishing with Grace and we might end up with a request
-// that contains data from multiple sources.
-func (c *Cache) Grace(primary string, secondary string, req *Request, next Middleware) {
-	key := primary + secondary
-	if c.reserveDownload(key) == false {
-		return
-	}
-	go c.grace(key, primary, secondary, req.Clone(), next)
-}
-
-func (c *Cache) grace(key string, primary string, secondary string, req *Request, next Middleware) {
-	defer func() {
-		req.Close()
-		c.Lock()
-		delete(c.downloads, key)
-		c.Unlock()
-	}()
-
-	res := next(req)
-	if res == nil {
-		Log.Errorf("grace nil response for %q", req.URL)
-		return
-	}
-	defer res.Close()
-	if res.Status() >= 500 {
-		Log.Errorf("grace error for %q", req.URL)
-	} else {
-		c.Set(primary, secondary, req.Route.Cache, res)
-	}
-}
-
-func (c *Cache) reserveDownload(key string) bool {
-	now := time.Now()
-	c.Lock()
-	defer c.Unlock()
-	if expires, exists := c.downloads[key]; exists && expires.After(now) {
-		return false
-	}
-	c.downloads[key] = now.Add(time.Second * 30)
-	return true
-}
-
-func (c *Cache) Save(path string, count int, cutoff time.Duration) error {
-	return c.Storage.Save(path, count, cutoff)
-}
-
-func (c *Cache) Load(path string) error {
-	return c.Storage.Load(path)
+	return nil
 }

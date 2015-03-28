@@ -2,14 +2,14 @@ package middlewares
 
 import (
 	"bytes"
-	"gopkg.in/karlseguin/garnish.v1/gc"
+	"gopkg.in/karlseguin/garnish.v1"
 )
 
 type Hydrate struct {
 	Header string
 }
 
-func (h *Hydrate) Handle(req *gc.Request, next gc.Middleware) gc.Response {
+func (h *Hydrate) Handle(req *garnish.Request, next garnish.Middleware) garnish.Response {
 	res := next(req)
 	if res == nil {
 		return res
@@ -23,26 +23,26 @@ func (h *Hydrate) Handle(req *gc.Request, next gc.Middleware) gc.Response {
 	return h.convert(req, res, hydrateField)
 }
 
-func (h *Hydrate) convert(req *gc.Request, res gc.Response, fieldName string) gc.Response {
+func (h *Hydrate) convert(req *garnish.Request, res garnish.Response, fieldName string) garnish.Response {
 	body := loadBody(req.Runtime, res)
 	fragments := ExtractFragments(body, req, fieldName)
 	if fragments == nil {
 		return res
 	}
-	return gc.NewHydraterResponse(res.Status(), res.Header(), fragments)
+	return garnish.NewHydraterResponse(res.Status(), res.Header(), fragments)
 }
 
-var ExtractFragments = func(body []byte, req *gc.Request, fieldName string) []gc.Fragment {
+var ExtractFragments = func(body []byte, req *garnish.Request, fieldName string) []garnish.Fragment {
 	position := 0
 	needle := []byte("\"" + fieldName)
-	fragments := make([]gc.Fragment, 0, 20)
+	fragments := make([]garnish.Fragment, 0, 20)
 	for {
 		index := bytes.Index(body, needle)
 		if index == -1 {
-			fragments = append(fragments, gc.LiteralFragment(body[position:]))
+			fragments = append(fragments, garnish.LiteralFragment(body[position:]))
 			break
 		}
-		fragments = append(fragments, gc.LiteralFragment(body[position:index-1]))
+		fragments = append(fragments, garnish.LiteralFragment(body[position:index-1]))
 		body = body[index:]
 		start := bytes.IndexRune(body, '{')
 		if start == -1 {
@@ -55,7 +55,7 @@ var ExtractFragments = func(body []byte, req *gc.Request, fieldName string) []gc
 			return nil
 		}
 		end += 1
-		fragment, err := gc.NewReferenceFragment(body[start:end])
+		fragment, err := garnish.NewReferenceFragment(body[start:end])
 		if err != nil {
 			req.Errorf("invalid hydration payload: %v", err)
 			return nil
@@ -66,7 +66,7 @@ var ExtractFragments = func(body []byte, req *gc.Request, fieldName string) []gc
 	return fragments
 }
 
-func loadBody(runtime *gc.Runtime, res gc.Response) []byte {
+func loadBody(runtime *garnish.Runtime, res garnish.Response) []byte {
 	l := res.ContentLength()
 	if l <= 0 {
 		l = 32768

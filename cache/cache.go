@@ -1,7 +1,7 @@
 package cache
 
 import (
-	"gopkg.in/karlseguin/garnish.v1/gc"
+	"gopkg.in/karlseguin/garnish.v1"
 	"hash/fnv"
 	"math/rand"
 	"time"
@@ -13,7 +13,7 @@ const (
 )
 
 type Entry struct {
-	gc.CachedResponse
+	garnish.CachedResponse
 	Primary   string
 	Secondary string
 	next      *Entry
@@ -51,7 +51,7 @@ func New(maxSize int) *Cache {
 	return c
 }
 
-func (c *Cache) Get(primary, secondary string) gc.CachedResponse {
+func (c *Cache) Get(primary, secondary string) garnish.CachedResponse {
 	bucket := c.bucket(primary)
 	response := bucket.get(primary, secondary)
 	if response == nil {
@@ -61,7 +61,7 @@ func (c *Cache) Get(primary, secondary string) gc.CachedResponse {
 	return response
 }
 
-func (c *Cache) Set(primary string, secondary string, response gc.CachedResponse) {
+func (c *Cache) Set(primary string, secondary string, response garnish.CachedResponse) {
 	entry := &Entry{
 		Primary:        primary,
 		Secondary:      secondary,

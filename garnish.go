@@ -1,7 +1,6 @@
 package garnish
 
 import (
-	"gopkg.in/karlseguin/garnish.v1/gc"
 	"net/http"
 	"sync/atomic"
 	"time"
@@ -17,7 +16,7 @@ func (g *Garnish) ServeHTTP(out http.ResponseWriter, request *http.Request) {
 	g.Load().(http.Handler).ServeHTTP(out, request)
 }
 
-func Start(runtime *gc.Runtime) {
+func Start(runtime *Runtime) {
 	garnish = &Garnish{new(atomic.Value)}
 	garnish.Store(runtime)
 
@@ -27,11 +26,11 @@ func Start(runtime *gc.Runtime) {
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
 	}
-	gc.Log.Infof("listening on %s", runtime.Address)
+	Log.Infof("listening on %s", runtime.Address)
 	panic(s.ListenAndServe())
 }
 
-func Reload(runtime *gc.Runtime) {
-	garnish.Load().(*gc.Runtime).ReplaceWith(runtime)
+func Reload(runtime *Runtime) {
+	garnish.Load().(*Runtime).ReplaceWith(runtime)
 	garnish.Store(runtime)
 }

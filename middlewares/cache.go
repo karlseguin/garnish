@@ -1,12 +1,12 @@
 package middlewares
 
 import (
-	"gopkg.in/karlseguin/garnish.v1/gc"
+	"gopkg.in/karlseguin/garnish.v1"
 	"time"
 )
 
 //TODO: handle purge
-func Cache(req *gc.Request, next gc.Middleware) gc.Response {
+func Cache(req *garnish.Request, next garnish.Middleware) garnish.Response {
 	cache := req.Runtime.Cache
 	config := req.Route.Cache
 

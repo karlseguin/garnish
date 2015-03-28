@@ -44,33 +44,33 @@ func main() {
 	}
 }
 
-func loadRuntime() (*gc.Runtime, error) {
-	config, err := garnish.LoadConfig("sample.toml")
+func loadRuntime() (*garnish.Runtime, error) {
+	config, err := gc.LoadConfig("sample.toml")
 	if err != nil {
 		return nil, err
 	}
 	config.Hydrate(HydrateLoader)
 	config.Stats().FileName("stats.json").Slow(time.Millisecond * 100)
 	config.Cache().Grace(time.Minute).PurgeHandler(PurgeHandler)
-	config.NotFound(gc.Json(404, `{"error":"not found", "code":404}`))
-	config.Fatal(gc.Json(500, `{"error":"server error", "code":500}`))
+	config.NotFound(garnish.Json(404, `{"error":"not found", "code":404}`))
+	config.Fatal(garnish.Json(500, `{"error":"server error", "code":500}`))
 
 	config.Upstream("users").Address("http://localhost:3000").KeepAlive(8)
 	config.Route("users").Get("/v1/users").Upstream("users").CacheTTL(time.Minute)
-	config.Route("ping").Get("/v1/ping").Handler(func(reg *gc.Request, next gc.Middleware) gc.Response {
-		return gc.Respond(200, "ok")
+	config.Route("ping").Get("/v1/ping").Handler(func(reg *garnish.Request, next garnish.Middleware) garnish.Response {
+		return garnish.Respond(200, "ok")
 	})
 	return config.Build()
 }
 
-func HydrateLoader(fragment gc.ReferenceFragment) []byte {
+func HydrateLoader(fragment garnish.ReferenceFragment) []byte {
 	return []byte(`{"id": "hyd-` + fragment.String("id") + `"}`)
 }
 
-func PurgeHandler(req *gc.Request, lookup gc.CacheKeyLookup, cache gc.CacheStorage) gc.Response {
+func PurgeHandler(req *garnish.Request, lookup garnish.CacheKeyLookup, cache garnish.CacheStorage) garnish.Response {
 	primary, secondary := lookup(req)
 	if cache.Delete(primary, secondary) {
-		return gc.PurgeHitResponse
+		return garnish.PurgeHitResponse
 	}
-	return gc.PurgeMissResponse
+	return garnish.PurgeMissResponse
 }

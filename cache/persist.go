@@ -3,7 +3,7 @@ package cache
 import (
 	"bytes"
 	"errors"
-	"gopkg.in/karlseguin/garnish.v1/gc"
+	"gopkg.in/karlseguin/garnish.v1"
 	"io"
 	"log"
 	"os"
@@ -45,9 +45,9 @@ func (p persist) persist(entries []*Entry) {
 		serializer.WriteString(entry.Secondary)
 
 		switch entry.CachedResponse.(type) {
-		case *gc.NormalResponse:
+		case *garnish.NormalResponse:
 			serializer.WriteByte(1)
-		case *gc.HydrateResponse:
+		case *garnish.HydrateResponse:
 			serializer.WriteByte(2)
 		default:
 			err = errors.New("unknown response type")
@@ -74,12 +74,12 @@ func loadFromFile(path string) ([]*Entry, error) {
 	entries := make([]*Entry, count)
 	for i := 0; i < count; i++ {
 		primary, secondary := deserializer.ReadString(), deserializer.ReadString()
-		var response gc.CachedResponse
+		var response garnish.CachedResponse
 		switch deserializer.ReadByte() {
 		case 1:
-			response = new(gc.NormalResponse)
+			response = new(garnish.NormalResponse)
 		case 2:
-			response = new(gc.HydrateResponse)
+			response = new(garnish.HydrateResponse)
 		default:
 			return nil, errors.New("unknown response type")
 		}

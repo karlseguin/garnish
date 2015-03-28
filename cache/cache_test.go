@@ -3,7 +3,7 @@ package cache
 import (
 	"bytes"
 	. "github.com/karlseguin/expect"
-	"gopkg.in/karlseguin/garnish.v1/gc"
+	"gopkg.in/karlseguin/garnish.v1"
 	"strconv"
 	"testing"
 	"time"
@@ -74,11 +74,11 @@ func (_ CacheTests) GetPromotesAValue() {
 	Expect(cache.size).To.Equal(151997)
 }
 
-func buildResponse(body string) gc.CachedResponse {
-	return gc.Respond(200, body).(*gc.NormalResponse)
+func buildResponse(body string) garnish.CachedResponse {
+	return garnish.Respond(200, body).(*garnish.NormalResponse)
 }
 
-func assertResponse(response gc.CachedResponse, expected string) {
+func assertResponse(response garnish.CachedResponse, expected string) {
 	buffer := new(bytes.Buffer)
 	response.Write(nil, buffer)
 	Expect(buffer.String()).To.Equal(expected)
