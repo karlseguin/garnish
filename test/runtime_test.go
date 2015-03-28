@@ -286,7 +286,7 @@ func helper() *RuntimeHelper {
 			"dispatch": &garnish.Route{
 				Stats: garnish.NewRouteStats(time.Millisecond * 100),
 				Cache: garnish.NewRouteCache(time.Duration(-1), nil),
-				Handler: func(req *garnish.Request, next garnish.Middleware) garnish.Response {
+				FlowHandler: func(req *garnish.Request, next garnish.Handler) garnish.Response {
 					res := next(req)
 					res.Header().Set("Dispatch", "out")
 					return res
@@ -313,7 +313,7 @@ func helper() *RuntimeHelper {
 	}
 }
 
-func (r *RuntimeHelper) Catch(catch garnish.Middleware) *RuntimeHelper {
+func (r *RuntimeHelper) Catch(catch garnish.Handler) *RuntimeHelper {
 	middlewares.Catch = catch
 	return r
 }

@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-func Upstream(req *garnish.Request, next garnish.Middleware) garnish.Response {
+func Upstream(req *garnish.Request, next garnish.Handler) garnish.Response {
 	r, err := roundTrip(req)
 	if err != nil {
 		return req.FatalResponseErr("upstream roundtrip", err)

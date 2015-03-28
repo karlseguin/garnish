@@ -9,7 +9,7 @@ type Hydrate struct {
 	Header string
 }
 
-func (h *Hydrate) Handle(req *garnish.Request, next garnish.Middleware) garnish.Response {
+func (h *Hydrate) Handle(req *garnish.Request, next garnish.Handler) garnish.Response {
 	res := next(req)
 	if res == nil {
 		return res

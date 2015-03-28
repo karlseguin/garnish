@@ -5,12 +5,13 @@ import (
 )
 
 type Route struct {
-	Name     string
-	Method   string
-	Upstream Upstream
-	Stats    *RouteStats
-	Cache    *RouteCache
-	Handler  Handler
+	Name        string
+	Method      string
+	Upstream    Upstream
+	Stats       *RouteStats
+	Cache       *RouteCache
+	StopHandler Handler
+	FlowHandler Middleware
 }
 
 type RouteCache struct {

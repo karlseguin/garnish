@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-func Stats(req *garnish.Request, next garnish.Middleware) garnish.Response {
+func Stats(req *garnish.Request, next garnish.Handler) garnish.Response {
 	res := next(req)
 	if res == nil {
 		return nil

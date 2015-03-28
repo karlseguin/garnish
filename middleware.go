@@ -1,10 +1,9 @@
 package garnish
 
-type Handler func(req *Request, next Middleware) Response
+type Handler func(req *Request) Response
+type Middleware func(req *Request, next Handler) Response
 
-type Middleware func(req *Request) Response
-
-func WrapMiddleware(name string, m Handler, next Middleware) Middleware {
+func WrapMiddleware(name string, m Middleware, next Handler) Handler {
 	return func(req *Request) Response {
 		old := req.scope
 		req.scope = name

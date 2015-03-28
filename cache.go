@@ -118,7 +118,7 @@ func (c *Cache) ttl(config *RouteCache, res Response) time.Duration {
 // A clone is critical since the original request is likely to be closed
 // before we're finishing with Grace and we might end up with a request
 // that contains data from multiple sources.
-func (c *Cache) Grace(primary string, secondary string, req *Request, next Middleware) {
+func (c *Cache) Grace(primary string, secondary string, req *Request, next Handler) {
 	key := primary + secondary
 	if c.reserveDownload(key) == false {
 		return
@@ -126,7 +126,7 @@ func (c *Cache) Grace(primary string, secondary string, req *Request, next Middl
 	go c.grace(key, primary, secondary, req.Clone(), next)
 }
 
-func (c *Cache) grace(key string, primary string, secondary string, req *Request, next Middleware) {
+func (c *Cache) grace(key string, primary string, secondary string, req *Request, next Handler) {
 	defer func() {
 		req.Close()
 		c.Lock()

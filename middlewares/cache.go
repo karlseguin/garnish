@@ -6,7 +6,7 @@ import (
 )
 
 //TODO: handle purge
-func Cache(req *garnish.Request, next garnish.Middleware) garnish.Response {
+func Cache(req *garnish.Request, next garnish.Handler) garnish.Response {
 	cache := req.Runtime.Cache
 	config := req.Route.Cache
 

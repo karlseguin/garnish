@@ -57,7 +57,7 @@ func loadRuntime() (*garnish.Runtime, error) {
 
 	config.Upstream("users").Address("http://localhost:3000").KeepAlive(8)
 	config.Route("users").Get("/v1/users").Upstream("users").CacheTTL(time.Minute)
-	config.Route("ping").Get("/v1/ping").Handler(func(reg *garnish.Request, next garnish.Middleware) garnish.Response {
+	config.Route("ping").Get("/v1/ping").Handler(func(reg *garnish.Request) garnish.Response {
 		return garnish.Respond(200, "ok")
 	})
 	return config.Build()

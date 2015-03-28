@@ -36,7 +36,7 @@ type Configuration struct {
 	tweaker   garnish.RequestTweaker
 	before    map[MiddlewarePosition]struct {
 		name    string
-		handler garnish.Handler
+		handler garnish.Middleware
 	}
 }
 
@@ -55,7 +55,7 @@ func Configure() *Configuration {
 		bytePool: poolConfiguration{65536, 64},
 		before: make(map[MiddlewarePosition]struct {
 			name    string
-			handler garnish.Handler
+			handler garnish.Middleware
 		}),
 	}
 }
@@ -119,10 +119,10 @@ func (c *Configuration) Fatal(response garnish.Response) *Configuration {
 	return c
 }
 
-func (c *Configuration) Insert(position MiddlewarePosition, name string, handler garnish.Handler) *Configuration {
+func (c *Configuration) Insert(position MiddlewarePosition, name string, handler garnish.Middleware) *Configuration {
 	c.before[position] = struct {
 		name    string
-		handler garnish.Handler
+		handler garnish.Middleware
 	}{
 		name,
 		handler,

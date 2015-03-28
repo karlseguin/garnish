@@ -22,7 +22,7 @@ type Runtime struct {
 	Address          string
 	NotFoundResponse Response
 	FatalResponse    Response
-	Executor         Middleware
+	Executor         Handler
 	Upstreams        map[string]Upstream
 	Routes           map[string]*Route
 	Router           *router.Router

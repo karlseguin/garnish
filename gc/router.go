@@ -53,7 +53,8 @@ type Route struct {
 	path              string
 	method            string
 	upstream          string
-	handler           garnish.Handler
+	stopHandler       garnish.Handler
+	flowHandler       garnish.Middleware
 	slow              time.Duration
 	cacheTTL          time.Duration
 	cacheKeyLookup    garnish.CacheKeyLookup
@@ -167,14 +168,21 @@ func (r *Route) CacheKeyLookupRef(route string) *Route {
 
 // Specify the handler function
 func (r *Route) Handler(handler garnish.Handler) *Route {
-	r.handler = handler
+	r.stopHandler = handler
+	return r
+}
+
+// Specify the handler function
+func (r *Route) FlowHandler(handler garnish.Middleware) *Route {
+	r.flowHandler = handler
 	return r
 }
 
 func (r *Route) Build(runtime *garnish.Runtime) (*garnish.Route, error) {
 	route := &garnish.Route{
-		Name:    r.name,
-		Handler: r.handler,
+		Name:        r.name,
+		StopHandler: r.stopHandler,
+		FlowHandler: r.flowHandler,
 	}
 
 	if r.slow > -1 {
