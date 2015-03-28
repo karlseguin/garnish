@@ -3,7 +3,7 @@ package cache
 import (
 	"bytes"
 	. "github.com/karlseguin/expect"
-	"github.com/karlseguin/garnish/gc"
+	"gopkg.in/karlseguin/garnish.v1/gc"
 	"strconv"
 	"testing"
 	"time"

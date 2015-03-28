@@ -1,7 +1,7 @@
 package middlewares
 
 import (
-	"github.com/karlseguin/garnish/gc"
+	"gopkg.in/karlseguin/garnish.v1/gc"
 )
 
 var Catch = func(req *gc.Request) gc.Response {

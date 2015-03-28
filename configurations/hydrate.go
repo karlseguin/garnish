@@ -1,8 +1,8 @@
 package configurations
 
 import (
-	"github.com/karlseguin/garnish/gc"
-	"github.com/karlseguin/garnish/middlewares"
+	"gopkg.in/karlseguin/garnish.v1/gc"
+	"gopkg.in/karlseguin/garnish.v1/middlewares"
 )
 
 type Hydrate struct {

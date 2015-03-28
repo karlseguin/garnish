@@ -2,7 +2,6 @@ package garnish
 
 import (
 	. "github.com/karlseguin/expect"
-	// "github.com/karlseguin/garnish/gc"
 	"testing"
 )
 

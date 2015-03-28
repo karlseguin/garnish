@@ -1,7 +1,7 @@
 package cache
 
 import (
-	"github.com/karlseguin/garnish/gc"
+	"gopkg.in/karlseguin/garnish.v1/gc"
 	"hash/fnv"
 	"math/rand"
 	"time"

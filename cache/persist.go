@@ -3,7 +3,7 @@ package cache
 import (
 	"bytes"
 	"errors"
-	"github.com/karlseguin/garnish/gc"
+	"gopkg.in/karlseguin/garnish.v1/gc"
 	"io"
 	"log"
 	"os"

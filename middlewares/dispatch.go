@@ -1,7 +1,7 @@
 package middlewares
 
 import (
-	"github.com/karlseguin/garnish/gc"
+	"gopkg.in/karlseguin/garnish.v1/gc"
 )
 
 func Dispatch(req *gc.Request, next gc.Middleware) gc.Response {

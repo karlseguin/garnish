@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"github.com/karlseguin/garnish"
-	"github.com/karlseguin/garnish/gc"
+	"gopkg.in/karlseguin/garnish.v1"
+	"gopkg.in/karlseguin/garnish.v1/gc"
 	"os"
 	"os/signal"
 	"syscall"
