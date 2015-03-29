@@ -5,6 +5,7 @@ import (
 	"gopkg.in/karlseguin/nd.v1"
 	"gopkg.in/karlseguin/params.v2"
 	"net/http"
+	"net/url"
 	"time"
 )
 
@@ -17,6 +18,9 @@ type Request struct {
 	hit    bool
 	scope  string
 	params *params.Params
+
+	// wraps request.Url.Query without having to re-parse it on each request
+	Query url.Values
 
 	// the underlying bytepool for the body. Consumers should use the Body() method
 	B *bytepool.Bytes
@@ -47,6 +51,7 @@ func NewRequest(req *http.Request, route *Route, params *params.Params) *Request
 		Route:   route,
 		params:  params,
 		Start:   nd.Now(),
+		Query:   req.URL.Query(),
 		Id:      nd.Guidv4String(),
 	}
 }
@@ -141,4 +146,28 @@ func (r *Request) FatalResponse(message string) Response {
 func (r *Request) FatalResponseErr(message string, err error) Response {
 	r.Errorf("%s: %s", message, err)
 	return r.Runtime.FatalResponse
+}
+
+// a request builder
+type ReqBuilder struct {
+	Request *Request
+}
+
+func RB() *ReqBuilder {
+	return &ReqBuilder{
+		Request: &Request{
+			params: params.New(10),
+			Query:  make(url.Values),
+		},
+	}
+}
+
+func (rb *ReqBuilder) Param(key, value string) *ReqBuilder {
+	rb.Request.params.Set(key, value)
+	return rb
+}
+
+func (rb *ReqBuilder) Query(key, value string) *ReqBuilder {
+	rb.Request.Query[key] = []string{value}
+	return rb
 }

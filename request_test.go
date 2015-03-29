@@ -14,12 +14,12 @@ func Test_Request(t *testing.T) {
 
 func (_ RequestTests) UniqueId() {
 	nd.ForceGuid("7ea58ddf-bd8d-4f20-071f-01dcb003952a")
-	req := NewRequest(nil, nil, nil)
+	req := NewRequest(RequestBuilder().Request, nil, nil)
 	Expect(req.Id).To.Equal("7ea58ddf-bd8d-4f20-071f-01dcb003952a")
 }
 
 func (_ RequestTests) StartTime() {
 	now := nd.LockTime()
-	req := NewRequest(nil, nil, nil)
+	req := NewRequest(RequestBuilder().Request, nil, nil)
 	Expect(req.Start).To.Equal(now)
 }

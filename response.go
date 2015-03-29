@@ -8,7 +8,8 @@ import (
 )
 
 var (
-	InvalidTypeResponse = Empty(500)
+	InvalidTypeResponse   = Empty(500)
+	EmptyNotFoundResponse = Empty(404)
 )
 
 // An http response
@@ -44,6 +45,14 @@ type Response interface {
 func Empty(status int) Response {
 	return &NormalResponse{
 		status: status,
+	}
+}
+
+// Builds a response with no body and the given status an headers
+func EmptyH(status int, header http.Header) Response {
+	return &NormalResponse{
+		status: status,
+		header: header,
 	}
 }
 
