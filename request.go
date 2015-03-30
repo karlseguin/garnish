@@ -63,6 +63,16 @@ func (r *Request) Params(key string) string {
 	return s
 }
 
+// Gets a querystring value. If the key holds an array of values, returns
+// the first one. Use the Query field to get an array
+func (r *Request) Q(key string) string {
+	values := r.Query[key]
+	if len(values) != 0 {
+		return values[0]
+	}
+	return ""
+}
+
 // The request's body. This value is only available before the upstream
 // is called (at which point it is drained)
 func (r *Request) Body() []byte {
