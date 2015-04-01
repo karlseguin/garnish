@@ -86,6 +86,11 @@ func (r *HydrateResponse) Status() int {
 	return r.status
 }
 
+func (r *HydrateResponse) AddHeader(key, value string) Response {
+	r.header.Set(key, value)
+	return r
+}
+
 func (r *HydrateResponse) Header() http.Header {
 	return r.header
 }

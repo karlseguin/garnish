@@ -8,8 +8,11 @@ import (
 )
 
 var (
-	InvalidTypeResponse   = Empty(500)
-	EmptyNotFoundResponse = Empty(404)
+	EmptyOk             = Empty(200)
+	EmptyCreated        = Empty(201)
+	EmptyInvalidRequest = Empty(401)
+	EmptyNotFound       = Empty(404)
+	EmptyServerError    = Empty(500)
 )
 
 // An http response
@@ -26,6 +29,9 @@ type Response interface {
 
 	// The headers
 	Header() http.Header
+
+	// Write a header
+	AddHeader(key, value string) Response
 
 	// Returns a cacheable version of this response
 	// When detached is true, it's expected that the original
@@ -85,7 +91,7 @@ func RespondH(status int, header http.Header, body interface{}) Response {
 		return &StreamingResponse{body: b, status: status, header: header}
 	default:
 		Log.Error("invalid response body type")
-		return InvalidTypeResponse
+		return EmptyServerError
 	}
 }
 
@@ -113,6 +119,11 @@ func (r *NormalResponse) Write(runtime *Runtime, w io.Writer) {
 
 func (r *NormalResponse) Status() int {
 	return r.status
+}
+
+func (r *NormalResponse) AddHeader(key, value string) Response {
+	r.header.Set(key, value)
+	return r
 }
 
 func (r *NormalResponse) Header() http.Header {
@@ -189,6 +200,11 @@ func (r *StreamingResponse) Write(runtime *Runtime, w io.Writer) {
 
 func (r *StreamingResponse) Status() int {
 	return r.status
+}
+
+func (r *StreamingResponse) AddHeader(key, value string) Response {
+	r.header.Set(key, value)
+	return r
 }
 
 func (r *StreamingResponse) Header() http.Header {
