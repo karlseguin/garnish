@@ -63,6 +63,12 @@ func (r *Request) Params(key string) string {
 	return s
 }
 
+// Whether the request could be cached or not
+func (r *Request) Cacheable() bool {
+	return (r.Method == "GET" || r.Method == "HEAD" || r.Method == "OPTIONS") && r.Route.Cache.TTL > 0
+
+}
+
 // Gets a querystring value. If the key holds an array of values, returns
 // the first one. Use the Query field to get an array
 func (r *Request) Q(key string) string {

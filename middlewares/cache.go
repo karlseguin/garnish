@@ -17,7 +17,7 @@ func Cache(req *garnish.Request, next garnish.Handler) garnish.Response {
 		return next(req)
 	}
 
-	if req.Method != "GET" || config.TTL < 0 {
+	if req.Cacheable() == false {
 		return next(req)
 	}
 	primary, secondary := config.KeyLookup(req)

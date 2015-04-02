@@ -37,13 +37,13 @@ type ReferenceFragment struct {
 }
 
 func NewReferenceFragment(data []byte) (ReferenceFragment, error) {
-	var ref map[string]interface{}
+	var ref typed.Typed
 	if err := json.Unmarshal(data, &ref); err != nil {
 		return ReferenceFragment{}, err
 	}
 	return ReferenceFragment{
 		size:  len(data) + 100,
-		Typed: typed.Typed(ref),
+		Typed: ref,
 	}, nil
 }
 
